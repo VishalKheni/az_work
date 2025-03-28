@@ -5,6 +5,21 @@ module.exports = (sequelize, DataTypes, Model) => {
             values: ['admin', 'company', 'worker'],
             allowNull: false,
         },
+        company_id: {
+            type: DataTypes.INTEGER,
+            references: { model: 'tbl_comapany', key: 'id' },
+            onDelete: 'CASCADE'
+        },
+        job_category_id: {
+            type: DataTypes.INTEGER,
+            references: { model: 'tbl_category', key: 'id' },
+            onDelete: 'CASCADE'
+        },
+        job_title_id: {
+            type: DataTypes.INTEGER,
+            references: { model: 'tbl_job_title', key: 'id' },
+            onDelete: 'CASCADE'
+        },
         login_type: {
             type: DataTypes.ENUM('google', 'email', 'number', 'apple'),
             defaultValue: "email"

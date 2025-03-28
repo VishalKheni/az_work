@@ -34,7 +34,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
-        company_address: {
+        address: {
             type: DataTypes.STRING,
             allowNull: true,
         },
