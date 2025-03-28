@@ -1,0 +1,27 @@
+
+# Node artifact files
+node_modules/
+dist/
+
+# Compiled Java class files
+*.class
+
+# Applications
+*.app
+*.exe
+*.war
+
+# Large media files
+*.mp4
+*.tiff
+*.avi
+*.flv
+*.mov
+*.wmv
+
+# Image and document files
+*.jpg
+*.jpeg
+*.pdf
+*.png
+*.webp
