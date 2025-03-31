@@ -1,0 +1,42 @@
+require('dotenv').config()
+const { email, forgetPassword } = require('./templetes');
+const fs = require('fs');
+const path = require('path');
+const nodemailer = require("nodemailer");
+let smtpUser = process.env.SMTPUSER
+let smtpPass = process.env.SMTPPASS
+
+
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: smtpUser,
+        pass: smtpPass,
+    },
+});
+
+
+const sendOTPVerificationEmail = async ({ email, otp }) => {
+    console.log("EMAIL AND OTP====>>>>", email, otp)
+    let htmlContent = email(otp);
+
+    let mail_option = {
+        from: `Car Wash <${smtpUser}>`,
+        to: email,
+        subject: "Verification Code: Complete Your Sign In",
+        text: `Your OTP is: ${otp}`,
+        html: htmlContent,
+    };
+
+    try {
+        const info = await transporter.sendMail(mail_option);
+        console.log('Email sent successfully:', info.response);
+        return info;
+    } catch (error) {
+        console.error('Failed to send email:', error);
+        throw error;
+    }
+};
+
+
+module.exports = { sendOTPVerificationEmail }

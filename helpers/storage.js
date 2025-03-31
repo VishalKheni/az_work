@@ -5,7 +5,7 @@ const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
       let folder = '';
-      if (file.fieldname === 'profile_image') folder = 'profile_pics';
+      if (file.fieldname === 'profile_image') folder = 'profile_images';
       else if (file.fieldname === 'ducument') folder = 'documents';
       else return cb(new Error('Invalid file fieldname'), false);
       const uploadPath = `./public/${folder}`;
@@ -20,4 +20,4 @@ const upload = multer({
   })
 });
  
-module.exports = { upload };
+module.exports =  upload;
