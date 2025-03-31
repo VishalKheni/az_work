@@ -2,11 +2,13 @@ module.exports = (sequelize, DataTypes, Model) => {
     const Job_title = sequelize.define('job_title_model', {
         company_id: {
             type: DataTypes.INTEGER,
+            allowNull: true,
             references: { model: 'tbl_company', key: 'id' },
             onDelete: 'CASCADE'
         },
         job_category_id: {
             type: DataTypes.INTEGER,
+            allowNull: true,
             references: { model: 'tbl_job_category', key: 'id' },
             onDelete: 'CASCADE'
         },

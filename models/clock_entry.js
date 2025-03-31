@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes, Model) => {
     const Clock_entry = sequelize.define('clock_entry_model', {
         worker_id: {
             type: DataTypes.INTEGER,
+            allowNull: true,
             references: { model: 'tbl_users', key: 'id' },
             onDelete: 'CASCADE'
         },
@@ -13,6 +14,7 @@ module.exports = (sequelize, DataTypes, Model) => {
         },
         company_id: {
             type: DataTypes.INTEGER,
+            allowNull: true,
             references: { model: 'tbl_company', key: 'id' },
             onDelete: 'CASCADE'
         },

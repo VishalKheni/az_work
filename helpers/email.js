@@ -1,5 +1,5 @@
 require('dotenv').config()
-const { email, forgetPassword } = require('./templetes');
+const { signupEmail, forgetPassword } = require('./templetes');
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require("nodemailer");
@@ -16,12 +16,12 @@ const transporter = nodemailer.createTransport({
 });
 
 
-const sendOTPVerificationEmail = async ({ email, otp }) => {
+const sendOTPVerificationEmail = async (email, otp) => {
     console.log("EMAIL AND OTP====>>>>", email, otp)
-    let htmlContent = email(otp);
+    let htmlContent = signupEmail(otp);
 
     let mail_option = {
-        from: `Car Wash <${smtpUser}>`,
+        from: `AZ Work <${smtpUser}>`,
         to: email,
         subject: "Verification Code: Complete Your Sign In",
         text: `Your OTP is: ${otp}`,

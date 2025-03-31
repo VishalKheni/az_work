@@ -2,11 +2,13 @@ module.exports = (sequelize, DataTypes, Model) => {
     const Client = sequelize.define('client_model', {
         company_id: {
             type: DataTypes.INTEGER,
+            allowNull: true,
             references: { model: 'tbl_company', key: 'id' },
             onDelete: 'CASCADE'
         },
         owner_id: {
             type: DataTypes.INTEGER,
+            allowNull: true,
             references: { model: 'tbl_users', key: 'id' },
             onDelete: 'CASCADE'
         },

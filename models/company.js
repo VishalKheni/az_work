@@ -2,11 +2,13 @@ module.exports = (sequelize, DataTypes, Model) => {
     const Company = sequelize.define('company_model', {
         owner_id: {
             type: DataTypes.INTEGER,
+            allowNull: true,
             references: { model: 'tbl_users', key: 'id' },
             onDelete: 'CASCADE'
         },
         branch_id: {
             type: DataTypes.INTEGER,
+            allowNull: true,
             references: { model: 'tbl_branch', key: 'id' },
             onDelete: 'CASCADE'
         },

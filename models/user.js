@@ -1,24 +1,26 @@
 module.exports = (sequelize, DataTypes, Model) => {
     const User = sequelize.define('user_model', {
         user_role: {
-            type: DataTypes.ENUM,
-            values: ['admin', 'company', 'worker'],
+            type: DataTypes.ENUM('admin', 'company', 'worker'),
             allowNull: false,
         },
         company_id: {
             type: DataTypes.INTEGER,
             allowNull: true,
             references: { model: 'tbl_company', key: 'id' },
+            onDelete: 'CASCADE'
         },
         job_category_id: {
             type: DataTypes.INTEGER,
             allowNull: true,
             references: { model: 'tbl_job_category', key: 'id' },
+            onDelete: 'CASCADE'
         },
         job_title_id: {
             type: DataTypes.INTEGER,
             allowNull: true,
             references: { model: 'tbl_job_title', key: 'id' },
+            onDelete: 'CASCADE'
         },
         firstname: {
             type: DataTypes.STRING,
@@ -56,15 +58,15 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
+        phone_number: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
         otp: {
             type: DataTypes.INTEGER,
         },
         otp_created_at: {
             type: DataTypes.DATE,
-            allowNull: true,
-        },
-        phone_number: {
-            type: DataTypes.STRING,
             allowNull: true,
         },
         is_email_verified: {
@@ -80,6 +82,10 @@ module.exports = (sequelize, DataTypes, Model) => {
             defaultValue: "email"
         },
         is_company_add: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+        },
+        is_worker_active: {
             type: DataTypes.BOOLEAN,
             defaultValue: false,
         },

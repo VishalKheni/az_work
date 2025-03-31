@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes, Model) => {
     const Branch = sequelize.define('branch_model', {
         user_id: {
             type: DataTypes.INTEGER,
+            allowNull: true,
             references: { model: 'tbl_users', key: 'id' },
             onDelete: 'CASCADE'
         },

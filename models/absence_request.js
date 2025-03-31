@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes, Model) => {
     const Absence_request = sequelize.define('absence_request_model', {
         worker_id: {
             type: DataTypes.INTEGER,
+            allowNull: true,
             references: { model: 'tbl_users', key: 'id' },
             onDelete: 'CASCADE'
         },

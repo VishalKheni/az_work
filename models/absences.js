@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes, Model) => {
     const Absences = sequelize.define('absences_model', {
         user_id: {
             type: DataTypes.INTEGER,
+            allowNull: true,
             references: { model: 'tbl_users', key: 'id' },
             onDelete: 'CASCADE'
         },

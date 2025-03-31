@@ -126,7 +126,7 @@ const forgetPassword = (otp) => `<!DOCTYPE html>
   </body>
 </html>`
 
-const email = (otp) => `<!DOCTYPE html>
+const signupEmail = (otp) => `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -253,4 +253,4 @@ const email = (otp) => `<!DOCTYPE html>
 </html>`
 
 
-module.exports = { forgetPassword, email }
+module.exports = { forgetPassword, signupEmail }

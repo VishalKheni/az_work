@@ -25,8 +25,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             allowNull: false,
         },
         notification_status: {
-            type: DataTypes.ENUM,
-            values: ['Read', 'Unread'],
+            type: DataTypes.ENUM('Read', 'Unread'),
             allowNull: false,
             defaultValue: 'Unread',
         },
