@@ -38,6 +38,14 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
+        is_company_blocked: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+        },
+        is_company_active: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+        },
     }, {
         tableName: "tbl_company",
         timestamps: true,
