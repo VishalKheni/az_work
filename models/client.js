@@ -2,7 +2,7 @@ module.exports = (sequelize, DataTypes, Model) => {
     const Client = sequelize.define('client_model', {
         company_id: {
             type: DataTypes.INTEGER,
-            references: { model: 'tbl_comapany', key: 'id' },
+            references: { model: 'tbl_company', key: 'id' },
             onDelete: 'CASCADE'
         },
         owner_id: {
@@ -35,7 +35,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             allowNull: true,
         },
     }, {
-        tableName: "tbl_client",
+        tableName: "tbl_clients",
         timestamps: true,
     });
     return Client;

@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.ENUM('accepted', 'rejected'),
         },
     }, {
-        tableName: "tbl_absences",
+        tableName: "tbl_absences_request",
         timestamps: true,
     });
     return Absence_request;

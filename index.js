@@ -5,7 +5,7 @@ const cors = require("cors")
 const PORT = process.env.PORT;
 const HOST = process.env.NODE_ENV == "LOCAL" ? process.env.LOCALHOST : process.env.SERVERHOST;
 const routes = require('./router/index');
-const db  = require('./config/db');
+const db = require('./config/db');
 const http = require("http");
 const https = require("https");
 const fs = require('fs');
@@ -14,8 +14,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger)
 
-
-
 var corsOptions = {
     origin: [`https://${HOST}:${PORT}`],
     optionsSuccessStatus: 200,
@@ -23,8 +21,6 @@ var corsOptions = {
 
 process.env.NODE_ENV == "LOCAL" ? app.use(cors()) : app.use(cors(corsOptions));
 app.use(express.static('public'));
-// Middleware to parse JSON in the request body
-
 
 // const options = {
 //     ...(process.env.NODE_ENV != "LOCAL" && {
@@ -32,6 +28,7 @@ app.use(express.static('public'));
 //         cert: fs.readFileSync(process.env.CERTKEY),
 //     }),
 // };
+
 const server = process.env.NODE_ENV == "LOCAL" ? http.createServer(app) : https.createServer(app);
 
 app.get("/", (req, res) => {
@@ -43,7 +40,7 @@ const start = async () => {
         await db.sequelize.authenticate();
         console.log('Connection has been established successfully.');
         console.log("...........................................................................")
-        // await db.sequelize.sync({ force: true });
+        // await db.sequelize.sync({ alter: true });
         server.listen(PORT, () => {
             console.log(`AZ Work running on ${process.env.NODE_ENV == "LOCAL" ? "http" : "https"}://${HOST}:${PORT}/ ...`);
         });

@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes, Model) => {
-    const Comapany = sequelize.define('company_model', {
+    const Company = sequelize.define('company_model', {
         owner_id: {
             type: DataTypes.INTEGER,
             references: { model: 'tbl_users', key: 'id' },
@@ -39,8 +39,8 @@ module.exports = (sequelize, DataTypes, Model) => {
             allowNull: true,
         },
     }, {
-        tableName: "tbl_comapany",
+        tableName: "tbl_company",
         timestamps: true,
     });
-    return Comapany;
+    return Company;
 }

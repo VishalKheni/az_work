@@ -7,22 +7,18 @@ module.exports = (sequelize, DataTypes, Model) => {
         },
         company_id: {
             type: DataTypes.INTEGER,
-            references: { model: 'tbl_comapany', key: 'id' },
-            onDelete: 'CASCADE'
+            allowNull: true,
+            references: { model: 'tbl_company', key: 'id' },
         },
         job_category_id: {
             type: DataTypes.INTEGER,
-            references: { model: 'tbl_category', key: 'id' },
-            onDelete: 'CASCADE'
+            allowNull: true,
+            references: { model: 'tbl_job_category', key: 'id' },
         },
         job_title_id: {
             type: DataTypes.INTEGER,
+            allowNull: true,
             references: { model: 'tbl_job_title', key: 'id' },
-            onDelete: 'CASCADE'
-        },
-        login_type: {
-            type: DataTypes.ENUM('google', 'email', 'number', 'apple'),
-            defaultValue: "email"
         },
         firstname: {
             type: DataTypes.STRING,
@@ -78,6 +74,10 @@ module.exports = (sequelize, DataTypes, Model) => {
         address: {
             type: DataTypes.STRING,
             allowNull: true,
+        },
+        login_type: {
+            type: DataTypes.ENUM('google', 'email', 'number', 'apple'),
+            defaultValue: "email"
         },
         is_company_add: {
             type: DataTypes.BOOLEAN,

@@ -25,7 +25,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             allowNull: false
         },
     }, {
-        tableName: "tbl_holidays",
+        tableName: "tbl_document",
         timestamps: true,
     });
     return Document;

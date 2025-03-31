@@ -2,7 +2,7 @@ module.exports = (sequelize, DataTypes, Model) => {
     const Job_category = sequelize.define('category_model', {
         company_id: {
             type: DataTypes.INTEGER,
-            references: { model: 'tbl_comapany', key: 'id' },
+            references: { model: 'tbl_company', key: 'id' },
             onDelete: 'CASCADE'
         },
         owner_id: {
@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             allowNull: true
         },
     }, {
-        tableName: "tbl_category",
+        tableName: "tbl_job_category",
         timestamps: true,
     });
     return Job_category;

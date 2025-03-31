@@ -2,12 +2,12 @@ module.exports = (sequelize, DataTypes, Model) => {
     const Project = sequelize.define('project_model', {
         company_id: {
             type: DataTypes.INTEGER,
-            references: { model: 'tbl_comapany', key: 'id' },
+            references: { model: 'tbl_company', key: 'id' },
             onDelete: 'CASCADE'
         },
         client_id: {
             type: DataTypes.INTEGER,
-            references: { model: 'tbl_users', key: 'id' },
+            references: { model: 'tbl_clients', key: 'id' },
             onDelete: 'CASCADE'
         },
         project_name: {

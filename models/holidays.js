@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes, Model) => {
         },
         company_id: {
             type: DataTypes.INTEGER,
-            references: { model: 'tbl_comapany', key: 'id' },
+            references: { model: 'tbl_company', key: 'id' },
             onDelete: 'CASCADE'
         },
         holiday_name: {

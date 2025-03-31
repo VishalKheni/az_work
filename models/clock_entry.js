@@ -5,21 +5,15 @@ module.exports = (sequelize, DataTypes, Model) => {
             references: { model: 'tbl_users', key: 'id' },
             onDelete: 'CASCADE'
         },
+        project_id: { 
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: { model: 'tbl_project', key: 'id' },
+            onDelete: 'CASCADE'
+        },
         company_id: {
             type: DataTypes.INTEGER,
-            references: { model: 'tbl_comapany', key: 'id' },
-            onDelete: 'CASCADE'
-        },
-        project_id: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            references: { model: 'tbl_project', key: 'id' },
-            onDelete: 'CASCADE'
-        },
-        project_id: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            references: { model: 'tbl_project', key: 'id' },
+            references: { model: 'tbl_company', key: 'id' },
             onDelete: 'CASCADE'
         },
         clock_in_time: {
