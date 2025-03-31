@@ -28,6 +28,10 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
+        profile_image: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
         email: {
             type: DataTypes.STRING,
             allowNull: true,
@@ -60,10 +64,6 @@ module.exports = (sequelize, DataTypes, Model) => {
             allowNull: true,
         },
         phone_number: {
-            type: DataTypes.STRING,
-            allowNull: true,
-        },
-        profile_image: {
             type: DataTypes.STRING,
             allowNull: true,
         },
