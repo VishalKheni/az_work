@@ -1,19 +1,30 @@
 const express = require('express');
 const authController = require('../controllers/auth');
+const authvalidation = require('../validation/auth.validation');
 const { verifyToken } = require('../middleware/verifyToken');
 const { upload } = require('../helpers/storage')
 const router = express.Router();
 
 const uploadFile = upload.fields([
-    { name: 'profile_image', maxCount: 1 },
-    { name: 'document', maxCount: 1 },
-    { name: 'company_logo', maxCount: 5 }, // Allows up to 5 files
+    { name: 'profile_image' },
+    { name: 'document' },
+    { name: 'company_logo' },
 ]);
 
-router.post('/signup', authController.signUp);
-router.post('/company', uploadFile, authController.addCompany);
+router.get('/refresh_token', authController.refreshToken);
+router.post('/login', authvalidation.login(), authController.login);
+router.post('/signup', authvalidation.signUp(), authController.signUp);
+router.post('/company', uploadFile,  authvalidation.addCompany(), authController.addCompany);
+router.post('/create_password', authvalidation.createPassword(), authController.createPassword);
+router.post('/verify_otp', authvalidation.verifyOtp(), authController.verifyOtpEmail);
 
-router.post('/create_password',  authController.createPassword);
-router.post('/verify_otp',  authController.verifyOtpEmail);
+
+
+router.post('/change_password', verifyToken,  authvalidation.changePassword(), authController.changePassword);
+router.post('/logout', verifyToken, authController.logOut);
+
+router.post('/send_otp_email', authvalidation.sendOtpToEmail(), authController.sendOtpToEmail);
+router.post('/verify_otp_email', authvalidation.verifyOtpForResetPassword(), authController.verifyOtpForResetPassword);
+router.post('/reset_password', authvalidation.resetPassword(), authController.resetPassword);
 
 module.exports = router

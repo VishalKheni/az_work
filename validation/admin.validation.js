@@ -1,0 +1,195 @@
+const { check, validationResult } = require("express-validator");
+const { verifyToken } = require('../middleware/verifyToken');
+const fs = require("fs");
+
+
+const validation = (req, res, next) => {
+    console.log("<<input>>req.query", req.query);
+    console.log("<<input>>req.body", req.body);
+    console.log("<<input>>req.file", req.file);
+    console.log("<<input>>req.files", req.files);
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        // Unlink or remove any uploaded files if validation fails
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
+
+        if (req.files) {
+            Object.values(req.files).forEach(fileArray => {
+                fileArray.forEach(file => {
+                    fs.unlinkSync(file.path);
+                });
+            });
+        }
+        return res.status(400).json({
+            Status: 0,
+            message: errors.array()[0].msg,
+            type: errors.array()[0].type,
+            value: errors.array()[0].value,
+            path: errors.array()[0].path,
+            location: errors.array()[0].location,
+            error: errors
+        });
+    }
+    next();
+}
+const checkForUnexpectedFields = (allowedFields) => {
+    return (req, res, next) => {
+        // Check for unexpected fields in req.body
+        const unexpectedBodyFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
+
+        // Check for unexpected fields in req.query
+        const unexpectedQueryFields = Object.keys(req.query).filter(field => !allowedFields.includes(field));
+
+        // Check for unexpected files in req.files
+        const unexpectedFileFields = Object.keys(req.files || {}).filter(field => !allowedFields.includes(field));
+
+        // If there are any unexpected file fields, unlink all files from the request
+        if (unexpectedFileFields.length > 0) {
+            Object.values(req.files).forEach(fileArray => {
+                fileArray.forEach(file => {
+                    fs.unlinkSync(file.path);  // Remove the file from the server
+                });
+            });
+        }
+
+        // Combine all unexpected fields
+        const unexpectedFields = [...unexpectedBodyFields, ...unexpectedQueryFields, ...unexpectedFileFields];
+
+        if (unexpectedFields.length > 0) {
+            return res.status(400).json({ Status: 0, message: `Unexpected fields: ${unexpectedFields.join(', ')}` });
+        }
+
+        next();
+    };
+};
+
+exports.companyList = () => {
+    return [
+        [
+            check('page')
+                .notEmpty()
+                .withMessage('Page must required.')
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer.'),
+        ],
+        checkForUnexpectedFields(["page", "limit"]),
+        validation, verifyToken
+    ];
+}
+
+
+exports.addBranch = () => {
+    return [
+        [
+            check('branch_name')
+                .notEmpty().withMessage('Branch name is required')
+                .isString().withMessage('Branch name must be a string'),
+            check('weekly_hours')
+                .notEmpty().withMessage('Weekly hours is required')
+                .isNumeric().withMessage('Weekly hours must be a number'),
+            check('monthly_hours')
+                .notEmpty().withMessage('Monthly hours is required')
+                .isNumeric().withMessage('Monthly hours must be a number'),
+            check('yearly_hours')
+                .notEmpty().withMessage('Yearly hours is required')
+                .isNumeric().withMessage('Yearly hours must be a number'),
+            check('over_time')
+                .notEmpty().withMessage('Over time is required')
+                .isNumeric().withMessage('Overtime must be a number')
+        ],
+        checkForUnexpectedFields(["branch_name", "weekly_hours", "monthly_hours", "yearly_hours", "over_time"]),
+        validation
+    ];
+}
+
+exports.allBranchList = () => {
+    return [
+        [
+            check('page')
+                .notEmpty()
+                .withMessage('Page must required.')
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer.'),
+        ],
+        checkForUnexpectedFields(["page", "limit"]),
+        validation, verifyToken
+    ];
+}
+
+
+
+exports.editBranch = () => {
+    return [
+        [
+            check("branch_id").notEmpty().withMessage("Branch ID is required."),
+            check('branch_name').optional().isString().withMessage('Branch name must be a string'),
+            check('weekly_hours').optional().isNumeric().withMessage('Weekly hours must be a number'),
+            check('monthly_hours').optional().isNumeric().withMessage('Monthly hours must be a number'),
+            check('yearly_hours').optional().isNumeric().withMessage('Yearly hours must be a number'),
+            check('over_time').optional().isNumeric().withMessage('Overtime must be a number')
+        ],
+        checkForUnexpectedFields(["branch_id", "branch_name", "weekly_hours", "monthly_hours", "yearly_hours", "over_time"]),
+        validation, verifyToken
+    ];
+}
+exports.deleteBranch = () => {
+    return [
+        [
+            check("branch_id").notEmpty().withMessage("Branch ID is required."),
+        ],
+        checkForUnexpectedFields(["branch_id"]),
+        validation, verifyToken
+    ];
+}
+
+exports.addHoliday = () => {
+    return [
+        [
+            check('holiday_name').notEmpty().withMessage('Holiday name is required').isString().withMessage('Holiday name must be a string'),
+            check("date").notEmpty().withMessage('Date is required.').isISO8601().withMessage("Date must be a valid date (YYYY-MM-DD)."),
+            check('day').notEmpty().withMessage('Day is required').isString().withMessage('Day must be a string'),
+        ],
+        checkForUnexpectedFields(["holiday_name", "date", "day"]),
+        validation, verifyToken
+    ];
+}
+
+exports.getHolidaysList = () => {
+    return [
+        [
+            check('page')
+                .notEmpty()
+                .withMessage('Page must required.')
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer.'),
+        ],
+        checkForUnexpectedFields(["page", "limit"]),
+        validation, verifyToken
+    ];
+}
+
+
+exports.editHoliday = () => {
+    return [
+        [
+            check("holiday_id").notEmpty().withMessage("Holiday ID is required."),
+            check('holiday_name').optional().isString().withMessage('Holiday name must be a string'),
+            check("date").optional().isISO8601().withMessage("Date must be a valid date (YYYY-MM-DD)."),
+            check('day').optional().isString().withMessage('Day must be a string'),
+        ],
+        checkForUnexpectedFields(["holiday_id", "holiday_name", "date", "day"]),
+        validation, verifyToken
+    ];
+}
+
+exports.deleteHoliday = () => {
+    return [
+        [
+            check("holiday_id").notEmpty().withMessage("Holiday ID is required."),
+        ],
+        checkForUnexpectedFields(["holiday_id"]),
+        validation, verifyToken
+    ];
+}

@@ -1,52 +1,72 @@
 const jwt = require('jsonwebtoken');
-const { db } = require('../config/db');
-const jwtSecretKey = process.env.JWT_SECRET_KEY;
+const db  = require('../config/db');
 
-const verifyToken = (req, res, next) => {
+const verifyToken = async (req, res, next) => {
     try {
-        const authHeader = req.headers['authorization'];
+        const authHeader = req.headers["authorization"];
 
         if (!authHeader) {
-            return res.status(401).json({ message: 'Authentication failed - Token missing on header' });
+            return res.status(401).json({
+                status: 0,
+                message: "Authentication failed - Token missing in header",
+            });
         }
 
-        const token = authHeader.split(' ')[1];
-        // Verify the token using the JWT secret key
-        jwt.verify(token, jwtSecretKey, async (err, decodedToken) => {
-            if (err) {
-                return res
-                    .status(401)
-                    .json({ status: 0, message: "Token is not valid!" });
-            }
-            const tokens = await db.Token.findByPk(decodedToken.token_id);
-            console.log(decodedToken)
-            if (!tokens) {
-                return res.status(401).json({ error: 'Invalid token' });
-            }
-            let User = await db.User.findOne({
-                where: { id: decodedToken.id },
-                include: [
-                    {
-                        model: db.Token,
-                        as: "user_tokens",
-                        where: { id: decodedToken.token_id }
-                    }
-                ]
+        const token = authHeader.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({
+                status: 0,
+                message: "Authentication failed - Token not provided",
             });
-            if (!User) {
-                return res.status(401).json({ status: 0, message: "You are not authenticated!" });
-            }
-            // if (User.is_block == true) {
-            //     return res.status(401).json({ status: 0, message: "You are block by admin!" });
-            // }
-            req.user = User;
-            next();
-        });
+        }
+        const decoded = jwt.decode(token, { complete: true });
+        if (!decoded || !decoded.payload) {
+            return res.status(401).json({
+                status: 0,
+                message: "Invalid token structure",
+            });
+        }
+
+        const { exp, user_id, token_id } = decoded.payload;
+        const currentTime = Math.floor(Date.now() / 1000);
+
+        // Manual expiration check
+        if (exp && exp < currentTime) {
+            return res.status(401).json({
+                status: 0,
+                message: "Token has expired",
+            });
+        }
+
+        let verifiedToken;
+        try {
+            verifiedToken = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        } catch (error) {
+            console.error("Error verifying token:", error);
+            return res.status(401).json({ status: 0, message: "Invalid token" });
+        }
+
+        if (!user_id || !token_id) {
+            return res
+                .status(401)
+                .json({ status: 0, message: "Invalid token payload" });
+        }
+        const user = await db.User.findByPk(verifiedToken.user_id);
+        const tokens = await db.Token.findByPk(verifiedToken.token_id);
+
+        if (!user || !tokens) {
+            return res.status(401).json({ status: 0, message: "Unauthorized" });
+        }
+
+        req.user = user;
+        req.token = tokens;
+        next();
     } catch (error) {
-        console.error('Error verifying JWT:', error);
-        res.status(401).json({ message: 'Authentication failed' });
+        console.error("Error verifying JWT:", error);
+        return res
+            .status(401)
+            .json({ status: 0, message: "Unauthorized" });
     }
 };
-
 
 module.exports = { verifyToken, };

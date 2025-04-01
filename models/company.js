@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             references: { model: 'tbl_users', key: 'id' },
             onDelete: 'CASCADE'
         },
-        branch_id: {
+        industry_id: {
             type: DataTypes.INTEGER,
             allowNull: true,
             references: { model: 'tbl_branch', key: 'id' },

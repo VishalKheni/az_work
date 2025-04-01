@@ -161,6 +161,15 @@ db.Project.belongsTo(db.Client, {
     as: 'client'
 });
 
+db.Branch.hasMany(db.Company, {
+    foreignKey: 'industry_id',
+    as: 'companies' 
+});
+db.Company.belongsTo(db.Branch, {
+    foreignKey: 'industry_id',
+    as: 'industry' 
+});
+
 db.User.hasMany(db.Notification, {
     foreignKey: 'notification_by',
     as: 'notification_user',

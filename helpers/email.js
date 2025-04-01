@@ -38,5 +38,24 @@ const sendOTPVerificationEmail = async (email, otp) => {
     }
 };
 
+const sendForgetPassOTPVerificationEmail = async (email, otp) => {
 
-module.exports = { sendOTPVerificationEmail }
+    let htmlContent = forgetPassword(otp);
+    let mailoption = {
+      from: `AZ Work <${smtpUser}>`,
+      to: email,
+      subject: "Complete Your Password Reset: OTP Verification",
+      html: htmlContent,
+    };
+  
+    return transporter.sendMail(mailoption, function (error, info) {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log('Email sent: ' + info.response);
+      }
+    });
+  };
+  
+
+module.exports = { sendOTPVerificationEmail, sendForgetPassOTPVerificationEmail }

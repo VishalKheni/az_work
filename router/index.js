@@ -1,9 +1,13 @@
-const express = require('express')
+const express = require('express');
 
-let authRouter = require('./auth')
+let adminRouter = require('./admin');
+let authRouter = require('./auth');
+let companyRouter = require('./company');
 
-const router = express.Router()
+const router = express.Router();
 
-router.use('/auth', authRouter)
+router.use('/admin', adminRouter);
+router.use('/auth', authRouter);
+router.use('/company', companyRouter);
 
-module.exports = router
+module.exports = router;

@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: true
         },
-        yearly_hour: {
+        yearly_hours: {
             type: DataTypes.STRING,
             allowNull: true
         },
