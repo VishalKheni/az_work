@@ -9,6 +9,35 @@ const { Op, where, Sequelize, col } = require("sequelize");
 let path = require('path');
 let fs = require('fs');
 
+
+exports.dashboard = async (req, res) => {
+    try {
+        const totalCompany = await db.User.count({ where: { user_role: "company", is_company_add: true } })
+        const totalWorker = await db.User.count({ where: { user_role: "worker" } })
+        const totalUsers = await db.User.count({
+            where: {
+              [Op.or]: [
+                { user_role: "worker" },
+                { user_role: "company", is_company_add: true }
+              ]
+            }
+          });
+                    
+        return res.status(200).json({
+            status: 1,
+            message: 'Dashboard count fetched successfully',
+            data: {
+                totalCompany,
+                totalWorker,
+                totalUsers
+            },
+        });
+
+    } catch (error) {
+        console.error('Error while fetching dashboard:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+}
 exports.companyList = async (req, res) => {
     try {
         let { page, limit } = req.query;
@@ -23,7 +52,7 @@ exports.companyList = async (req, res) => {
                 {
                     model: db.User,
                     as: 'owner',
-                    attributes: ['id', 'firstname', 'lastname', 'email']
+                    attributes: ['id', 'firstname', 'lastname', 'country_code', 'iso_code', 'phone_number']
                 },
                 {
                     model: db.Branch,
@@ -36,6 +65,7 @@ exports.companyList = async (req, res) => {
 
         return res.status(200).json({
             status: 1,
+            message: 'Company List fetched successfully',
             pagination: {
                 totalCompanies: count,
                 totalPages: Math.ceil(count / limit),
@@ -49,6 +79,44 @@ exports.companyList = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 };
+
+exports.companyDetail = async (req, res) => {
+    try {
+        const { company_id } = req.query;
+
+        const company = await db.Company.findByPk(company_id, {
+            include: [
+                {
+                    model: db.User,
+                    as: 'owner',
+                    attributes: ['id', 'firstname', 'lastname', 'country_code', 'iso_code', 'phone_number']
+                },
+                {
+                    model: db.Branch,
+                    as: 'industry',
+                    attributes: ['id', 'branch_name', 'createdAt']
+                }
+            ],
+        });
+
+        if (!company) {
+            return res.status(400).json({
+                status: 0,
+                message: 'Company not found',
+            })
+        }
+
+        return res.status(200).json({
+            status: 1,
+            message: 'Company detail fetched successfully',
+            data: company,
+        });
+    } catch (error) {
+        console.error('Error while fetching company list:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+
 
 exports.addBranch = async (req, res) => {
     try {
@@ -184,6 +252,7 @@ exports.getHolidaysList = async (req, res) => {
 
         return res.status(200).json({
             status: 1,
+            message: "Holiday List fetched successfully",
             pagination: {
                 totalHoliday: count,
                 totalPages: Math.ceil(count / limit),
@@ -224,3 +293,81 @@ exports.deleteHoliday = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 };
+
+exports.addAbsences = async (req, res) => {
+    try {
+        const { absence_type, status } = req.body;
+        const user_id = req.user.id;
+
+        const absence = await db.Absences.create({
+            user_id,
+            absence_type,
+            status,
+            created_by_admin: true
+        });
+
+        return res.status(201).json({ status: 1, message: 'Absence added successfully', data: absence });
+
+    } catch (error) {
+        console.error('Error while adding absence:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+
+exports.editAbsences = async (req, res) => {
+    try {
+        const { absence_id, absence_type, status } = req.body;
+        const absence = await db.Absences.findByPk(absence_id)
+        if (!absence) return res.status(404).json({ status: 0, message: 'Absence Not Found' });
+        await absence.update({ absence_type, status });
+        return res.status(201).json({ status: 1, message: 'Absence update successfully', data: absence });
+    } catch (error) {
+        console.error('Error while edit absence:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+
+exports.deleteAbsences = async (req, res) => {
+    try {
+        const { absence_id } = req.query;
+        const absence = await db.Absences.findByPk(absence_id);
+        if (!absence) return res.status(404).json({ status: 0, message: 'Absence Not Found' });
+        await absence.destroy();
+        return res.status(201).json({ status: 1, message: 'Absence deleted successfully' });
+    } catch (error) {
+        console.error('Error while delete absence:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+
+exports.getAbsencesList = async (req, res) => {
+    try {
+        let { page, limit } = req.query;
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 10;
+        const offset = (page - 1) * limit;
+
+        const { count, rows: absence } = await db.Absences.findAndCountAll({
+            limit,
+            offset,
+            order: [['createdAt', 'Desc']],
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: "Absence List fetched successfully",
+            pagination: {
+                totalAbsence: count,
+                totalPages: Math.ceil(count / limit),
+                currentPage: page,
+                limit: limit,
+            },
+            data: absence,
+        });
+
+    } catch (error) {
+        console.error('Error while fetching absence:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+

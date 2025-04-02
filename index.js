@@ -29,7 +29,7 @@ app.use(express.static('public'));
 //     }),
 // };
 
-const server = process.env.NODE_ENV == "LOCAL" ? http.createServer(app) : https.createServer(app);
+const server = process.env.NODE_ENV == "LOCAL" ? http.createServer(app) : http.createServer(app);
 
 app.get("/", (req, res) => {
     res.send(`<h1>AZ Work Running!</h1>`);
@@ -40,9 +40,9 @@ const start = async () => {
         await db.sequelize.authenticate();
         console.log('Connection has been established successfully.');
         console.log("........................................................................")
-        // await db.Company.sync({ alter: true });
+        // await db.Job_title.sync({ alter: true });
         server.listen(PORT, () => {
-            console.log(`AZ Work running on ${process.env.NODE_ENV == "LOCAL" ? "http" : "https"}://${HOST}:${PORT}/ ...`);
+            console.log(`AZ Work running on ${process.env.NODE_ENV == "LOCAL" ? "http" : "http"}://${HOST}:${PORT}/ ...`);
             console.log("........................................................................")
         });
     } catch (error) {

@@ -58,7 +58,7 @@ exports.addCompany = async (req, res) => {
     const branch = await db.Branch.findByPk(industry_id);
     if (!branch) return res.status(400).json({ status: 0, message: 'Branch not found' });
 
-    const validation = await validateFiles(company_logo, ["jpg", "jpeg", "png", "webp"], 5 * 1024 * 1024);
+    const validation = await validateFiles(company_logo, ["jpg", "jpeg", "png", "webp"], 15 * 1024 * 1024);
     if (!validation.valid) return res.status(400).json({ Status: 0, message: validation.message });
 
     const company = await db.Company.create({
@@ -77,7 +77,6 @@ exports.addCompany = async (req, res) => {
   } catch (error) {
     console.error('Error while adding company:', error);
     return res.status(500).json({ status: 0, message: 'Internal server error' });
-
   }
 }
 
@@ -313,7 +312,7 @@ exports.verifyOtpForResetPassword = async (req, res) => {
       return res.status(400).json({ status: 0, message: "OTP has expired" });
     }
     await user.update({ otp: null, otp_created_at: null });
-    return res.status(201).json({
+    return res.status(200).json({
       status: 1,
       message: 'OTP verified successfully.',
     });

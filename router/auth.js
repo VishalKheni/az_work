@@ -7,7 +7,7 @@ const router = express.Router();
 
 const uploadFile = upload.fields([
     { name: 'profile_image' },
-    { name: 'document' },
+    { name: 'documents' },
     { name: 'company_logo' },
 ]);
 

@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             references: { model: 'tbl_users', key: 'id' },
             onDelete: 'CASCADE'
         },
-        absences_type: {
+        absence_type: {
             type: DataTypes.STRING,
             allowNull: false
         },

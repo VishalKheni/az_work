@@ -75,7 +75,16 @@ exports.companyList = () => {
                 .withMessage('Page must be a positive integer.'),
         ],
         checkForUnexpectedFields(["page", "limit"]),
-        validation, verifyToken
+        validation
+    ];
+}
+exports.companyDetail = () => {
+    return [
+        [
+            check("company_id").notEmpty().withMessage("Company ID is required."),
+        ],
+        checkForUnexpectedFields(["company_id"]),
+        validation
     ];
 }
 
@@ -114,12 +123,9 @@ exports.allBranchList = () => {
                 .withMessage('Page must be a positive integer.'),
         ],
         checkForUnexpectedFields(["page", "limit"]),
-        validation, verifyToken
+        validation
     ];
 }
-
-
-
 exports.editBranch = () => {
     return [
         [
@@ -131,7 +137,7 @@ exports.editBranch = () => {
             check('over_time').optional().isNumeric().withMessage('Overtime must be a number')
         ],
         checkForUnexpectedFields(["branch_id", "branch_name", "weekly_hours", "monthly_hours", "yearly_hours", "over_time"]),
-        validation, verifyToken
+        validation
     ];
 }
 exports.deleteBranch = () => {
@@ -140,7 +146,7 @@ exports.deleteBranch = () => {
             check("branch_id").notEmpty().withMessage("Branch ID is required."),
         ],
         checkForUnexpectedFields(["branch_id"]),
-        validation, verifyToken
+        validation
     ];
 }
 
@@ -152,7 +158,7 @@ exports.addHoliday = () => {
             check('day').notEmpty().withMessage('Day is required').isString().withMessage('Day must be a string'),
         ],
         checkForUnexpectedFields(["holiday_name", "date", "day"]),
-        validation, verifyToken
+        validation
     ];
 }
 
@@ -166,7 +172,7 @@ exports.getHolidaysList = () => {
                 .withMessage('Page must be a positive integer.'),
         ],
         checkForUnexpectedFields(["page", "limit"]),
-        validation, verifyToken
+        validation
     ];
 }
 
@@ -180,7 +186,7 @@ exports.editHoliday = () => {
             check('day').optional().isString().withMessage('Day must be a string'),
         ],
         checkForUnexpectedFields(["holiday_id", "holiday_name", "date", "day"]),
-        validation, verifyToken
+        validation
     ];
 }
 
@@ -190,6 +196,51 @@ exports.deleteHoliday = () => {
             check("holiday_id").notEmpty().withMessage("Holiday ID is required."),
         ],
         checkForUnexpectedFields(["holiday_id"]),
-        validation, verifyToken
+        validation
+    ];
+}
+
+exports.addAbsences = () => {
+    return [
+        [
+            check('absence_type').notEmpty().withMessage('Absences type name is required').isString().withMessage('Absences type must be a string'),
+            check("status").not().isEmpty().withMessage("Status is required").trim().escape()
+                .isIn(["paid", "unpaid"]).withMessage("Invalid value for user_role. Allowed values are 'paid' or 'unpaid' "),
+        ],
+        checkForUnexpectedFields(["absence_type", "status"]),
+        validation
+    ];
+}
+exports.editAbsences = () => {
+    return [
+        [
+            check("absence_id").notEmpty().withMessage("Absence ID is required."),
+            check('absence_type').optional().isString().withMessage('Absences type must be a string'),
+            check("status").optional().isIn(["paid", "unpaid"]).withMessage("Invalid value for user_role. Allowed values are 'paid' or 'unpaid' "),
+        ],
+        checkForUnexpectedFields(["absence_id", "absence_type", "status"]),
+        validation
+    ];
+}
+exports.deleteAbsences = () => {
+    return [
+        [
+            check("absence_id").notEmpty().withMessage("Absence ID is required."),
+        ],
+        checkForUnexpectedFields(["absence_id"]),
+        validation
+    ];
+}
+exports.getAbsencesList = () => {
+    return [
+        [
+            check('page')
+                .notEmpty()
+                .withMessage('Page must required.')
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer.'),
+        ],
+        checkForUnexpectedFields(["page", "limit"]),
+        validation
     ];
 }

@@ -161,7 +161,7 @@ exports.changePassword = () => {
             check("newPassword").not().isEmpty().withMessage("New Password is required").trim().escape(),
         ],
         checkForUnexpectedFields(["oldPassword", "newPassword"]),
-        validation, verifyToken
+        validation
     ];
 }
 

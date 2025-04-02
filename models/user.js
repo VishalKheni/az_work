@@ -39,11 +39,11 @@ module.exports = (sequelize, DataTypes, Model) => {
             allowNull: true,
         },
         insurance_number: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.STRING,
             allowNull: true,
         },
         employment_date: {
-            type: DataTypes.DATE,
+            type: DataTypes.DATEONLY,
             allowNull: true,
         },
         password: {

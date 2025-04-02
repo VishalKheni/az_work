@@ -8,7 +8,6 @@ const forgetPassword = (otp) => `<!DOCTYPE html>
     <meta name="description" content="" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
-
   <body
     style="
       font-family: Helvetica, Arial, sans-serif;
@@ -63,7 +62,7 @@ const forgetPassword = (otp) => `<!DOCTYPE html>
                           style="text-align: center; margin-bottom: 0px"
                         >
                           <img
-                            src="https://carwashnearme.ae:8800/uploads/app_logo/car_wash_logo.png"
+                            src=""
                             alt="App Logo"
                             style="width: 80px; height: auto"
                           />
@@ -141,8 +140,7 @@ const signupEmail = (otp) => `<!DOCTYPE html>
       margin: 0px;
       padding: 0px;
       background-color: #ffffff;
-    "
-  >
+    ">
     <table
       role="presentation"
       style="
@@ -151,9 +149,7 @@ const signupEmail = (otp) => `<!DOCTYPE html>
         border: 0px;
         border-spacing: 0px;
         font-family: Arial, Helvetica, sans-serif;
-        
-      "
-    >
+      ">
       <tbody>
         <tr>
           <td
@@ -189,7 +185,7 @@ const signupEmail = (otp) => `<!DOCTYPE html>
                           style="text-align: center; margin-bottom: 0px"
                         >
                            <img
-                           src="https://carwashnearme.ae:8800/uploads/app_logo/car_wash_logo.png"
+                           src=""
                           alt="App Logo"
                             style="width: 50px; height: auto"
                            />
@@ -253,4 +249,35 @@ const signupEmail = (otp) => `<!DOCTYPE html>
 </html>`
 
 
-module.exports = { forgetPassword, signupEmail }
+const sendWorkerEmail = ({ email, username, company_name, password }) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>${company_name} - Worker Account Created</title>
+</head>
+<body>
+    <table style="width: 100%; max-width: 600px; margin: auto; border-collapse: collapse; font-family: Arial, sans-serif;">
+        <tr>
+            <td style="background-color: #0D2D5B; padding: 20px; text-align: center;">
+                <img src="" alt="App Logo" style="width: 80px; height: auto"/>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 20px; background-color: #ffffff;">
+                <p>Dear ${username},</p>
+                <p>Your worker account has been successfully created by <strong>${company_name}</strong>. Below are your login details:</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Password:</strong> ${password}</p>
+                <br/>
+                <p>Best regards,<br>${company_name} Team</p>
+            </td>
+        </tr>
+        <tr><td style="background-color: #0D2D5B; padding: 10px; text-align: center; color: #FFFF;"></td></tr>
+    </table>
+</body>
+</html>
+`;
+
+
+module.exports = { forgetPassword, signupEmail, sendWorkerEmail }

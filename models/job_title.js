@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             references: { model: 'tbl_job_category', key: 'id' },
             onDelete: 'CASCADE'
         },
-        category_name: {
+        Job_title: {
             type: DataTypes.STRING,
             allowNull: true
         },
