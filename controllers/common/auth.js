@@ -1,11 +1,11 @@
 require('dotenv').config()
-const db = require("../config/db");
+const db = require("../../config/db");
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken');
 const moment = require('moment');
-const { sendOTPVerificationEmail, sendForgetPassOTPVerificationEmail } = require("../helpers/email");
-const { validateMobile, } = require('../helpers/twilio');
-const { validateFiles, } = require('../helpers/fileValidation');
+const { sendOTPVerificationEmail, sendForgetPassOTPVerificationEmail } = require("../../helpers/email");
+const { validateMobile, } = require('../../helpers/twilio');
+const { validateFiles, } = require('../../helpers/fileValidation');
 const { Op, where, Sequelize, col } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
 let path = require('path');

@@ -40,11 +40,11 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
-        is_company_blocked: {
+        is_company_active: {
             type: DataTypes.BOOLEAN,
             defaultValue: false,
         },
-        is_company_active: {
+        is_company_blocked: {
             type: DataTypes.BOOLEAN,
             defaultValue: false,
         },

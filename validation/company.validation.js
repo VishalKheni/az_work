@@ -127,3 +127,39 @@ exports.addJobCategory = () => {
         validation
     ];
 }
+
+exports.addClient = () => {
+    return [
+        [
+            check('company_name').not().isEmpty().withMessage("company name Name is required")
+                .isString().withMessage('Company name Name must be sting').trim(),
+            check('client_name').not().isEmpty().withMessage("Client name is required")
+                .isString().withMessage('Client name must be sting').trim(),
+            check("email").not().isEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
+            check('phone_number').not().isEmpty().withMessage("phone_number is required"),
+            check('iso_code').not().isEmpty().withMessage("ISO Code is required").trim().escape(),
+            check('country_code').not().isEmpty().withMessage("Country Code is required").trim().escape(),
+            check("address").notEmpty().withMessage("address is required."),
+        ],
+        checkForUnexpectedFields(["company_name", "client_name", "email", "phone_number", "iso_code", "country_code", "address"]),
+        validation
+    ];
+}
+
+exports.editClient = () => {
+    return [
+        [
+            check("client_id").notEmpty().withMessage("Client ID is required."),
+            check('company_name').optional().isString().withMessage('Company name Name must be sting').trim(),
+            check('client_name').optional().isString().withMessage('Client name must be sting').trim(),
+            check("email").optional().isEmail().withMessage("Invalid email format"),
+            check('phone_number').optional(),
+            check('iso_code').optional().trim().escape(),
+            check('country_code').optional().trim().escape(),
+            check("address").optional().isString().withMessage('Address must be sting').trim(),
+        ],
+        checkForUnexpectedFields(["client_id", "company_name", "client_name", "email", "phone_number", "iso_code", "country_code", "address"]),
+        validation
+    ];
+}
+

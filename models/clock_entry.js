@@ -18,8 +18,12 @@ module.exports = (sequelize, DataTypes, Model) => {
             references: { model: 'tbl_company', key: 'id' },
             onDelete: 'CASCADE'
         },
-        clock_in_time: {
+        date: {
             type: DataTypes.DATE,
+            allowNull: true, 
+        },
+        clock_in_time: {
+            type: DataTypes.TIME,
             allowNull: true, 
         },
         sign_in_address: {
@@ -27,7 +31,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             allowNull: false, 
         },
         clock_out_time: {
-            type: DataTypes.DATE,
+            type: DataTypes.TIME,
             allowNull: true,
         },
         sign_out_address: {
@@ -40,7 +44,7 @@ module.exports = (sequelize, DataTypes, Model) => {
         },
         reason: {
             type: DataTypes.STRING,
-            allowNull: false, 
+            allowNull: true, 
         },
     }, {
         tableName: "tbl_clock_entry",

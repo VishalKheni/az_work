@@ -152,6 +152,17 @@ db.Project.belongsTo(db.Company, {
     foreignKey: 'company_id',
     as: 'company'
 });
+
+db.Company.hasMany(db.Client, {
+    foreignKey: 'company_id',
+    as: 'client_detail'
+}); 
+db.Client.belongsTo(db.Company, {
+    foreignKey: 'company_id',
+    as: 'company'
+});
+
+
 db.Client.hasMany(db.Project, {
     foreignKey: 'client_id',
     as: 'projects'

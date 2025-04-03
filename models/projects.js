@@ -28,6 +28,10 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.ENUM('active', 'deactive', 'completed', 'cancelled'),
             allowNull: true,
         },
+        address: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
     }, {
         tableName: "tbl_project",
         timestamps: true,

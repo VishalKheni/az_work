@@ -73,8 +73,20 @@ exports.companyList = () => {
                 .withMessage('Page must required.')
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
+                check("search").optional().isString().withMessage("search must be string").trim(),
+            check("status").optional().isString().withMessage("status must be string").trim()
+                .isIn(["active", 'inactive', 'blocked'])
+                .withMessage("Invalid value for user_role. Allowed values are 'active' or 'inactive' or 'blocked "),
+                check("branch_name").optional().isString().withMessage("Branch name must be string").trim()
+                // check("branch_name")
+                // .optional()
+                // .customSanitizer(value => decodeURIComponent(value)) // Decode URL encoding
+                // .isString() 
+                // .withMessage("Branch name must be a string")
+                // .trim()
+
         ],
-        checkForUnexpectedFields(["page", "limit"]),
+        checkForUnexpectedFields(["page", "limit", "search", "status", "branch_name"]),
         validation
     ];
 }

@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const db  = require('../config/db');
+const db = require('../config/db');
 
 const verifyToken = async (req, res, next) => {
     try {
@@ -69,4 +69,11 @@ const verifyToken = async (req, res, next) => {
     }
 };
 
-module.exports = { verifyToken, };
+const checkUserRole = (allowedRoles) => (req, res, next) => {
+    if (!allowedRoles.includes(req.user.user_role)) {
+        return res.status(403).json({ status: 0, message: 'Access denied.' });
+    }
+    next();
+};
+
+module.exports = { verifyToken, checkUserRole };
