@@ -14,17 +14,41 @@ const uploadFile = upload.fields([
 
 router.get('/branch_list', companyController.branchList);
 
+// Company
 router.get('/detail', verifyToken, checkUserRole(['company']), companyController.companyDetail);
 
+
+// worker
 router.post('/add_worker', verifyToken, uploadFile, checkUserRole(['company']), companyvalidation.addWorker(), companyController.addWorker);
-router.get('/get_worker_detail', verifyToken, checkUserRole(['company']), companyvalidation.getWorkerDetail(), companyController.getWorkerDetail);
+router.get('/worker_list', verifyToken, checkUserRole(['company']), companyvalidation.getworkerList(), companyController.getWorkerList);
+router.get('/worker_detail', verifyToken, checkUserRole(['company']), companyvalidation.getWorkerDetail(), companyController.getWorkerDetail);
 router.delete('/delete_worker', verifyToken, checkUserRole(['company']), companyvalidation.getWorkerDetail(), companyController.deleteWorker);
 
 
+// Job category
 router.post('/add_job_category', verifyToken, checkUserRole(['company']), companyvalidation.addJobCategory(), companyController.addJobCategory);
+router.put('/edit_job_category', verifyToken, checkUserRole(['company']), companyvalidation.editJobCategory(), companyController.editJobCategory);
+router.delete('/delete_job_category', verifyToken, checkUserRole(['company']), companyvalidation.JobCategoryDetail(), companyController.deleteJobCategory);
+router.get('/job_category_list', verifyToken, checkUserRole(['company']), companyvalidation.getJobCategoryList(), companyController.getJobCategoryList);
 
 
+// Client
 router.post('/add_client', verifyToken, checkUserRole(['company']), companyvalidation.addClient(), companyController.addClient);
 router.put('/edit_client', verifyToken, checkUserRole(['company']), companyvalidation.editClient(), companyController.editClient);
+router.delete('/delete_client', verifyToken, checkUserRole(['company']), companyvalidation.getClientDetail(), companyController.deleteClient);
+router.get('/client_list', verifyToken, checkUserRole(['company']), companyvalidation.clientList(), companyController.clientList);
+router.get('/client_detail', verifyToken, checkUserRole(['company']), companyvalidation.getClientDetail(), companyController.clientDetail);
+
+
+// Project
+router.post('/add_project', verifyToken, uploadFile, checkUserRole(['company']), companyvalidation.addProject(), companyController.addProject);
+router.put('/edit_project', verifyToken, checkUserRole(['company']), companyvalidation.editProject(), companyController.editProject);
+router.delete('/delete_project', verifyToken, checkUserRole(['company']), companyvalidation.projectDetail(), companyController.deleteProject);
+router.get('/project_list', verifyToken, checkUserRole(['company']), companyvalidation.getProjectList(), companyController.getProjectList);
+router.get('/project_detail', verifyToken, checkUserRole(['company']), companyvalidation.projectDetail(), companyController.getProjectDetail);
+router.get('/project_document_list', verifyToken, checkUserRole(['company']), companyvalidation.projectDocumentList(), companyController.projectDocumentList);
+router.post('/add_project_document', verifyToken, uploadFile, checkUserRole(['company']), companyvalidation.addProjectDocuments(), companyController.addProjectDocuments);
+router.delete('/delete_project_document', verifyToken, checkUserRole(['company']), companyvalidation.deleteProjectDocuments(), companyController.deleteProjectDocuments);
+
 
 module.exports = router;

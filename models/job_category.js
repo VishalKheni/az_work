@@ -6,12 +6,12 @@ module.exports = (sequelize, DataTypes, Model) => {
             references: { model: 'tbl_company', key: 'id' },
             onDelete: 'CASCADE'
         },
-        owner_id: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            references: { model: 'tbl_users', key: 'id' },
-            onDelete: 'CASCADE'
-        },
+        // owner_id: {
+        //     type: DataTypes.INTEGER,
+        //     allowNull: true,
+        //     references: { model: 'tbl_users', key: 'id' },
+        //     onDelete: 'CASCADE'
+        // },
         category_name: {
             type: DataTypes.STRING,
             allowNull: true

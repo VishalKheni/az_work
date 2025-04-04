@@ -65,6 +65,7 @@ const checkForUnexpectedFields = (allowedFields) => {
 };
 
 
+// Worker
 exports.addWorker = () => {
     return [
         [
@@ -105,6 +106,22 @@ exports.addWorker = () => {
         validation
     ];
 }
+
+exports.getworkerList = () => {
+    return [
+        [
+            check('page')
+                .notEmpty()
+                .withMessage('Page must required.')
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer.'),
+            check("search").optional().isString().withMessage("search must be string").trim(),
+        ],
+        checkForUnexpectedFields(["page", "limit", "search"]),
+        validation
+    ];
+}
+
 exports.getWorkerDetail = () => {
     return [
         [
@@ -115,6 +132,8 @@ exports.getWorkerDetail = () => {
     ];
 }
 
+
+// JobCategory
 exports.addJobCategory = () => {
     return [
         [
@@ -127,12 +146,50 @@ exports.addJobCategory = () => {
         validation
     ];
 }
+exports.JobCategoryDetail = () => {
+    return [
+        [
+            check("category_id").notEmpty().withMessage("Category ID is required."),
+        ],
+        checkForUnexpectedFields(["category_id"]),
+        validation
+    ];
+}
+exports.getJobCategoryList = () => {
+    return [
+        [
+            check('page')
+                .notEmpty()
+                .withMessage('Page must required.')
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer.'),
+            check("search").optional().isString().withMessage("search must be string").trim(),
+        ],
+        checkForUnexpectedFields(["page", "limit", "search"]),
+        validation
+    ];
+}
 
+exports.editJobCategory = () => {
+    return [
+        [
+            check("category_id").notEmpty().withMessage("Category ID is required."),
+            check("job_title_id").notEmpty().withMessage("Job title ID is required."),
+            check('category_name').optional().isString().withMessage('Category Name must be sting').trim(),
+            check('Job_title').optional().isString().withMessage('Job title must be sting').trim(),
+        ],
+        checkForUnexpectedFields(["category_id", "job_title_id", "category_name", "Job_title"]),
+        validation
+    ];
+}
+
+
+// Client
 exports.addClient = () => {
     return [
         [
-            check('company_name').not().isEmpty().withMessage("company name Name is required")
-                .isString().withMessage('Company name Name must be sting').trim(),
+            check('company_name').not().isEmpty().withMessage("company Name is required")
+                .isString().withMessage('Company Name must be sting').trim(),
             check('client_name').not().isEmpty().withMessage("Client name is required")
                 .isString().withMessage('Client name must be sting').trim(),
             check("email").not().isEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
@@ -163,3 +220,138 @@ exports.editClient = () => {
     ];
 }
 
+exports.getClientDetail = () => {
+    return [
+        [
+            check("client_id").notEmpty().withMessage("Client ID is required."),
+        ],
+        checkForUnexpectedFields(["client_id"]),
+        validation
+    ];
+}
+
+exports.clientList = () => {
+    return [
+        [
+            check('page')
+                .notEmpty()
+                .withMessage('Page must required.')
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer.'),
+            check("search").optional().isString().withMessage("search must be string").trim(),
+        ],
+        checkForUnexpectedFields(["page", "limit", "search"]),
+        validation
+    ];
+}
+
+
+
+// Project
+exports.addProject = () => {
+    return [
+        [
+            check("documents").custom((value, { req }) => {
+                if (!req.files || !req.files.documents) {
+                    throw new Error('documents is required');
+                }
+                return true;
+            }),
+            check("client_id").notEmpty().withMessage("Client ID is required."),
+            check('project_name').not().isEmpty().withMessage("Project Name is required")
+                .isString().withMessage('Project Name must be sting').trim(),
+            check("start_date").notEmpty().withMessage('Start Date is required.').isISO8601().withMessage("Start Date must be a valid date (YYYY-MM-DD)."),
+            check("end_date").notEmpty().withMessage('End Date is required.').isISO8601().withMessage("End Date must be a valid date (YYYY-MM-DD)."),
+            check("address").notEmpty().withMessage("address is required.").isString().withMessage('Address must be sting').trim(),
+            check("status").not().isEmpty().withMessage("Status is required").trim()
+                .isIn(['active', 'deactive', 'completed', 'cancelled']).withMessage("Invalid value for status. Allowed values are 'active' or 'deactive' or 'completed' or 'cancelled' "),
+        ],
+        checkForUnexpectedFields(["documents", "client_id", "project_name", "start_date", "end_date", "address", "status"]),
+        validation
+    ];
+}
+
+exports.editProject = () => {
+    return [
+        [
+            check("project_id").notEmpty().withMessage("Project ID is required."),
+            check("client_id").optional().isInt().withMessage("Client ID must be integer."),
+            check('project_name').optional().isString().withMessage('Project Name must be sting').trim(),
+            check("start_date").optional().isISO8601().withMessage("Start Date must be a valid date (YYYY-MM-DD)."),
+            check("end_date").optional().isISO8601().withMessage("End Date must be a valid date (YYYY-MM-DD)."),
+            check("address").optional().isString().withMessage('Address must be sting').trim(),
+            check("status").optional().isIn(['active', 'deactive', 'completed', 'cancelled']).withMessage("Invalid value for status. Allowed values are 'active' or 'deactive' or 'completed' or 'cancelled' ").trim(),
+        ],
+        checkForUnexpectedFields(["project_id", "client_id", "project_name", "start_date", "end_date", "address", "status"]),
+        validation
+    ];
+}
+
+exports.projectDetail = () => {
+    return [
+        [
+            check("project_id").notEmpty().withMessage("Project ID is required."),
+        ],
+        checkForUnexpectedFields(["project_id"]),
+        validation
+    ];
+}
+
+exports.getProjectList = () => {
+    return [
+        [
+            check('page')
+                .notEmpty()
+                .withMessage('Page must required.')
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer.'),
+            check("search").optional().isString().withMessage("search must be string").trim(),
+        ],
+        checkForUnexpectedFields(["page", "limit", "search"]),
+        validation
+    ];
+}
+
+
+exports.projectDocumentList = () => {
+    return [
+        [
+            check("project_id").notEmpty().withMessage("Project ID is required."),
+            check('page')
+                .notEmpty()
+                .withMessage('Page must required.')
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer.'),
+            check("search").optional().isString().withMessage("search must be string").trim(),
+        ],
+        checkForUnexpectedFields(["project_id", "page", "limit", "search"]),
+        validation
+    ];
+}
+
+exports.addProjectDocuments = () => {
+    return [
+        [
+            check("documents").custom((value, { req }) => {
+                if (!req.files || !req.files.documents) {
+                    throw new Error('documents is required');
+                }
+                return true;
+            }),
+            check("project_id").notEmpty().withMessage("Project ID is required."),
+            check('title').not().isEmpty().withMessage("Title is required").isString().withMessage('Title must be sting').trim(),
+        ],
+        checkForUnexpectedFields(["documents", "project_id", "title"]),
+        validation
+    ];
+}
+
+exports.deleteProjectDocuments = () => {
+    return [
+        [
+            check("document_id").notEmpty().withMessage("Document ID is required."),
+        ],
+        checkForUnexpectedFields(["document_id"]),
+        validation
+    ];
+}

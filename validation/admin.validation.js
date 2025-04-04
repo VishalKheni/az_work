@@ -65,6 +65,7 @@ const checkForUnexpectedFields = (allowedFields) => {
     };
 };
 
+// Company Validation
 exports.companyList = () => {
     return [
         [
@@ -100,7 +101,7 @@ exports.companyDetail = () => {
     ];
 }
 
-
+// Branch Validation
 exports.addBranch = () => {
     return [
         [
@@ -162,6 +163,7 @@ exports.deleteBranch = () => {
     ];
 }
 
+// Holiday Validation
 exports.addHoliday = () => {
     return [
         [
@@ -173,7 +175,6 @@ exports.addHoliday = () => {
         validation
     ];
 }
-
 exports.getHolidaysList = () => {
     return [
         [
@@ -187,8 +188,6 @@ exports.getHolidaysList = () => {
         validation
     ];
 }
-
-
 exports.editHoliday = () => {
     return [
         [
@@ -201,7 +200,6 @@ exports.editHoliday = () => {
         validation
     ];
 }
-
 exports.deleteHoliday = () => {
     return [
         [
@@ -212,12 +210,14 @@ exports.deleteHoliday = () => {
     ];
 }
 
+
+// Absences Validation
 exports.addAbsences = () => {
     return [
         [
             check('absence_type').notEmpty().withMessage('Absences type name is required').isString().withMessage('Absences type must be a string'),
             check("status").not().isEmpty().withMessage("Status is required").trim().escape()
-                .isIn(["paid", "unpaid"]).withMessage("Invalid value for user_role. Allowed values are 'paid' or 'unpaid' "),
+                .isIn(["paid", "unpaid"]).withMessage("Invalid value for status. Allowed values are 'paid' or 'unpaid' "),
         ],
         checkForUnexpectedFields(["absence_type", "status"]),
         validation

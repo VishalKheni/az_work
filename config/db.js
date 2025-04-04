@@ -103,7 +103,7 @@ db.Document.belongsTo(db.User, {
 
 db.Project.hasMany(db.Document, {
     foreignKey: 'project_id',
-    as: 'documents'
+    as: 'project_documents'
 });         
 db.Document.belongsTo(db.Project, {
     foreignKey: 'project_id',
@@ -118,14 +118,14 @@ db.Job_category.belongsTo(db.Company, {
     foreignKey: 'company_id',
     as: 'company'
 });
-db.User.hasMany(db.Job_category, {
-    foreignKey: 'owner_id',
-    as: 'job_categories'
-});
-db.Job_category.belongsTo(db.User, {
-    foreignKey: 'owner_id',
-    as: 'user'
-});
+// db.User.hasMany(db.Job_category, {
+//     foreignKey: 'owner_id',
+//     as: 'job_categories'
+// });
+// db.Job_category.belongsTo(db.User, {
+//     foreignKey: 'owner_id',
+//     as: 'user'
+// });
 
 db.Company.hasMany(db.Job_title, {
     foreignKey: 'company_id',
