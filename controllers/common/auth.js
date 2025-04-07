@@ -31,7 +31,8 @@ exports.signUp = async (req, res) => {
       country_code: country_code,
       iso_code: iso_code,
       phone_number: phone_number,
-      user_role: user_role
+      user_role: user_role,
+      is_account_created: true,
     });
 
     return res.status(200).json({ status: 1, message: 'User created successfully', user });
@@ -52,17 +53,24 @@ exports.addCompany = async (req, res) => {
       return res.status(400).json({ message: valid.message });
     }
 
+    const existingEmail = await db.Company.findOne({ where: { email: email } });
+    if (existingEmail) return res.status(400).json({ status: 0, message: 'Email already exists' });
+
     const owner = await db.User.findByPk(user_id);
     if (!owner) return res.status(400).json({ status: 0, message: 'User not found' });
+
+    if (owner.is_company_add) return res.status(400).json({ status: 0, message: 'Company already exists' });
+    if (!owner.is_account_created) return res.status(400).json({ status: 0, message: 'Please create account first' });
 
     const branch = await db.Branch.findByPk(industry_id);
     if (!branch) return res.status(400).json({ status: 0, message: 'Branch not found' });
 
     const validation = await validateFiles(company_logo, ["jpg", "jpeg", "png", "webp"], 15 * 1024 * 1024);
-    if (!validation.valid) return res.status(400).json({ Status: 0, message: validation.message });
+    if (!validation.valid) return res.status(400).json({ status: 0, message: validation.message });
+
 
     const company = await db.Company.create({
-      owner_id: user_id,
+      owner_id: owner.id,
       industry_id: industry_id,
       company_logo: `company_logo/${company_logo[0].filename}`,
       company_name,
@@ -73,6 +81,7 @@ exports.addCompany = async (req, res) => {
       address
     });
 
+    await owner.update({ is_company_add: true, });
     return res.status(200).json({ status: 1, message: 'company created successfully', company });
   } catch (error) {
     console.error('Error while adding company:', error);
@@ -99,7 +108,7 @@ exports.createPassword = async (req, res) => {
     await user.update({
       email,
       password: hashedPassword,
-      is_company_add: true,
+      is_password_add: true,
       otp: otp,
       otp_created_at: otpCreatedAt
     });
@@ -143,9 +152,9 @@ exports.verifyOtpEmail = async (req, res) => {
     const tokenRecord = await db.Token.create({ user_id: user.id, device_id, device_type, device_token, refresh_token: uuidv4(), token_expire_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
     const token = jwt.sign({ user_id: user.id, token_id: tokenRecord.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
 
-    return res.status(201).json({
+    return res.status(200).json({
       status: 1,
-      message: "User registered successfully",
+      message: 'OTP verified successfully.',
       access_token: token,
       refresh_token: tokenRecord.refresh_token,
       data: user
@@ -186,25 +195,28 @@ exports.login = async (req, res) => {
   const { email, password, device_id, device_type, device_token } = req.body;
 
   try {
-    // Check if user is logging in with email and password
     const user = await db.User.findOne({ where: { email: email } });
+    if (!user) return res.status(404).json({ status: 0, message: "This email is not registerd!please registerd first.." });
 
-    // If user does not exist
-    if (!user) {
-      return res.status(404).json({ status: 0, message: "This email is not registerd!please registerd first.." });
+
+    if (user.user_role == "company") {
+      if (!user.is_account_created) return res.status(400).json({ status: 2, message: "Please add account detail first.", data: user });
+      else if (!user.is_company_add) return res.status(400).json({ status: 3, message: "Please add company detail first.", data: user });
+      else if (!user.is_password_add && user.password == null) return res.status(400).json({ status: 4, message: "Please create a password first.", data: user });
+
+      // Check if email is verified
+      else if (!user.is_email_verified) {
+        const otp = generateOTP();
+        const otpCreatedAt = moment().toDate();
+        await user.update({
+          otp: otp,
+          otp_created_at: otpCreatedAt
+        });
+        await sendOTPVerificationEmail(email, otp);
+        return res.status(400).json({ status: 5, message: "Email is not verified. Please verify your email.", otp });
+      }
     }
 
-    // Check if email is verified
-    if (!user.is_email_verified) {
-      const otp = generateOTP();
-      const otpCreatedAt = moment().toDate();
-      await user.update({
-        otp: otp,
-        otp_created_at: otpCreatedAt
-      });
-      await sendOTPVerificationEmail(email, otp);
-      return res.status(400).json({ status: 2, message: "Email is not verified. Please verify your email.", otp });
-    }
 
     // Check if the password matches
     const isMatch = await bcrypt.compare(password, user.password);
@@ -311,7 +323,7 @@ exports.verifyOtpForResetPassword = async (req, res) => {
       await user.update({ otp: null, otp_created_at: null });
       return res.status(400).json({ status: 0, message: "OTP has expired" });
     }
-    await user.update({ otp: null, otp_created_at: null });
+    await user.update({ otp: null, otp_created_at: null, is_email_verified: true });
     return res.status(200).json({
       status: 1,
       message: 'OTP verified successfully.',
@@ -328,7 +340,6 @@ exports.resetPassword = async (req, res) => {
     const { email, newpassword } = req.body;
 
     let user = await db.User.findOne({ where: { email: email } });
-
     if (!user) return res.status(404).json({ status: 0, message: "No account associated with this email." });
 
     const newHashedPassword = await bcrypt.hash(newpassword, 10);
@@ -345,5 +356,38 @@ exports.resetPassword = async (req, res) => {
       status: 0,
       message: "Internal Server Error!",
     });
+  }
+};
+
+
+exports.editProfile = async (req, res) => {
+  try {
+    const { firstname, lastname } = req.body;
+    const { profile_image } = req.files;
+
+    const user = await db.User.findByPk(req.user.id, {
+      attributes: ['id', 'firstname', 'lastname', 'profile_image', 'updatedAt'],
+    });
+
+    if (!user) return res.status(404).json({ status: 0, message: 'User Not Found' });
+
+    if (profile_image) {
+      const validation = await validateFiles(profile_image, ["jpg", "jpeg", "png", "webp"], 15 * 1024 * 1024);
+      if (!validation.valid) return res.status(400).json({ status: 0, message: validation.message });
+      fs.unlinkSync(`public/${user.profile_image}`);
+      user.profile_image = `profile_images/${profile_image[0].filename}`;
+      await user.save();
+    }
+
+    await user.update({ firstname, lastname });
+
+    return res.status(200).json({
+      status: 1,
+      message: "Profile update successfully",
+      data: user
+    });
+  } catch (error) {
+    console.error('Error while edit Profile:', error);
+    return res.status(500).json({ status: 0, message: 'Internal server error' });
   }
 };

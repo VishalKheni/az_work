@@ -48,7 +48,7 @@ exports.addWorker = async (req, res) => {
             documentsData = documents.map(doc => ({
                 worker_id: worker.id,
                 document_url: `documents/${doc.filename}`,
-                title: path.parse(doc.originalname).name, 
+                title: path.parse(doc.originalname).name,
                 date: moment().toDate()
             }));
             await db.Document.bulkCreate(documentsData);
@@ -204,3 +204,41 @@ exports.deleteWorker = async (req, res) => {
     }
 }
 
+exports.workerJobCategoryList = async (req, res) => {
+    try {
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+        if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
+
+
+        const job_category = await db.Job_category.findAll({
+            where: { company_id: company.id },
+        })
+        return res.status(200).json({
+            status: 1,
+            message: 'Job category List fetched successfully',
+            data: job_category,
+        });
+    } catch (error) {
+        console.error('Error while fetching Job Category list:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+
+exports.workerJobTitleList = async (req, res) => {
+    try {
+        const { category_id } = req.query;
+
+        const titles = await db.Job_title.findAll({
+            where: { job_category_id: category_id }
+        });
+        
+        return res.status(200).json({
+            status: 1,
+            message: "Job Title List fetched successfully",
+            data: titles
+        });
+    } catch (error) {
+        console.error('Error while fetching Job Title List:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+}

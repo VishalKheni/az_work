@@ -100,6 +100,17 @@ exports.companyDetail = () => {
         validation
     ];
 }
+exports.changeCompanyPassword = () => {
+    return [
+        [
+            check("user_id").notEmpty().withMessage("User ID is required."),
+            check("newPassword").not().isEmpty().withMessage("New Password is required").trim().escape(),
+        ],
+        checkForUnexpectedFields(["user_id", "newPassword"]),
+        validation
+    ];
+}
+
 
 // Branch Validation
 exports.addBranch = () => {

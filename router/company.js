@@ -16,9 +16,12 @@ router.get('/branch_list', companyController.branchList);
 
 // Company
 router.get('/detail', verifyToken, checkUserRole(['company']), companyController.companyDetail);
+router.put('/edit_company', uploadFile, companyvalidation.editCompany(), companyController.editCompany);
 
 
 // worker
+router.get('/worker_job_category_list', verifyToken, checkUserRole(['company']), companyController.workerJobCategoryList);
+router.get('/worker_job__title_list', verifyToken, checkUserRole(['company']), companyvalidation.JobCategoryDetail(), companyController.workerJobTitleList);
 router.post('/add_worker', verifyToken, uploadFile, checkUserRole(['company']), companyvalidation.addWorker(), companyController.addWorker);
 router.get('/worker_list', verifyToken, checkUserRole(['company']), companyvalidation.getworkerList(), companyController.getWorkerList);
 router.get('/worker_detail', verifyToken, checkUserRole(['company']), companyvalidation.getWorkerDetail(), companyController.getWorkerDetail);
@@ -41,6 +44,7 @@ router.get('/client_detail', verifyToken, checkUserRole(['company']), companyval
 
 
 // Project
+router.get('/project_client_list', verifyToken, checkUserRole(['company']), companyController.projectClientList);
 router.post('/add_project', verifyToken, uploadFile, checkUserRole(['company']), companyvalidation.addProject(), companyController.addProject);
 router.put('/edit_project', verifyToken, checkUserRole(['company']), companyvalidation.editProject(), companyController.editProject);
 router.delete('/delete_project', verifyToken, checkUserRole(['company']), companyvalidation.projectDetail(), companyController.deleteProject);

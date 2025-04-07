@@ -288,3 +288,26 @@ exports.deleteProjectDocuments = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 };
+
+
+exports.projectClientList = async (req, res) => {
+    try {
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+        if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
+
+        const client = await db.Client.findAll({
+            where: { company_id: company.id },
+            attributes: ['id', 'client_name', 'createdAt'],
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: 'Client List fetched successfully',
+            data: client,
+        });
+    } catch (error) {
+        console.error('Error while fetching client list:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });``
+    }
+};
+    

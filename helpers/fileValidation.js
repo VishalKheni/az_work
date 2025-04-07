@@ -24,7 +24,7 @@ const validateFiles = async (files, acceptedExtensions, maxFileSize) => {
         await fs.unlink(file.path);
       } catch (e) { console.log(e) }
     }
-    return { valid: false, message: `Image size must be less than${maxFileSize / (1024 * 1024)}MB` };
+    return { valid: false, message: `Image size must be less than ${maxFileSize / (1024 * 1024)}MB` };
   }
 
   return { valid: true }

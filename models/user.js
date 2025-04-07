@@ -81,7 +81,15 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.ENUM('google', 'email', 'number', 'apple'),
             defaultValue: "email"
         },
+        is_account_created: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+        },
         is_company_add: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+        },
+        is_password_add: {
             type: DataTypes.BOOLEAN,
             defaultValue: false,
         },

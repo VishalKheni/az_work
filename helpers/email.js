@@ -33,7 +33,7 @@ const sendOTPVerificationEmail = async (email, otp) => {
     console.log('Email sent successfully:', info.response);
     return info;
   } catch (error) {
-    console.error('Failed to send email:', error);
+    console.error('Failed to send email:', error);    
     throw error;
   }
 };

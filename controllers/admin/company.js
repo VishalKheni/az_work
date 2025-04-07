@@ -157,7 +157,7 @@ exports.companyDetail = async (req, res) => {
                 {
                     model: db.User,
                     as: 'owner',
-                    attributes: ['id', 'firstname', 'lastname', 'email', 'country_code', 'iso_code', 'phone_number']
+                    attributes: ['id', 'firstname', 'lastname', 'email', 'country_code', 'iso_code', 'phone_number', 'password', 'user_role']
                 },
                 {
                     model: db.Branch,
@@ -186,6 +186,19 @@ exports.companyDetail = async (req, res) => {
 };
 
 
-
-
+exports.changeCompanyPassword = async (req, res) => {
+    const { user_id, newPassword } = req.body;
+    try {
+        const user = await db.User.findByPk(user_id);
+        if (!user)  return res.status(404).json({ status: 0, message: 'User not found.' });
+        const isSamePassword = await bcrypt.compare(newPassword, user.password);
+        if (isSamePassword)  return res.status(400).json({ status: 0, message: 'New password cannot be the same as the old password.' });
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await user.update({ password: hashedPassword });
+        return res.status(200).json({ status: 1, message: 'Password changed successfully.' });
+    } catch (error) {
+        console.error('Error changing password by admin:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error.' });
+    }
+};
 

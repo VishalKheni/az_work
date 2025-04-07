@@ -102,7 +102,7 @@ exports.addCompany = () => {
             }),
             check("user_id").notEmpty().withMessage("User ID is required."),
             check("industry_id").notEmpty().withMessage("Industry ID is required."),
-            check('company_name').not().isEmpty().withMessage("Cpmpany Name is required").trim().escape(),
+            check('company_name').not().isEmpty().withMessage("Company Name is required").trim().escape(),
             check("email").not().isEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
             check('phone_number').not().isEmpty().withMessage("phone_number is required"),
             check('iso_code').not().isEmpty().withMessage("ISO Code is required").trim().escape(),
@@ -197,3 +197,23 @@ exports.resetPassword = () => {
     ];
 }
 
+
+exports.editProfile = () => {
+    return [
+        [
+            check("profile_image").custom((value, { req }) => {
+                if (req.files.profile_image.length > 1) {
+                    req.files.profile_image.forEach(element => {
+                        fs.unlinkSync(element.path);
+                    });
+                    throw new Error('Maximum 1 images allowed');
+                }
+                return true;
+            }).optional(),
+            check('firstname').optional().isString().withMessage('First Name must be sting').trim().escape(),
+            check('lastname').optional().isString().withMessage('Last Name must be sting').trim().escape(),
+        ],
+        checkForUnexpectedFields(["profile_image", "firstname", 'lastname']),
+        validation
+    ];
+}

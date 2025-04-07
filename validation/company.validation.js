@@ -65,6 +65,36 @@ const checkForUnexpectedFields = (allowedFields) => {
 };
 
 
+exports.editCompany = () => {
+    return [
+        [
+            check("company_logo").custom((value, { req }) => {
+                if (req.files.company_logo.length > 1) {
+                    req.files.company_logo.forEach(element => {
+                        fs.unlinkSync(element.path);
+                    });
+                    throw new Error('Maximum 1 images allowed');
+                }
+                return true;
+            }).optional(),
+            check("company_id").notEmpty().withMessage("Company ID is required."),
+            check("industry_id").optional().isInt().withMessage("Industry ID must be integer."),
+            check('company_name').optional().isString().withMessage('Company name Name must be sting').trim().escape(),
+            check("email").optional().isString().withMessage('Email must be string').isEmail().withMessage("Invalid email format"),
+            check('phone_number').optional().isString().withMessage('Phone number must be string'),
+            check('iso_code').optional().isString().withMessage("ISO Code must be string").trim().escape(),
+            check('country_code').optional().isString().withMessage("Country Code must be string").trim().escape(),
+            check("address").optional().isString().withMessage("address must be string.").trim(),
+            check('owner_phone_number').optional().isString().withMessage('Phone number must be string'),
+            check('owner_iso_code').optional().isString().withMessage("ISO Code must be string").trim().escape(),
+            check('owner_country_code').optional().isString().withMessage("Country Code must be string").trim().escape(),
+        ],
+        checkForUnexpectedFields(["company_id", 'industry_id', "company_logo", "company_name", "email", "phone_number", "iso_code", "country_code", "address", "owner_phone_number", "owner_iso_code", "owner_country_code",]),
+        validation
+    ];
+}
+
+
 // Worker
 exports.addWorker = () => {
     return [
