@@ -29,4 +29,4 @@ router.post('/reset_password', authvalidation.resetPassword(), authController.re
 
 router.put('/edit_profile',  verifyToken, uploadFile, authvalidation.editProfile(), authController.editProfile);
 
-module.exports = router
+module.exports = router;

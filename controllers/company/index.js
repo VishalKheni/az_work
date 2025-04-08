@@ -4,6 +4,7 @@ const workerModule = require('./worker');
 const projectModule = require('./project');
 const clientsModule = require('./clients');
 const jobCategoryModule = require('./job_category');
+const holidayModule = require('./holiday');
 
 // Merging both modules into a single export
 module.exports = {
@@ -11,5 +12,6 @@ module.exports = {
   ...projectModule,
   ...workerModule,
   ...clientsModule,
-  ...jobCategoryModule
+  ...jobCategoryModule,
+  ...holidayModule,
 };

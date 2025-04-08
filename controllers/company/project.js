@@ -271,25 +271,6 @@ exports.addProjectDocuments = async (req, res) => {
     }
 };
 
-exports.deleteProjectDocuments = async (req, res) => {
-    try {
-        const { document_id } = req.query;
-
-        const document = await db.Document.findByPk(document_id);
-        if (!document) return res.status(400).json({ status: 0, message: 'Document Not Found' });
-        fs.unlinkSync(`public/${document.document_url}`);
-        await document.destroy();
-        return res.status(200).json({
-            status: 1,
-            message: "Document deleted successfully",
-        });
-    } catch (error) {
-        console.error('Error while delete document:', error);
-        return res.status(500).json({ status: 0, message: 'Internal server error' });
-    }
-};
-
-
 exports.projectClientList = async (req, res) => {
     try {
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
@@ -307,7 +288,7 @@ exports.projectClientList = async (req, res) => {
         });
     } catch (error) {
         console.error('Error while fetching client list:', error);
-        return res.status(500).json({ status: 0, message: 'Internal server error' });``
+        return res.status(500).json({ status: 0, message: 'Internal server error' }); ``
     }
 };
-    
+

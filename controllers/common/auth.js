@@ -59,8 +59,8 @@ exports.addCompany = async (req, res) => {
     const owner = await db.User.findByPk(user_id);
     if (!owner) return res.status(400).json({ status: 0, message: 'User not found' });
 
-    if (owner.is_company_add) return res.status(400).json({ status: 0, message: 'Company already exists' });
     if (!owner.is_account_created) return res.status(400).json({ status: 0, message: 'Please create account first' });
+    if (owner.is_company_add) return res.status(400).json({ status: 0, message: 'Company already exists' });
 
     const branch = await db.Branch.findByPk(industry_id);
     if (!branch) return res.status(400).json({ status: 0, message: 'Branch not found' });
@@ -71,7 +71,7 @@ exports.addCompany = async (req, res) => {
 
     const company = await db.Company.create({
       owner_id: owner.id,
-      industry_id: industry_id,
+      industry_id: branch.id,
       company_logo: `company_logo/${company_logo[0].filename}`,
       company_name,
       email,
@@ -175,10 +175,10 @@ exports.refreshToken = async (req, res) => {
     const storedToken = await db.Token.findOne({ where: { refresh_token } });
     if (!storedToken || storedToken.token_expire_at < new Date()) {
       if (storedToken) await db.Token.destroy({ where: { refresh_token } });
-      return res.status(403).json({ error: "Invalid or expired refresh token, please log in again" });
+      return res.status(403).json({ status: 0, message: "Invalid or expired refresh token, please log in again" });
     }
     const user = await db.User.findByPk(storedToken.user_id);
-    if (!user) return res.status(400).json({ error: "User not found" });
+    if (!user) return res.status(400).json({status: 0, message: "User not found" });
     const token = jwt.sign({ user_id: user.id, token_id: storedToken.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
     return res.status(200).json({
       status: 1,

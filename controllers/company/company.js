@@ -54,7 +54,7 @@ exports.companyDetail = async (req, res) => {
 
 exports.editCompany = async (req, res) => {
     try {
-        const { company_id, industry_id, company_name, email, country_code, iso_code, phone_number, address, owner_phone_number, owner_country_code, owner_iso_code, } = req.body;
+        const { company_id, industry_id, company_name, email, country_code, iso_code, phone_number, address, owner_phone_number, owner_country_code, owner_iso_code } = req.body;
         const { company_logo } = req.files;
 
         if (iso_code && phone_number) {
@@ -74,29 +74,28 @@ exports.editCompany = async (req, res) => {
         if (industry_id) {
             const branch = await db.Branch.findByPk(industry_id);
             if (!branch) return res.status(404).json({ status: 0, message: 'Branch not found' });
-            await branch.update({ industry_id: branch.id })
+            await branch.update({ industry_id: branch.id });
         }
 
 
         if (company_logo) {
             fs.unlinkSync(`public/${company.company_logo}`);
-            console.log('`public/${company.company_logo}`', `public/${company.company_logo}`)
             await company.update({ company_logo: `company_logo/${company_logo[0].filename}` });
         }
 
         await company.update({ company_name, email, country_code, iso_code, phone_number, address });
-        await owner.update({ country_code: owner_country_code, iso_code: owner_iso_code, phone_number: owner_phone_number })
+        await owner.update({ country_code: owner_country_code, iso_code: owner_iso_code, phone_number: owner_phone_number });
 
         return res.status(200).json({
             status: 1,
-            message: "company detail update Successfully",
+            message: "Company detail update successfully",
             data: {
                 company,
                 owner
             }
         });
     } catch (error) {
-        console.error('Error while signup:', error);
+        console.error('Error while edit company:', error);
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 }

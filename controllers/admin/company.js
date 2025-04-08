@@ -70,8 +70,7 @@ exports.companyList = async (req, res) => {
 
         const { count, rows: companies } = await db.Company.findAndCountAll({
             where: { ...whereCondition },
-            limit,
-            offset,
+            attributes: { exclude: ['is_account_created', 'is_password_add'] },
             include: [
                 {
                     model: db.User,
@@ -85,7 +84,9 @@ exports.companyList = async (req, res) => {
                     attributes: ['id', 'branch_name', 'createdAt']
                 }
             ],
-            order: [['createdAt', 'DESC']]
+            order: [['createdAt', 'DESC']],
+            limit,
+            offset,
         });
 
         return res.status(200).json({
@@ -104,48 +105,6 @@ exports.companyList = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 };
-
-
-exports.companyActiveDeactive = async (req, res) => {
-    try {
-        const { company_id } = req.body;
-        const company = await db.Company.findByPk(company_id);
-
-        const active = company.is_company_active === true ? false : true;
-
-        await company.update({ is_company_active: active })
-        return res.status(200).json({
-            status: 1,
-            message: active ? 'Company activated successfully' : 'Company deactivated successfully',
-            is_company_active: company.is_company_active
-        });
-
-    } catch (error) {
-        console.error('Error while ActiveDeactive company:', error);
-        return res.status(500).json({ status: 0, message: 'Internal server error' });
-    }
-}
-
-
-exports.companyBockUnblock = async (req, res) => {
-    try {
-        const { company_id } = req.body;
-        const company = await db.Company.findByPk(company_id);
-
-        const blobked_unbloced = company.is_company_blocked === true ? false : true;
-
-        await company.update({ is_company_blocked: blobked_unbloced })
-        return res.status(200).json({
-            status: 1,
-            message: blobked_unbloced ? 'Company Blocked successfully' : 'Company Unblocked successfully',
-            is_company_blocked: company.is_company_blocked
-        });
-
-    } catch (error) {
-        console.error('Error while BockUnblock company:', error);
-        return res.status(500).json({ status: 0, message: 'Internal server error' });
-    }
-}
 
 
 exports.companyDetail = async (req, res) => {
@@ -167,12 +126,7 @@ exports.companyDetail = async (req, res) => {
             ],
         });
 
-        if (!company) {
-            return res.status(400).json({
-                status: 0,
-                message: 'Company not found',
-            })
-        }
+        if (!company) return res.status(400).json({ status: 0, message: 'Company not found' });
 
         return res.status(200).json({
             status: 1,
@@ -185,14 +139,60 @@ exports.companyDetail = async (req, res) => {
     }
 };
 
+exports.companyActiveDeactive = async (req, res) => {
+    try {
+        const { company_id } = req.body;
+
+        const company = await db.Company.findByPk(company_id);
+        if (!company) return res.status(404).json({ status: 0, message: 'Company not found' });
+
+        const active = company.is_company_active === true ? false : true;
+
+        await company.update({ is_company_active: active });
+        return res.status(200).json({
+            status: 1,
+            message: active ? 'Company activated successfully' : 'Company deactivated successfully',
+            is_company_active: company.is_company_active
+        });
+
+    } catch (error) {
+        console.error('Error while ActiveDeactive company:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+}
+
+
+exports.companyBockUnblock = async (req, res) => {
+    try {
+        const { company_id } = req.body;
+
+        const company = await db.Company.findByPk(company_id);
+        if (!company) return res.status(404).json({ status: 0, message: 'Company not found' });
+
+        const blobked_unbloced = company.is_company_blocked === true ? false : true;
+
+        await company.update({ is_company_blocked: blobked_unbloced });
+        return res.status(200).json({
+            status: 1,
+            message: blobked_unbloced ? 'Company Blocked successfully' : 'Company Unblocked successfully',
+            is_company_blocked: company.is_company_blocked
+        });
+
+    } catch (error) {
+        console.error('Error while BockUnblock company:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+}
 
 exports.changeCompanyPassword = async (req, res) => {
     const { user_id, newPassword } = req.body;
     try {
         const user = await db.User.findByPk(user_id);
-        if (!user)  return res.status(404).json({ status: 0, message: 'User not found.' });
+        if (!user) return res.status(404).json({ status: 0, message: 'User not found.' });
+
         const isSamePassword = await bcrypt.compare(newPassword, user.password);
-        if (isSamePassword)  return res.status(400).json({ status: 0, message: 'New password cannot be the same as the old password.' });
+        if (isSamePassword) return res.status(400).json({ status: 0, message: 'New password cannot be the same as the old password.' });
+
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         await user.update({ password: hashedPassword });
         return res.status(200).json({ status: 1, message: 'Password changed successfully.' });

@@ -26,6 +26,9 @@ router.post('/add_worker', verifyToken, uploadFile, checkUserRole(['company']), 
 router.get('/worker_list', verifyToken, checkUserRole(['company']), companyvalidation.getworkerList(), companyController.getWorkerList);
 router.get('/worker_detail', verifyToken, checkUserRole(['company']), companyvalidation.getWorkerDetail(), companyController.getWorkerDetail);
 router.delete('/delete_worker', verifyToken, checkUserRole(['company']), companyvalidation.getWorkerDetail(), companyController.deleteWorker);
+router.post('/add_worker_document', verifyToken, uploadFile, checkUserRole(['company']), companyvalidation.addWorkerDocuments(), companyController.addWorkerDocuments);
+router.delete('/delete_document', verifyToken, checkUserRole(['company']), companyvalidation.deleteDocument(), companyController.deleteDocument);
+router.patch('/worker_active_deactive', companyvalidation.workerActiveDeactive(), companyController.workerActiveDeactive);
 
 
 // Job category
@@ -50,9 +53,14 @@ router.put('/edit_project', verifyToken, checkUserRole(['company']), companyvali
 router.delete('/delete_project', verifyToken, checkUserRole(['company']), companyvalidation.projectDetail(), companyController.deleteProject);
 router.get('/project_list', verifyToken, checkUserRole(['company']), companyvalidation.getProjectList(), companyController.getProjectList);
 router.get('/project_detail', verifyToken, checkUserRole(['company']), companyvalidation.projectDetail(), companyController.getProjectDetail);
-router.get('/project_document_list', verifyToken, checkUserRole(['company']), companyvalidation.projectDocumentList(), companyController.projectDocumentList);
 router.post('/add_project_document', verifyToken, uploadFile, checkUserRole(['company']), companyvalidation.addProjectDocuments(), companyController.addProjectDocuments);
-router.delete('/delete_project_document', verifyToken, checkUserRole(['company']), companyvalidation.deleteProjectDocuments(), companyController.deleteProjectDocuments);
+router.get('/project_document_list', verifyToken, checkUserRole(['company']), companyvalidation.projectDocumentList(), companyController.projectDocumentList);
+
+// Holiday
+router.post('/add_company_holiday', verifyToken, checkUserRole(['company']), companyvalidation.addCompanyHoliday(), companyController.addCompanyHoliday);
+router.get('/get_company_holiday_list', verifyToken, checkUserRole(['company']), companyvalidation.getCompanyHolidaysList(), companyController.getCompanyHolidaysList);
+router.put('/edit_company_holiday', verifyToken, checkUserRole(['company']), companyvalidation.editCompanyHoliday(), companyController.editCompanyHoliday);
+router.delete('/delete_company_holiday', verifyToken, checkUserRole(['company']), companyvalidation.deleteCompanyHoliday(), companyController.deleteCompanyHoliday);
 
 
 module.exports = router;

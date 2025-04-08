@@ -146,8 +146,11 @@ exports.getworkerList = () => {
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
             check("search").optional().isString().withMessage("search must be string").trim(),
+            check("status").optional().isString().withMessage("status must be string").trim()
+                .isIn(["active", 'inactive', 'blocked'])
+                .withMessage("Invalid value for user_role. Allowed values are 'active' or 'inactive' or 'blocked "),
         ],
-        checkForUnexpectedFields(["page", "limit", "search"]),
+        checkForUnexpectedFields(["page", "limit", "search", "status"]),
         validation
     ];
 }
@@ -158,6 +161,32 @@ exports.getWorkerDetail = () => {
             check("worker_id").notEmpty().withMessage("Worker ID is required."),
         ],
         checkForUnexpectedFields(["worker_id"]),
+        validation
+    ];
+}
+
+exports.addWorkerDocuments = () => {
+    return [
+        [
+            check("documents").custom((value, { req }) => {
+                if (!req.files || !req.files.documents) {
+                    throw new Error('documents is required');
+                }
+                return true;
+            }),
+            check("user_id").notEmpty().withMessage("User ID is required."),
+            check('title').not().isEmpty().withMessage("Title is required").isString().withMessage('Title must be sting').trim(),
+        ],
+        checkForUnexpectedFields(["documents", "user_id", "title"]),
+        validation
+    ];
+}
+exports.workerActiveDeactive = () => {
+    return [
+        [
+            check("user_id").notEmpty().withMessage("User ID is required."),
+        ],
+        checkForUnexpectedFields(["user_id"]),
         validation
     ];
 }
@@ -376,7 +405,7 @@ exports.addProjectDocuments = () => {
     ];
 }
 
-exports.deleteProjectDocuments = () => {
+exports.deleteDocument = () => {
     return [
         [
             check("document_id").notEmpty().withMessage("Document ID is required."),
@@ -385,3 +414,52 @@ exports.deleteProjectDocuments = () => {
         validation
     ];
 }
+
+
+// Company Holiday Validation
+exports.addCompanyHoliday = () => {
+    return [
+        [
+            check('holiday_name').notEmpty().withMessage('Holiday name is required').isString().withMessage('Holiday name must be a string'),
+            check("date").notEmpty().withMessage('Date is required.').isISO8601().withMessage("Date must be a valid date (YYYY-MM-DD)."),
+            check('day').notEmpty().withMessage('Day is required').isString().withMessage('Day must be a string'),
+        ],
+        checkForUnexpectedFields(["holiday_name", "date", "day"]),
+        validation
+    ];
+}
+exports.getCompanyHolidaysList = () => {
+    return [
+        [
+            check('page')
+                .notEmpty()
+                .withMessage('Page must required.')
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer.'),
+        ],
+        checkForUnexpectedFields(["page", "limit"]),
+        validation
+    ];
+}
+exports.editCompanyHoliday = () => {
+    return [
+        [
+            check("holiday_id").notEmpty().withMessage("Holiday ID is required."),
+            check('holiday_name').optional().isString().withMessage('Holiday name must be a string'),
+            check("date").optional().isISO8601().withMessage("Date must be a valid date (YYYY-MM-DD)."),
+            check('day').optional().isString().withMessage('Day must be a string'),
+        ],
+        checkForUnexpectedFields(["holiday_id", "holiday_name", "date", "day"]),
+        validation
+    ];
+}
+exports.deleteCompanyHoliday = () => {
+    return [
+        [
+            check("holiday_id").notEmpty().withMessage("Holiday ID is required."),
+        ],
+        checkForUnexpectedFields(["holiday_id"]),
+        validation
+    ];
+}
+

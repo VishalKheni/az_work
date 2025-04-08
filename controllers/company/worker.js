@@ -41,7 +41,8 @@ exports.addWorker = async (req, res) => {
             job_title_id: job_title.id,
             password: hashedPassword,
             profile_image: `profile_images/${profile_image[0].filename}`,
-            is_email_verified: true
+            is_email_verified: true,
+            is_worker_active: true,
         })
         let documentsData;
         if (documents && documents.length > 0) {
@@ -77,7 +78,7 @@ exports.addWorker = async (req, res) => {
 
 exports.getWorkerList = async (req, res) => {
     try {
-        let { page, limit, search } = req.query;
+        let { page, limit, search, status } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
@@ -97,9 +98,23 @@ exports.getWorkerList = async (req, res) => {
             ];
         }
 
+
+        if (status === 'active') {
+            whereCondition.is_worker_active = true;
+            // whereCondition.is_company_blocked = false;
+        } else if (status === 'inactive') {
+            whereCondition.is_worker_active = false;
+            // whereCondition.is_worker_blocked = false;
+        } 
+        // else if (status === 'blocked') {
+        //     whereCondition.is_worker_blocked = true;
+        // }
+
+
+
         const { count, rows: worker } = await db.User.findAndCountAll({
             where: { ...whereCondition, user_role: "worker", company_id: company.id },
-            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'password'] },
+            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add', 'password'] },
             include: [
                 {
                     model: db.Job_category,
@@ -145,7 +160,7 @@ exports.getWorkerDetail = async (req, res) => {
         const { worker_id } = req.query;
 
         const worker = await db.User.findByPk(worker_id, {
-            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add',] },
+            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add', 'password'] },
             include: [
                 {
                     model: db.Job_category,
@@ -242,3 +257,80 @@ exports.workerJobTitleList = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 }
+
+
+exports.addWorkerDocuments = async (req, res) => {
+    try {
+        const { user_id, title } = req.body;
+        const { documents } = req.files;
+
+        const worker = await db.User.findByPk(user_id);
+        if (!worker) return res.status(400).json({ status: 0, message: 'Worker Not Found' });
+
+        let documentsData = [];
+
+        if (documents && documents.length > 0) {
+            for (const doc of documents) {
+                documentsData.push({
+                    worker_id: worker.id,
+                    document_url: `documents/${doc.filename}`,
+                    title: title,
+                    date: moment().toDate()
+                });
+            }
+            await db.Document.bulkCreate(documentsData);
+        }
+        
+        return res.status(201).json({
+            status: 1,
+            message: "Worker document added successfully",
+            documents: documentsData
+        });
+    } catch (error) {
+        console.error('Error while create project:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+
+
+exports.deleteDocument = async (req, res) => {
+    try {
+        const { document_id } = req.query;
+
+        const document = await db.Document.findByPk(document_id);
+        if (!document) return res.status(400).json({ status: 0, message: 'Document Not Found' });
+        fs.unlinkSync(`public/${document.document_url}`);
+        await document.destroy();
+        return res.status(200).json({
+            status: 1,
+            message: "Document deleted successfully",
+        });
+    } catch (error) {
+        console.error('Error while delete document:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+
+
+exports.workerActiveDeactive = async (req, res) => {
+    try {
+        const { user_id } = req.body;
+
+        const worker = await db.User.findByPk(user_id);
+        if (!worker) return res.status(404).json({ status: 0, message: 'Company not found' });
+
+        const active = worker.is_worker_active === true ? false : true;
+
+        await worker.update({ is_worker_active: active });
+        return res.status(200).json({
+            status: 1,
+            message: active ? 'Worker activated successfully' : 'Worker deactivated successfully',
+            is_worker_active: worker.is_worker_active
+        });
+
+    } catch (error) {
+        console.error('Error while ActiveDeactive worker:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+}
+

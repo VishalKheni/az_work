@@ -180,23 +180,11 @@ exports.deleteJobCategory = async (req, res) => {
 
         // Find company of current user
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
-
-        if (!company) {
-            return res.status(400).json({ status: 0, message: 'Company Not Found' });
-        }
+        if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
 
         // Fetch the category to update
-        const category = await db.Job_category.findOne({
-            where: {
-                id: category_id,
-                company_id: company.id,
-                owner_id: company.owner_id
-            }
-        });
-
-        if (!category) {
-            return res.status(404).json({ status: 0, message: 'Job category not found' });
-        }
+        const category = await db.Job_category.findOne({ where: { id: category_id, company_id: company.id } });
+        if (!category) return res.status(404).json({ status: 0, message: 'Job category not found' });
 
         await category.destroy();
         return res.status(200).json({
@@ -204,7 +192,7 @@ exports.deleteJobCategory = async (req, res) => {
             message: 'Job category deleted successfully',
         });
     } catch (error) {
-        console.error('Error while editing Job Category and Job Title:', error);
+        console.error('Error while delete Job Category:', error);
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 };
