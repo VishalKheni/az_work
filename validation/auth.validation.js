@@ -202,11 +202,11 @@ exports.editProfile = () => {
     return [
         [
             check("profile_image").custom((value, { req }) => {
-                if (req.files.profile_image.length > 1) {
+                if (req.files && req.files.profile_image && req.files.profile_image.length > 1) {
                     req.files.profile_image.forEach(element => {
                         fs.unlinkSync(element.path);
                     });
-                    throw new Error('Maximum 1 images allowed');
+                    throw new Error('Maximum 1 image allowed');
                 }
                 return true;
             }).optional(),

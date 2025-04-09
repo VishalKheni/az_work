@@ -288,7 +288,7 @@ exports.projectClientList = async (req, res) => {
         });
     } catch (error) {
         console.error('Error while fetching client list:', error);
-        return res.status(500).json({ status: 0, message: 'Internal server error' }); ``
+        return res.status(500).json({ status: 0, message: 'Internal server error' }); 
     }
 };
 

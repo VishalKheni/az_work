@@ -60,7 +60,7 @@ exports.companyList = async (req, res) => {
         }
 
         if (search) {
-            whereCondition.company_name = { [Op.like]: `%${search}%` };;
+            whereCondition.company_name = { [Op.like]: `%${search}%` };
         }
 
         let branchCondition = {};
@@ -70,7 +70,6 @@ exports.companyList = async (req, res) => {
 
         const { count, rows: companies } = await db.Company.findAndCountAll({
             where: { ...whereCondition },
-            attributes: { exclude: ['is_account_created', 'is_password_add'] },
             include: [
                 {
                     model: db.User,

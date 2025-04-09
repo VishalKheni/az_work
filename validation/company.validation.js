@@ -312,7 +312,7 @@ exports.addProject = () => {
         [
             check("documents").custom((value, { req }) => {
                 if (!req.files || !req.files.documents) {
-                    throw new Error('documents is required');
+                    throw new Error('Documents is required');
                 }
                 return true;
             }),
@@ -370,7 +370,6 @@ exports.getProjectList = () => {
         validation
     ];
 }
-
 
 exports.projectDocumentList = () => {
     return [

@@ -178,7 +178,7 @@ exports.refreshToken = async (req, res) => {
       return res.status(403).json({ status: 0, message: "Invalid or expired refresh token, please log in again" });
     }
     const user = await db.User.findByPk(storedToken.user_id);
-    if (!user) return res.status(400).json({status: 0, message: "User not found" });
+    if (!user) return res.status(400).json({ status: 0, message: "User not found" });
     const token = jwt.sign({ user_id: user.id, token_id: storedToken.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
     return res.status(200).json({
       status: 1,
@@ -374,7 +374,7 @@ exports.editProfile = async (req, res) => {
     if (profile_image) {
       const validation = await validateFiles(profile_image, ["jpg", "jpeg", "png", "webp"], 15 * 1024 * 1024);
       if (!validation.valid) return res.status(400).json({ status: 0, message: validation.message });
-      fs.unlinkSync(`public/${user.profile_image}`);
+      if (user.profile_image) { fs.unlinkSync(`public/${user.profile_image}`) }
       user.profile_image = `profile_images/${profile_image[0].filename}`;
       await user.save();
     }

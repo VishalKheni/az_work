@@ -10,4 +10,4 @@ module.exports = {
   ...branchModule,
   ...holidayModule,
   ...absenceModule
-};
+};56

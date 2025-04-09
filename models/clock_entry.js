@@ -23,28 +23,36 @@ module.exports = (sequelize, DataTypes, Model) => {
             allowNull: true, 
         },
         clock_in_time: {
-            type: DataTypes.TIME,
+            type: DataTypes.DATE,
             allowNull: true, 
-        },
-        sign_in_address: {
-            type: DataTypes.STRING,
-            allowNull: false, 
         },
         clock_out_time: {
-            type: DataTypes.TIME,
+            type: DataTypes.DATE,
             allowNull: true,
         },
-        sign_out_address: {
+        duration: {
             type: DataTypes.STRING,
             allowNull: true, 
         },
-        status: {
-            type: DataTypes.ENUM('pending', 'approved', 'rejected'),
-            defaultValue: 'pending',
+        address: {
+            type: DataTypes.STRING,
+            allowNull: true, 
         },
         reason: {
             type: DataTypes.STRING,
             allowNull: true, 
+        },
+        latitude: {
+            type: DataTypes.DECIMAL(10, 8),
+            allowNull: true,
+        },
+        longitude: {
+            type: DataTypes.DECIMAL(11, 8),
+            allowNull: true,
+        },
+        status: {
+            type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+            defaultValue: 'pending',
         },
     }, {
         tableName: "tbl_clock_entry",

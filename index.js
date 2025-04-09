@@ -15,7 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger)
 
 var corsOptions = {
-    origin: [`https://${HOST}:${PORT}`],
+    origin: [`http://${HOST}:${PORT}`, `http://${HOST}`],
     optionsSuccessStatus: 200,
 };
 
@@ -40,7 +40,7 @@ const start = async () => {
         await db.sequelize.authenticate();
         console.log('Connection has been established successfully.');
         console.log("........................................................................")
-        // await db.User.sync({ alter: true });
+        // await db.Clock_entry.sync({ alter: true });
         server.listen(PORT, () => {
             console.log(`AZ Work running on ${process.env.NODE_ENV == "LOCAL" ? "http" : "http"}://${HOST}:${PORT}/ ...`);
             console.log("........................................................................")
@@ -52,6 +52,8 @@ const start = async () => {
 start();
 
 app.use(routes);
+
+app.use((err, req, res, next) => { res.status(400).json({ status: 0, message: err.message }) });
 
 app.all("*", (req, res) => {
     res.status(405).json({ message: "The method is not allowed for the requested URl" });

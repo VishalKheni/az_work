@@ -16,7 +16,7 @@ router.get('/branch_list', companyController.branchList);
 
 // Company
 router.get('/detail', verifyToken, checkUserRole(['company']), companyController.companyDetail);
-router.put('/edit_company', uploadFile, companyvalidation.editCompany(), companyController.editCompany);
+router.put('/edit_company', uploadFile, checkUserRole(['company']), companyvalidation.editCompany(), companyController.editCompany);
 
 
 // worker
@@ -28,7 +28,7 @@ router.get('/worker_detail', verifyToken, checkUserRole(['company']), companyval
 router.delete('/delete_worker', verifyToken, checkUserRole(['company']), companyvalidation.getWorkerDetail(), companyController.deleteWorker);
 router.post('/add_worker_document', verifyToken, uploadFile, checkUserRole(['company']), companyvalidation.addWorkerDocuments(), companyController.addWorkerDocuments);
 router.delete('/delete_document', verifyToken, checkUserRole(['company']), companyvalidation.deleteDocument(), companyController.deleteDocument);
-router.patch('/worker_active_deactive', companyvalidation.workerActiveDeactive(), companyController.workerActiveDeactive);
+router.patch('/worker_active_deactive', verifyToken, checkUserRole(['company']), companyvalidation.workerActiveDeactive(), companyController.workerActiveDeactive);
 
 
 // Job category
@@ -55,6 +55,7 @@ router.get('/project_list', verifyToken, checkUserRole(['company']), companyvali
 router.get('/project_detail', verifyToken, checkUserRole(['company']), companyvalidation.projectDetail(), companyController.getProjectDetail);
 router.post('/add_project_document', verifyToken, uploadFile, checkUserRole(['company']), companyvalidation.addProjectDocuments(), companyController.addProjectDocuments);
 router.get('/project_document_list', verifyToken, checkUserRole(['company']), companyvalidation.projectDocumentList(), companyController.projectDocumentList);
+
 
 // Holiday
 router.post('/add_company_holiday', verifyToken, checkUserRole(['company']), companyvalidation.addCompanyHoliday(), companyController.addCompanyHoliday);
