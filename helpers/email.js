@@ -1,20 +1,28 @@
 require('dotenv').config()
-const { signupEmail, forgetPassword, sendWorkerEmail } = require('./templetes');
+const { signupEmail, sendWorkerEmail } = require('./templetes');
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require("nodemailer");
 let smtpUser = process.env.SMTPUSER
 let smtpPass = process.env.SMTPPASS
+let smtphost = process.env.SMTPHOST
 
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: smtpUser,
+//     pass: smtpPass,
+//   },
+// });
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: smtphost,
+  secure: true,
   auth: {
     user: smtpUser,
     pass: smtpPass,
   },
 });
-
 
 const sendOTPVerificationEmail = async (email, otp) => {
   console.log("EMAIL AND OTP====>>>>", email, otp)
@@ -38,24 +46,24 @@ const sendOTPVerificationEmail = async (email, otp) => {
   }
 };
 
-const sendForgetPassOTPVerificationEmail = async (email, otp) => {
+// const sendForgetPassOTPVerificationEmail = async (email, otp) => {
 
-  let htmlContent = forgetPassword(otp);
-  let mailoption = {
-    from: `AZ Work <${smtpUser}>`,
-    to: email,
-    subject: "Complete Your Password Reset: OTP Verification",
-    html: htmlContent,
-  };
+//   let htmlContent = forgetPassword(otp);
+//   let mailoption = {
+//     from: `AZ Work <${smtpUser}>`,
+//     to: email,
+//     subject: "Complete Your Password Reset: OTP Verification",
+//     html: htmlContent,
+//   };
 
-  return transporter.sendMail(mailoption, function (error, info) {
-    if (error) {
-      console.log(error);
-    } else {
-      console.log('Email sent: ' + info.response);
-    }
-  });
-};
+//   return transporter.sendMail(mailoption, function (error, info) {
+//     if (error) {
+//       console.log(error);
+//     } else {
+//       console.log('Email sent: ' + info.response);
+//     }
+//   });
+// };
 
 const sendEmailToWorker = async ({email, username, company_name, password}) => {
   let htmlContent = sendWorkerEmail({email, username, company_name, password});
@@ -79,6 +87,5 @@ const sendEmailToWorker = async ({email, username, company_name, password}) => {
 
 module.exports = {
   sendOTPVerificationEmail,
-  sendForgetPassOTPVerificationEmail,
   sendEmailToWorker
 }

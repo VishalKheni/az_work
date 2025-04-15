@@ -298,7 +298,7 @@ exports.sendOtpToEmail = async (req, res) => {
     const otp = generateOTP();
     const otpCreatedAt = moment().toDate();
     await user.update({ otp: otp, otp_created_at: otpCreatedAt });
-    await sendForgetPassOTPVerificationEmail(email, otp);
+    await sendOTPVerificationEmail(email, otp);
     return res.status(200).json({ status: 1, message: "OTP sent to email for password reset!", data: otp });
   } catch (error) {
     console.error('Error sending OTP to email:', error);
@@ -371,7 +371,7 @@ exports.editProfile = async (req, res) => {
 
     if (!user) return res.status(404).json({ status: 0, message: 'User Not Found' });
 
-    if (profile_image) {
+    if (req.files && profile_image) {
       const validation = await validateFiles(profile_image, ["jpg", "jpeg", "png", "webp"], 15 * 1024 * 1024);
       if (!validation.valid) return res.status(400).json({ status: 0, message: validation.message });
       if (user.profile_image) { fs.unlinkSync(`public/${user.profile_image}`) }
