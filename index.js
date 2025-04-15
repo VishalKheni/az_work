@@ -32,6 +32,9 @@ app.use(express.static('public'));
 const server = process.env.NODE_ENV == "LOCAL" ? http.createServer(app) : http.createServer(app);
 
 app.get("/", (req, res) => {
+    console.log("<<gettt>>req.query", req.query);
+    console.log("<<gettt>>req.body", req.headers);
+    console.log("<<gettt>>req.body", req.body);
     res.send(`<h1>AZ Work Running!</h1>`);
 });
 

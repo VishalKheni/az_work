@@ -6,31 +6,31 @@ const { upload } = require('../helpers/storage');
 const multer = require('multer');
 const router = express.Router();
 
-// const uploadFile = upload.fields([
-//     { name: 'profile_image' },
-//     { name: 'documents' },
-//     { name: 'company_logo' },
-// ]);
+const uploadFile = upload.fields([
+    { name: 'profile_image' },
+    { name: 'documents' },
+    { name: 'company_logo' },
+]);
 
-const uploadFile = (req, res, next) => {
-    const handler = upload.fields([
-        { name: 'profile_image' },
-        { name: 'documents' },
-        { name: 'company_logo' },
-        ]);
+// const uploadFile = (req, res, next) => {
+//     const handler = upload.fields([
+//         { name: 'profile_image' },
+//         { name: 'documents' },
+//         { name: 'company_logo' },
+//         ]);
 
-    handler(req, res, function (err) {
-        if (err instanceof multer.MulterError) {
-            return res.status(400).json({ message: err.message });
-        } else if (err) {
-            return res.status(500).json({ message: err.message });
-        }
-        // Ensure req.body is an object
-        if (!req.body) req.body = {};
-        if (!req.files) req.files = {};
-        next();
-    });
-};
+//     handler(req, res, function (err) {
+//         if (err instanceof multer.MulterError) {
+//             return res.status(400).json({ message: err.message });
+//         } else if (err) {
+//             return res.status(500).json({ message: err.message });
+//         }
+//         // Ensure req.body is an object
+//         if (!req.body) req.body = {};
+//         if (!req.files) req.files = {};
+//         next();
+//     });
+// };
 
 
 router.get('/refresh_token', authController.refreshToken);
