@@ -1,38 +1,29 @@
 require('dotenv').config()
 const { signupEmail, sendWorkerEmail } = require('./templetes');
-const fs = require('fs');
-const path = require('path');
 const nodemailer = require("nodemailer");
 let smtpUser = process.env.SMTPUSER
 let smtpPass = process.env.SMTPPASS
-let smtphost = process.env.SMTPHOST
-
-// const transporter = nodemailer.createTransport({
-//   service: "gmail",
-//   auth: {
-//     user: smtpUser,
-//     pass: smtpPass,
-//   },
-// });
+let smtpHost = process.env.SMTPHOST
 
 const transporter = nodemailer.createTransport({
-  host: smtphost,
-  secure: true,
+  service: "gmail",
+  host: smtpHost,
+  port: 465,
+  secure: true, 
   auth: {
     user: smtpUser,
     pass: smtpPass,
-  },
+  },             
 });
 
 const sendOTPVerificationEmail = async (email, otp) => {
-  console.log("EMAIL AND OTP====>>>>", email, otp)
+  // console.log("EMAIL AND OTP====>>>>", email, otp)
   let htmlContent = signupEmail(otp);
 
   let mail_option = {
     from: `AZ Work <${smtpUser}>`,
     to: email,
     subject: "Verification Code: Complete Your Sign In",
-    text: `Your OTP is: ${otp}`,
     html: htmlContent,
   };
 
@@ -45,25 +36,6 @@ const sendOTPVerificationEmail = async (email, otp) => {
     throw error;
   }
 };
-
-// const sendForgetPassOTPVerificationEmail = async (email, otp) => {
-
-//   let htmlContent = forgetPassword(otp);
-//   let mailoption = {
-//     from: `AZ Work <${smtpUser}>`,
-//     to: email,
-//     subject: "Complete Your Password Reset: OTP Verification",
-//     html: htmlContent,
-//   };
-
-//   return transporter.sendMail(mailoption, function (error, info) {
-//     if (error) {
-//       console.log(error);
-//     } else {
-//       console.log('Email sent: ' + info.response);
-//     }
-//   });
-// };
 
 const sendEmailToWorker = async ({email, username, company_name, password}) => {
   let htmlContent = sendWorkerEmail({email, username, company_name, password});
@@ -82,7 +54,6 @@ const sendEmailToWorker = async ({email, username, company_name, password}) => {
     }
   });
 };
-
 
 
 module.exports = {

@@ -15,26 +15,23 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger)
 
 var corsOptions = {
-    origin: [`http://${HOST}:${PORT}`, `http://${HOST}`],
+    origin: [`https://${HOST}:${PORT}`, `https://${HOST}`],
     optionsSuccessStatus: 200,
 };
 
 process.env.NODE_ENV == "LOCAL" ? app.use(cors()) : app.use(cors(corsOptions));
 app.use(express.static('public'));
 
-// const options = {
-//     ...(process.env.NODE_ENV != "LOCAL" && {
-//         key: fs.readFileSync(process.env.PRIVATEKEY),
-//         cert: fs.readFileSync(process.env.CERTKEY),
-//     }),
-// };
+const options = {
+    ...(process.env.NODE_ENV != "LOCAL" && {
+        key: fs.readFileSync(process.env.PRIVATEKEY),
+        cert: fs.readFileSync(process.env.CERTKEY),
+    }),
+};
 
-const server = process.env.NODE_ENV == "LOCAL" ? http.createServer(app) : http.createServer(app);
+const server = process.env.NODE_ENV == "LOCAL" ? http.createServer(app) : https.createServer(options,app);
 
 app.get("/", (req, res) => {
-    console.log("<<gettt>>req.query", req.query);
-    console.log("<<gettt>>req.body", req.headers);
-    console.log("<<gettt>>req.body", req.body);
     res.send(`<h1>AZ Work Running!</h1>`);
 });
 
@@ -45,7 +42,7 @@ const start = async () => {
         console.log("........................................................................")
         // await db.Clock_entry.sync({ alter: true });
         server.listen(PORT, () => {
-            console.log(`AZ Work running on ${process.env.NODE_ENV == "LOCAL" ? "http" : "http"}://${HOST}:${PORT}/ ...`);
+            console.log(`AZ Work running on ${process.env.NODE_ENV == "LOCAL" ? "http" : "https"}://${HOST}:${PORT}/ ...`);
             console.log("........................................................................")
         });
     } catch (error) {
