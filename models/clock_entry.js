@@ -12,12 +12,6 @@ module.exports = (sequelize, DataTypes, Model) => {
             references: { model: 'tbl_project', key: 'id' },
             onDelete: 'CASCADE'
         },
-        company_id: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            references: { model: 'tbl_company', key: 'id' },
-            onDelete: 'CASCADE'
-        },
         date: {
             type: DataTypes.DATE,
             allowNull: true, 
@@ -48,6 +42,10 @@ module.exports = (sequelize, DataTypes, Model) => {
         },
         longitude: {
             type: DataTypes.DECIMAL(11, 8),
+            allowNull: true,
+        },
+        type: {
+            type: DataTypes.ENUM('clock_in', 'clock_out'),
             allowNull: true,
         },
         status: {
