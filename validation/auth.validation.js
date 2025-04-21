@@ -75,9 +75,7 @@ exports.signUp = () => {
             check('phone_number').not().isEmpty().withMessage("phone_number is required"),
             check('iso_code').not().isEmpty().withMessage("ISO Code is required").trim().escape(),
             check('country_code').not().isEmpty().withMessage("Country Code is required").trim().escape(),
-            check("user_role").not().isEmpty().withMessage("user_role is required").trim().escape()
-                .isIn(["company"])
-                .withMessage("Invalid value for user_role. Allowed values are company "),
+            check("user_role").isIn(['company', 'worker']).withMessage('Invalid value for user_role. Allowed values are: "company", "worker".'),
         ],
         checkForUnexpectedFields(["firstname", "lastname", "phone_number", "iso_code", "country_code", "user_role"]),
         validation
@@ -148,6 +146,8 @@ exports.login = () => {
             check("device_id").not().isEmpty().withMessage("Device ID is required").trim().escape(),
             check("device_type").not().isEmpty().withMessage("Device type is required").trim().escape(),
             check("device_token").not().isEmpty().withMessage("Device token is required").trim().escape(),
+            check("user_role").isIn(['company', 'worker', 'admin']).withMessage('Invalid value for user_role. Allowed values are: "company", "worker", "admin.'),
+
         ],
         checkForUnexpectedFields(["user_role", "device_token", "device_type", "device_id", "email", "password"]),
         validation

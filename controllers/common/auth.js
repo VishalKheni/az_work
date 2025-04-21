@@ -192,31 +192,16 @@ exports.refreshToken = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  const { email, password, device_id, device_type, device_token } = req.body;
+  const { email, password, device_id, device_type, device_token, user_role } = req.body;
 
   try {
     const user = await db.User.findOne({ where: { email: email } });
     if (!user) return res.status(404).json({ status: 0, message: "This email is not registerd!please registerd first.." });
 
 
-    if (user.user_role == "company") {
-      if (!user.is_account_created) return res.status(400).json({ status: 2, message: "Please add account detail first.", data: user });
-      else if (!user.is_company_add) return res.status(400).json({ status: 3, message: "Please add company detail first.", data: user });
-      else if (!user.is_password_add && user.password == null) return res.status(400).json({ status: 4, message: "Please create a password first.", data: user });
-
-      // Check if email is verified
-      else if (!user.is_email_verified) {
-        const otp = generateOTP();
-        const otpCreatedAt = moment().toDate();
-        await user.update({
-          otp: otp,
-          otp_created_at: otpCreatedAt
-        });
-        await sendOTPVerificationEmail(email, otp);
-        return res.status(400).json({ status: 5, message: "Email is not verified. Please verify your email.", otp });
-      }
+    if (user_role != user.user_role) {
+      return res.status(400).json({ status: 0, message: `Access denied. ${user.user_role} cannot log in to the ${user_role} interface. Please use the ${user.user_role} login page.!` });
     }
-
 
     // Check if the password matches
     const isMatch = await bcrypt.compare(password, user.password);
@@ -227,6 +212,24 @@ exports.login = async (req, res) => {
     let tokenRecord = await db.Token.findOne({ where: { device_id, device_type, device_token, user_id: user.id } });
     if (!tokenRecord) tokenRecord = await db.Token.create({ device_id, device_type, device_token, user_id: user.id, refresh_token: uuidv4(), token_expire_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
     const token = jwt.sign({ user_id: user.id, token_id: tokenRecord.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+
+    if (user.user_role == "company") {
+      // Check if email is verified
+      if (!user.is_email_verified) {
+        const otp = generateOTP();
+        const otpCreatedAt = moment().toDate();
+        await user.update({
+          otp: otp,
+          otp_created_at: otpCreatedAt
+        });
+        await sendOTPVerificationEmail(email, otp);
+        return res.status(400).json({ status: 5, message: "Email is not verified. Please verify your email.", otp });
+      }
+
+      if (!user.is_account_created) return res.status(400).json({ status: 2, message: "Please add account detail first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
+      else if (!user.is_company_add) return res.status(400).json({ status: 3, message: "Please add company detail first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
+      else if (!user.is_password_add || user.password == null) return res.status(400).json({ status: 4, message: "Please create a password first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
+    }
 
     return res.status(200).json({
       status: 1,
