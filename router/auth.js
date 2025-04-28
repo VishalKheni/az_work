@@ -16,7 +16,7 @@ router.post('/login', authvalidation.login(), authController.login);
 router.post('/signup', authvalidation.signUp(), authController.signUp);
 router.post('/add_company', uploadFile, authvalidation.addCompany(), authController.addCompany);
 router.post('/create_password', authvalidation.createPassword(), authController.createPassword);
-router.post('/verify_otp', authvalidation.verifyOtp(), authController.verifyOtpEmail);
+router.post('/verify_signup_otp', authvalidation.verifyOtp(), authController.verifyOtpEmail);
 
 
 

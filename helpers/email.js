@@ -1,12 +1,11 @@
 require('dotenv').config()
-const { signupEmail, sendWorkerEmail } = require('./templetes');
 const nodemailer = require("nodemailer");
+const { signupEmail, sendWorkerEmail } = require('./templetes');
 let smtpUser = process.env.SMTPUSER
 let smtpPass = process.env.SMTPPASS
 let smtpHost = process.env.SMTPHOST
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
   host: smtpHost,
   port: 465,
   secure: true, 

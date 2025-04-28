@@ -205,7 +205,7 @@ db.User.hasMany(db.Clock_entry, {
 });
 db.Clock_entry.belongsTo(db.User, {
     foreignKey: 'worker_id',
-    as: 'user'
+    as: 'worker'
 });
 // db.Company.hasMany(db.Clock_entry, {
 //     foreignKey: 'company_id',

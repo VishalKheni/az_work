@@ -8,7 +8,11 @@ module.exports = (sequelize, DataTypes, Model) => {
         },
         absence_type: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: true
+        },
+        absence_logo: {
+            type: DataTypes.STRING,
+            allowNull: true
         },
         status: {
             type: DataTypes.ENUM('paid', 'unpaid'),

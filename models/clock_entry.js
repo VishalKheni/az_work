@@ -44,10 +44,10 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.DECIMAL(11, 8),
             allowNull: true,
         },
-        type: {
-            type: DataTypes.ENUM('clock_in', 'clock_out'),
-            allowNull: true,
-        },
+        // type: {
+        //     type: DataTypes.ENUM('clock_in', 'clock_out'),
+        //     allowNull: true,
+        // },
         status: {
             type: DataTypes.ENUM('pending', 'approved', 'rejected'),
             defaultValue: 'pending',

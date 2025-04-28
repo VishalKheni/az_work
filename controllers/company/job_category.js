@@ -5,9 +5,22 @@ const moment = require('moment');
 const { Op, where, Sequelize, col } = require("sequelize");
 
 
+function normalizeString(str) {
+    if (typeof str !== 'string') return '';
+    return str
+        .trim()
+        .replace(/\s*&+\s*/g, ' & ')
+        .replace(/\s+/g, ' ');
+}
+
 exports.addJobCategory = async (req, res) => {
     try {
-        const { category_name, Job_title } = req.body;
+        let { category_name, Job_title } = req.body;
+
+        // Trim and normalize input
+        category_name = normalizeString(category_name);
+        Job_title = normalizeString(Job_title);
+
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
 
         if (!company) {
@@ -16,21 +29,27 @@ exports.addJobCategory = async (req, res) => {
 
         // Check if the category already exists for this company
         let category = await db.Job_category.findOne({
-            where: { company_id: company.id, category_name }
+            where: {
+                company_id: company.id,
+                category_name: category_name
+            }
         });
 
         // If category does not exist, create a new one
         if (!category) {
             category = await db.Job_category.create({
                 company_id: company.id,
-                owner_id: company.owner_id,
-                category_name
+                category_name: category_name
             });
         }
 
         // Check if the job title already exists under this category
         let jobTitle = await db.Job_title.findOne({
-            where: { company_id: company.id, job_category_id: category.id, Job_title }
+            where: {
+                company_id: company.id,
+                job_category_id: category.id,
+                Job_title: Job_title
+            }
         });
 
         // If job title does not exist, create a new one
@@ -38,7 +57,7 @@ exports.addJobCategory = async (req, res) => {
             jobTitle = await db.Job_title.create({
                 company_id: company.id,
                 job_category_id: category.id,
-                Job_title
+                Job_title: Job_title
             });
         }
 
@@ -55,6 +74,7 @@ exports.addJobCategory = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 };
+
 
 exports.getJobCategoryList = async (req, res) => {
     try {
@@ -113,7 +133,11 @@ exports.getJobCategoryList = async (req, res) => {
 
 exports.editJobCategory = async (req, res) => {
     try {
-        const { category_id, job_title_id, category_name, Job_title } = req.body;
+        let { category_id, job_title_id, category_name, Job_title } = req.body;
+
+        // Trim and normalize input
+        const normalizedCategoryName = normalizeString(category_name);
+        const normalizedJobTitle = normalizeString(Job_title);
 
         // Find company of current user
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
@@ -127,7 +151,6 @@ exports.editJobCategory = async (req, res) => {
             where: {
                 id: category_id,
                 company_id: company.id,
-                owner_id: company.owner_id
             }
         });
 
@@ -135,9 +158,21 @@ exports.editJobCategory = async (req, res) => {
             return res.status(404).json({ status: 0, message: 'Job category not found' });
         }
 
-        // Update category name if provided
-        if (category_name) {
-            category.category_name = category_name;
+        // Before updating category name, check if same name already exists (for same company but different category)
+        if (normalizedCategoryName) {
+            const existingCategory = await db.Job_category.findOne({
+                where: {
+                    company_id: company.id,
+                    category_name: normalizedCategoryName,
+                    id: { [db.Sequelize.Op.ne]: category_id } // Not same id
+                }
+            });
+
+            if (existingCategory) {
+                return res.status(400).json({ status: 0, message: 'Category name already exists' });
+            }
+
+            category.category_name = normalizedCategoryName;
             await category.save();
         }
 
@@ -154,9 +189,22 @@ exports.editJobCategory = async (req, res) => {
             return res.status(404).json({ status: 0, message: 'Job title not found' });
         }
 
-        // Update job title if provided
-        if (Job_title) {
-            jobTitle.Job_title = Job_title;
+        // Before updating job title, check if same title already exists (for same category)
+        if (normalizedJobTitle) {
+            const existingJobTitle = await db.Job_title.findOne({
+                where: {
+                    company_id: company.id,
+                    job_category_id: category.id,
+                    Job_title: normalizedJobTitle,
+                    id: { [db.Sequelize.Op.ne]: job_title_id } // Not same id
+                }
+            });
+
+            if (existingJobTitle) {
+                return res.status(400).json({ status: 0, message: 'Job title already exists under this category' });
+            }
+
+            jobTitle.Job_title = normalizedJobTitle;
             await jobTitle.save();
         }
 
@@ -176,14 +224,14 @@ exports.editJobCategory = async (req, res) => {
 
 exports.deleteJobCategory = async (req, res) => {
     try {
-        const { category_id } = req.query;
+        const { job_title_id } = req.query;
 
         // Find company of current user
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
         if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
 
         // Fetch the category to update
-        const category = await db.Job_category.findOne({ where: { id: category_id, company_id: company.id } });
+        const category = await db.Job_title.findOne({ where: { id: job_title_id, company_id: company.id } });
         if (!category) return res.status(404).json({ status: 0, message: 'Job category not found' });
 
         await category.destroy();

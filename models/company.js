@@ -20,10 +20,6 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: false
         },
-        email: {
-            type: DataTypes.STRING,
-            allowNull: true,
-        },
         country_code: {
             type: DataTypes.STRING,
             allowNull: true,

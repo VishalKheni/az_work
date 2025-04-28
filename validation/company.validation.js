@@ -86,10 +86,12 @@ exports.editCompany = () => {
             check('country_code').optional().isString().withMessage("Country Code must be string").trim().escape(),
             check("address").optional().isString().withMessage("address must be string.").trim(),
             check('owner_phone_number').optional().isString().withMessage('Phone number must be string'),
+            check('owner_firstname').optional().isString().withMessage('First Name must be sting').trim().escape(),
+            check('owner_lastname').optional().isString().withMessage('Last Name must be sting').trim().escape(),
             check('owner_iso_code').optional().isString().withMessage("ISO Code must be string").trim().escape(),
             check('owner_country_code').optional().isString().withMessage("Country Code must be string").trim().escape(),
         ],
-        checkForUnexpectedFields(["company_id", 'industry_id', "company_logo", "company_name", "email", "phone_number", "iso_code", "country_code", "address", "owner_phone_number", "owner_iso_code", "owner_country_code",]),
+        checkForUnexpectedFields(["company_id", 'industry_id', "company_logo", "company_name", "email", "phone_number", "iso_code", "country_code", "address", "owner_firstname", "owner_lastname", "owner_phone_number", "owner_iso_code", "owner_country_code",]),
         validation
     ];
 }
@@ -174,19 +176,19 @@ exports.addWorkerDocuments = () => {
                 }
                 return true;
             }),
-            check("user_id").notEmpty().withMessage("User ID is required."),
+            check("worker_id").notEmpty().withMessage("Worker ID is required."),
             check('title').not().isEmpty().withMessage("Title is required").isString().withMessage('Title must be sting').trim(),
         ],
-        checkForUnexpectedFields(["documents", "user_id", "title"]),
+        checkForUnexpectedFields(["documents", "worker_id", "title"]),
         validation
     ];
 }
 exports.workerActiveDeactive = () => {
     return [
         [
-            check("user_id").notEmpty().withMessage("User ID is required."),
+            check("worker_id").notEmpty().withMessage("Worker ID is required."),
         ],
-        checkForUnexpectedFields(["user_id"]),
+        checkForUnexpectedFields(["worker_id"]),
         validation
     ];
 }
@@ -238,6 +240,15 @@ exports.editJobCategory = () => {
             check('Job_title').optional().isString().withMessage('Job title must be sting').trim(),
         ],
         checkForUnexpectedFields(["category_id", "job_title_id", "category_name", "Job_title"]),
+        validation
+    ];
+}
+exports.deleteJobCategory = () => {
+    return [
+        [
+            check("job_title_id").notEmpty().withMessage("Job title ID is required."),
+        ],
+        checkForUnexpectedFields(["job_title_id"]),
         validation
     ];
 }
@@ -458,6 +469,84 @@ exports.deleteCompanyHoliday = () => {
             check("holiday_id").notEmpty().withMessage("Holiday ID is required."),
         ],
         checkForUnexpectedFields(["holiday_id"]),
+        validation
+    ];
+}
+
+exports.editWorkerProfile = () => {
+    return [
+        [
+            check("worker_id").notEmpty().withMessage("Worker ID is required."),
+            check("profile_image").custom((value, { req }) => {
+                if (req.files.profile_image.length > 1) {
+                    req.files.profile_image.forEach(element => {
+                        fs.unlinkSync(element.path);
+                    });
+                    throw new Error('Maximum 1 images allowed');
+                }
+                return true;
+            }).optional(),
+            check("job_category_id").optional().isInt().withMessage("Job Category ID must be integer."),
+            check("job_title_id").optional().isInt().withMessage("Job ttitle ID must be integer."),
+            check('firstname').optional().isString().withMessage('First Name must be sting').trim(),
+            check('lastname').optional().isString().withMessage('Last Name must be sting').trim(),
+            check('password').optional().isString().withMessage('Password must be sting').trim(),
+            check('phone_number').optional().isString().withMessage('Phone number must be string').trim(),
+            check('iso_code').optional().isString().withMessage("ISO Code must be string").trim(),
+            check('country_code').optional().isString().withMessage("Country Code must be string").trim(),
+            check("email").optional().isString().withMessage('Email must be string').isEmail().withMessage("Invalid email format"),
+            check("address").optional().isString().withMessage("address must be string.").trim(),
+            check("insurance_number").optional().isString().withMessage('Insurance Number must be sting').trim(),
+            check("employment_date").optional().isISO8601().withMessage("Employment Date must be a valid date (YYYY-MM-DD)."),
+        ],
+        checkForUnexpectedFields(["worker_id", "profile_image", "job_category_id", "job_title_id", "firstname", "lastname", "password", "phone_number", "iso_code", "country_code", "email", "address", "insurance_number", "employment_date"]),
+        validation
+    ];
+}
+
+exports.getWorkerMonthlyHours = () => {
+    return [
+        [
+            check("worker_id").notEmpty().withMessage("Worker ID is required."),
+            check('year').notEmpty().withMessage('Year is required').isInt().withMessage('Year must be a positive integer'),
+        ],
+        checkForUnexpectedFields(["worker_id", "year"]),
+        validation
+    ];
+}
+
+exports.getWorkerTimeTable = () => {
+    return [
+        [
+            check("worker_id").notEmpty().withMessage("Worker ID is required."),
+            check('page').notEmpty().withMessage('Page must required.').isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
+            check('year').notEmpty().withMessage('Year is required').isInt().withMessage('Year must be a positive integer'),
+            check('month').optional().isInt({ min: 1, max: 12 }).withMessage('Month must be a positive integer between 1 and 12'),
+        ],
+        checkForUnexpectedFields(["worker_id", "year", "month", "page", "limit"]),
+        validation
+    ];
+}
+
+
+
+exports.getTimetableDetail = () => {
+    return [
+        [
+            check("clock_entry_id").notEmpty().withMessage("Clock entry_id ID is required."),
+        ],
+        checkForUnexpectedFields(["clock_entry_id"]),
+        validation
+    ];
+}
+
+exports.editTimetableStatus = () => {
+    return [
+        [
+            check("clock_entry_id").notEmpty().withMessage("Clock entry_id ID is required."),
+            check("status").isIn(['approved', 'rejected']).withMessage('Invalid value for status. Allowed values are: "approved", "rejected".'),
+        ],
+        checkForUnexpectedFields(["clock_entry_id", "status"]),
         validation
     ];
 }

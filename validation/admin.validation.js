@@ -74,17 +74,17 @@ exports.companyList = () => {
                 .withMessage('Page must required.')
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
-                check("search").optional().isString().withMessage("search must be string").trim(),
+            check("search").optional().isString().withMessage("search must be string").trim(),
             check("status").optional().isString().withMessage("status must be string").trim()
                 .isIn(["active", 'inactive', 'blocked'])
                 .withMessage("Invalid value for user_role. Allowed values are 'active' or 'inactive' or 'blocked "),
-                check("branch_name").optional().isString().withMessage("Branch name must be string").trim()
-                // check("branch_name")
-                // .optional()
-                // .customSanitizer(value => decodeURIComponent(value)) // Decode URL encoding
-                // .isString() 
-                // .withMessage("Branch name must be a string")
-                // .trim()
+            check("branch_name").optional().isString().withMessage("Branch name must be string").trim()
+            // check("branch_name")
+            // .optional()
+            // .customSanitizer(value => decodeURIComponent(value)) // Decode URL encoding
+            // .isString() 
+            // .withMessage("Branch name must be a string")
+            // .trim()
 
         ],
         checkForUnexpectedFields(["page", "limit", "search", "status", "branch_name"]),
@@ -226,22 +226,43 @@ exports.deleteHoliday = () => {
 exports.addAbsences = () => {
     return [
         [
+            check("absence_logo").custom((value, { req }) => {
+                if (!req.files || !req.files.absence_logo) {
+                    throw new Error('absence logo is required');
+                }
+                if (req.files.absence_logo.length > 1) {
+                    req.files.absence_logo.forEach(element => {
+                        fs.unlinkSync(element.path);
+                    });
+                    throw new Error('Maximum 1 images allowed');
+                }
+                return true;
+            }),
             check('absence_type').notEmpty().withMessage('Absences type name is required').isString().withMessage('Absences type must be a string'),
             check("status").not().isEmpty().withMessage("Status is required").trim().escape()
                 .isIn(["paid", "unpaid"]).withMessage("Invalid value for status. Allowed values are 'paid' or 'unpaid' "),
         ],
-        checkForUnexpectedFields(["absence_type", "status"]),
+        checkForUnexpectedFields(["absence_type", "status", "absence_logo"]),
         validation
     ];
 }
 exports.editAbsences = () => {
     return [
         [
-            check("absence_id").notEmpty().withMessage("Absence ID is required."),
-            check('absence_type').optional().isString().withMessage('Absences type must be a string'),
-            check("status").optional().isIn(["paid", "unpaid"]).withMessage("Invalid value for user_role. Allowed values are 'paid' or 'unpaid' "),
+            check("absence_logo").custom((value, { req }) => {
+            if (req.files && req.files.absence_logo && req.files.absence_logo.length > 1) {
+                req.files.absence_logo.forEach(element => {
+                    fs.unlinkSync(element.path);
+                });
+                throw new Error('Maximum 1 image allowed');
+            }
+            return true;
+        }).optional(),
+        check("absence_id").notEmpty().withMessage("Absence ID is required."),
+        check('absence_type').optional().isString().withMessage('Absences type must be a string'),
+        check("status").optional().isIn(["paid", "unpaid"]).withMessage("Invalid value for user_role. Allowed values are 'paid' or 'unpaid' "),
         ],
-        checkForUnexpectedFields(["absence_id", "absence_type", "status"]),
+        checkForUnexpectedFields(["absence_id", "absence_type", "status", "absence_logo"]),
         validation
     ];
 }

@@ -18,7 +18,7 @@ exports.signUp = async (req, res) => {
 
   let valid = await validateMobile(iso_code, phone_number)
   if (valid.status == 0) {
-    return res.status(400).json({ message: valid.message });
+    return res.status(400).json({ status: 0, message: valid.message });
   }
 
   try {
@@ -44,7 +44,7 @@ exports.signUp = async (req, res) => {
 }
 
 exports.addCompany = async (req, res) => {
-  const { user_id, industry_id, company_name, email, country_code, iso_code, phone_number, address } = req.body;
+  const { user_id, industry_id, company_name, country_code, iso_code, phone_number, address } = req.body;
   const { company_logo } = req.files;
 
   try {
@@ -53,11 +53,9 @@ exports.addCompany = async (req, res) => {
       return res.status(400).json({ message: valid.message });
     }
 
-    const existingEmail = await db.Company.findOne({ where: { email: email } });
-    if (existingEmail) return res.status(400).json({ status: 0, message: 'Email already exists' });
-
     const owner = await db.User.findByPk(user_id);
     if (!owner) return res.status(400).json({ status: 0, message: 'User not found' });
+    if (owner.is_company_add) return res.status(400).json({ status: 0, message: 'Company already exists' });
 
     if (!owner.is_account_created) return res.status(400).json({ status: 0, message: 'Please create account first' });
     if (owner.is_company_add) return res.status(400).json({ status: 0, message: 'Company already exists' });
@@ -74,7 +72,6 @@ exports.addCompany = async (req, res) => {
       industry_id: branch.id,
       company_logo: `company_logo/${company_logo[0].filename}`,
       company_name,
-      email,
       country_code,
       iso_code,
       phone_number,
@@ -98,6 +95,7 @@ exports.createPassword = async (req, res) => {
       return res.status(400).json({ status: 0, message: 'User not found' });
     }
 
+    if (user.is_password_add) return res.status(400).json({ status: 0, message: 'Password already created' });
     if (email === user.email) {
       return res.status(400).json({ status: 0, message: 'Email alrady exists' });
     }
@@ -112,6 +110,13 @@ exports.createPassword = async (req, res) => {
       otp: otp,
       otp_created_at: otpCreatedAt
     });
+
+    if (user.user_role === "company") {
+      await db.Company.update(
+        { is_company_active: true },
+        { where: { owner_id: user.id } }
+      );
+    }
 
     await sendOTPVerificationEmail(email, otp);
 
@@ -223,12 +228,12 @@ exports.login = async (req, res) => {
           otp_created_at: otpCreatedAt
         });
         await sendOTPVerificationEmail(email, otp);
-        return res.status(400).json({ status: 5, message: "Email is not verified. Please verify your email.", otp });
+        return res.status(400).json({ status: 2, message: "Email is not verified. Please verify your email.", otp });
       }
 
-      if (!user.is_account_created) return res.status(400).json({ status: 2, message: "Please add account detail first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
-      else if (!user.is_company_add) return res.status(400).json({ status: 3, message: "Please add company detail first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
-      else if (!user.is_password_add || user.password == null) return res.status(400).json({ status: 4, message: "Please create a password first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
+      if (!user.is_account_created) return res.status(400).json({ status: 3, message: "Please add account detail first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
+      else if (!user.is_company_add) return res.status(400).json({ status: 4, message: "Please add company detail first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
+      else if (!user.is_password_add || user.password == null) return res.status(400).json({ status: 5, message: "Please create a password first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
     }
 
     return res.status(200).json({

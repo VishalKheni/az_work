@@ -2,8 +2,13 @@ const express = require('express');
 const admincontroller = require('../controllers/admin');
 const adminvalidation = require('../validation/admin.validation');
 const { verifyToken, checkUserRole } = require('../middleware/verifyToken');
+const { upload } = require('../helpers/storage');
 
 const router = express.Router();
+
+const uploadFile = upload.fields([
+    { name: 'absence_logo' },
+]);
 
 
 router.get('/dashboard', verifyToken, checkUserRole(['admin']), admincontroller.dashboard);
@@ -28,8 +33,8 @@ router.put('/edit_holiday', verifyToken, checkUserRole(['admin']), adminvalidati
 router.delete('/delete_holiday', verifyToken, checkUserRole(['admin']), adminvalidation.deleteHoliday(), admincontroller.deleteHoliday);
 
 // Absence
-router.post('/add_absence', verifyToken, checkUserRole(['admin']), adminvalidation.addAbsences(), admincontroller.addAbsences);
-router.put('/edit_absence', verifyToken, checkUserRole(['admin']), adminvalidation.editAbsences(), admincontroller.editAbsences);
+router.post('/add_absence', verifyToken, uploadFile, checkUserRole(['admin']), adminvalidation.addAbsences(), admincontroller.addAbsences);
+router.put('/edit_absence', verifyToken, uploadFile, checkUserRole(['admin']), adminvalidation.editAbsences(), admincontroller.editAbsences);
 router.delete('/delete_absence', verifyToken, checkUserRole(['admin']), adminvalidation.deleteAbsences(), admincontroller.deleteAbsences);
 router.get('/get_absence_list', verifyToken, checkUserRole(['admin']), adminvalidation.getAbsencesList(), admincontroller.getAbsencesList);
 

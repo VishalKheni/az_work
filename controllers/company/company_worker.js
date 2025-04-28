@@ -9,6 +9,8 @@ const { Op, where, Sequelize, col } = require("sequelize");
 const path = require('path');
 const fs = require('fs');
 
+
+
 exports.addWorker = async (req, res) => {
     try {
         const { job_category_id, job_title_id, iso_code, phone_number, password } = req.body;
@@ -75,7 +77,6 @@ exports.addWorker = async (req, res) => {
     }
 }
 
-
 exports.getWorkerList = async (req, res) => {
     try {
         let { page, limit, search, status } = req.query;
@@ -101,14 +102,9 @@ exports.getWorkerList = async (req, res) => {
 
         if (status === 'active') {
             whereCondition.is_worker_active = true;
-            // whereCondition.is_company_blocked = false;
         } else if (status === 'inactive') {
             whereCondition.is_worker_active = false;
-            // whereCondition.is_worker_blocked = false;
-        } 
-        // else if (status === 'blocked') {
-        //     whereCondition.is_worker_blocked = true;
-        // }
+        }
 
 
 
@@ -119,10 +115,12 @@ exports.getWorkerList = async (req, res) => {
                 {
                     model: db.Job_category,
                     as: 'job_category',
+                    attributes: ['id', 'category_name'],
                 },
                 {
                     model: db.Job_title,
-                    as: 'job_title'
+                    as: 'job_title',
+                    attributes: ['id', 'job_title'],
                 },
                 {
                     model: db.Document,
@@ -160,7 +158,7 @@ exports.getWorkerDetail = async (req, res) => {
         const { worker_id } = req.query;
 
         const worker = await db.User.findByPk(worker_id, {
-            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add', 'password'] },
+            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add'] },
             include: [
                 {
                     model: db.Job_category,
@@ -241,12 +239,12 @@ exports.workerJobCategoryList = async (req, res) => {
 
 exports.workerJobTitleList = async (req, res) => {
     try {
-        const { category_id } = req.query;
+        const { category_id } = req.body;
 
         const titles = await db.Job_title.findAll({
             where: { job_category_id: category_id }
         });
-        
+
         return res.status(200).json({
             status: 1,
             message: "Job Title List fetched successfully",
@@ -258,13 +256,12 @@ exports.workerJobTitleList = async (req, res) => {
     }
 }
 
-
 exports.addWorkerDocuments = async (req, res) => {
     try {
-        const { user_id, title } = req.body;
+        const { worker_id, title } = req.body;
         const { documents } = req.files;
 
-        const worker = await db.User.findByPk(user_id);
+        const worker = await db.User.findByPk(worker_id);
         if (!worker) return res.status(400).json({ status: 0, message: 'Worker Not Found' });
 
         let documentsData = [];
@@ -280,7 +277,7 @@ exports.addWorkerDocuments = async (req, res) => {
             }
             await db.Document.bulkCreate(documentsData);
         }
-        
+
         return res.status(201).json({
             status: 1,
             message: "Worker document added successfully",
@@ -311,13 +308,12 @@ exports.deleteDocument = async (req, res) => {
     }
 };
 
-
 exports.workerActiveDeactive = async (req, res) => {
     try {
-        const { user_id } = req.body;
+        const { worker_id } = req.body;
 
-        const worker = await db.User.findByPk(user_id);
-        if (!worker) return res.status(404).json({ status: 0, message: 'Company not found' });
+        const worker = await db.User.findByPk(worker_id);
+        if (!worker) return res.status(404).json({ status: 0, message: 'Worker not found' });
 
         const active = worker.is_worker_active === true ? false : true;
 
@@ -334,3 +330,237 @@ exports.workerActiveDeactive = async (req, res) => {
     }
 }
 
+exports.editWorkerProfile = async (req, res) => {
+    try {
+        const { worker_id, job_category_id, job_title_id, firstname, lastname, phone_number, country_code, iso_code, address, insurance_number, employment_date, password } = req.body;
+
+        const worker = await db.User.findByPk(worker_id, {
+            attributes: ['id', 'firstname', 'lastname', 'profile_image', 'phone_number', 'country_code', 'iso_code', 'address', 'job_category_id', 'job_title_id', 'insurance_number', 'employment_date', 'password'],
+        });
+
+        if (!worker) return res.status(404).json({ status: 0, message: "Worker not found" });
+
+        if (req.files && req.files.profile_image) {
+            const { profile_image } = req.files;
+            if (worker.profile_image) {
+                fs.unlinkSync(`public/${worker.profile_image}`);
+            }
+            await worker.update({ profile_image: `profile_images/${profile_image[0].filename}` });
+        }
+        if (password) {
+            var hashedPassword = await bcrypt.hash(password, 10);
+        }
+        const updatedData = {
+            firstname: firstname || worker.firstname,
+            lastname: lastname || worker.lastname,
+            phone_number: phone_number || worker.phone_number,
+            password: password ? hashedPassword : worker.password,
+            country_code: country_code || worker.country_code,
+            iso_code: iso_code || worker.iso_code,
+            address: address || worker.address,
+            job_category_id: parseInt(job_category_id) || worker.job_category_id,
+            job_title_id: parseInt(job_title_id) || worker.job_title_id,
+            insurance_number: insurance_number || worker.insurance_number,
+            employment_date: employment_date || worker.employment_date,
+        }
+
+        await worker.update(updatedData);
+        return res.status(200).json({
+            status: 1,
+            message: "worker profile update Successfully",
+            data: worker
+        });
+
+    } catch (error) {
+        console.error('Error while add worker detail:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+}
+
+exports.getWorkerMonthlyHours = async (req, res) => {
+    try {
+        const { worker_id, year } = req.query;
+
+        // Get worker details
+        const worker = await db.User.findOne({
+            where: { id: worker_id },
+            include: [{
+                model: db.Company,
+                as: 'company',
+                include: [{
+                    model: db.Branch,
+                    as: 'industry'
+                }]
+            }]
+        });
+
+        if (!worker) {
+            return res.status(404).json({ message: "Worker not found." });
+        }
+
+        const branchMonthlyHours = parseFloat(worker.company?.industry?.monthly_hours || 0);
+
+        const results = [];
+        for (let month = 0; month < 12; month++) {
+            const startOfMonth = moment.utc({ year, month, day: 1 }).startOf('month').toDate();
+            const endOfMonth = moment.utc({ year, month, day: 1 }).endOf('month').toDate();
+
+            const workedHoursData = await db.Clock_entry.findAll({
+                where: {
+                    worker_id,
+                    date: { [Op.between]: [startOfMonth, endOfMonth] },
+                },
+                attributes: [
+                    [
+                        db.Sequelize.literal(`
+                            COALESCE(SUM(
+                                CASE
+                                    WHEN duration IS NOT NULL AND duration != '' THEN TIME_TO_SEC(duration)
+                                    ELSE 0
+                                END
+                            ), 0)
+                        `),
+                        'total_hours'
+                    ]
+                ],
+                raw: true,
+            });
+            const totalWorkingHoursInSeconds = parseFloat(workedHoursData[0]?.total_hours || 0);
+            const totalWorkingHours = (totalWorkingHoursInSeconds / 3600).toFixed(2);
+            const overtime = totalWorkingHours > branchMonthlyHours ? Math.round(totalWorkingHours - branchMonthlyHours) : 0;
+            results.push({
+                month: moment().month(month).format("MMMM"),
+                monthly_hour: parseInt(branchMonthlyHours),
+                total_working_hours: parseInt(totalWorkingHours),
+                over_time: overtime,
+            });
+        }
+
+        return res.status(200).json({
+            status: 1,
+            message: "Working Hours fetched successfully",
+            working_hours: results
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 0, message: "Internal server error" });
+    }
+};
+
+exports.getWorkerTimeTable = async (req, res) => {
+    try {
+        let { worker_id, page, limit, month, year } = req.query;
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 10;
+        const offset = (page - 1) * limit;
+
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+
+        if (!company) {
+            return res.status(400).json({ status: 0, message: 'Company Not Found' });
+        }
+
+        const whereCondition = {
+            worker_id,
+            [db.Sequelize.Op.and]: [
+                db.sequelize.where(db.sequelize.fn('MONTH', db.sequelize.col('clock_in_time')), month),
+                db.sequelize.where(db.sequelize.fn('YEAR', db.sequelize.col('clock_in_time')), year)
+            ]
+        };
+
+        // Step 2: Get clock entries from ClockEntry directly
+        const { count, rows: clockEntries } = await db.Clock_entry.findAndCountAll({
+            where: {
+                ...whereCondition
+            },
+            limit,
+            offset,
+            order: [['date', 'DESC']]
+        });
+
+        // const totalDurationResult = await db.Clock_entry.findOne({
+        //     where: { ...whereCondition },
+        //     attributes: [
+        //         [
+        //             db.sequelize.literal(`SEC_TO_TIME(SUM(TIME_TO_SEC(duration)))`),
+        //             'total_duration'
+        //         ]
+        //     ],
+        //     raw: true
+        // });
+
+
+        return res.status(200).json({
+            status: 1,
+            message: "Time table fetched successfully",
+            pagination: {
+                totalClockEntries: count,
+                totalPages: Math.ceil(count / limit),
+                currentPage: page,
+                limit: limit,
+            },
+            // all_pages_total: totalDurationResult.total_duration,
+            data: clockEntries
+        });
+
+    } catch (error) {
+        console.error('Error while fetching worker time table:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+
+exports.getTimetableDetail = async (req, res) => {
+    try {
+        let { clock_entry_id } = req.query;
+
+        const clockEntries = await db.Clock_entry.findByPk(clock_entry_id, {
+            include: [
+                {
+                    model: db.User,
+                    as: 'worker',
+                    attributes: ['id', 'firstname', 'lastname', 'profile_image'],
+                },
+            ]
+        })
+
+        if (!clockEntries) return res.status(404).json({ status: 0, message: "Clock Entries not found" })
+        return res.status(200).json({
+            status: 1,
+            message: "Clock Entry detail fetched successfully",
+            data: clockEntries
+        });
+
+    } catch (error) {
+        console.error('Error while fetching worker time table:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+
+exports.editTimetableStatus = async (req, res) => {
+    try {
+        let { clock_entry_id, status } = req.body;
+
+        const clockEntries = await db.Clock_entry.findByPk(clock_entry_id)
+        if (!clockEntries) return res.status(404).json({ status: 0, message: "Clock Entries not found" })
+
+        if (status === 'approved') {
+            clockEntries.status = 'approved';
+            await clockEntries.save();
+        }
+        else if (status === 'rejected') {
+            clockEntries.status = 'rejected';
+            await clockEntries.save();
+        }
+
+        return res.status(200).json({
+            status: 1,
+            message: `Clock Entry ${status} successfully`,
+            data: clockEntries
+        });
+
+    } catch (error) {
+        console.error('Error while fetching worker time table:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};

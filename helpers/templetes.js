@@ -46,7 +46,7 @@ const signupEmail = (otp) => `<!DOCTYPE html>
                       <div
                         style="
                           padding: 20px;
-                          background-color: #F9FAFD;
+                          background-color: #E6F0FA;
                           border-radius: 10px;
                           box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
                           border: 10px;
@@ -134,7 +134,7 @@ const sendWorkerEmail = ({ email, username, company_name, password }) => `
     <table style="width: 100%; max-width: 600px; margin: auto; border-collapse: collapse; font-family: Arial, sans-serif;">
         <tr>
             <td style="background-color: #0D2D5B; padding: 20px; text-align: center;">
-                <img src="" alt="App Logo" style="width: 80px; height: auto"/>
+                <img src="https://app.arbeitszeit.swiss:8800/app_logo.png" alt="App Logo" style="width: 80px; height: auto"/>
             </td>
         </tr>
         <tr>
@@ -155,3 +155,5 @@ const sendWorkerEmail = ({ email, username, company_name, password }) => `
 
 
 module.exports = { signupEmail, sendWorkerEmail }
+
+

@@ -1,15 +1,18 @@
 require('dotenv').config()
 const db = require("../../config/db");
+let fs = require('fs');
 
 
 exports.addAbsences = async (req, res) => {
     try {
         const { absence_type, status } = req.body;
+        const { absence_logo } = req.files;
         const user_id = req.user.id;
 
         const absence = await db.Absences.create({
             user_id,
             absence_type,
+            absence_logo: `absence_logo/${absence_logo[0].filename}` ,
             status,
             created_by_admin: true
         });
@@ -25,8 +28,15 @@ exports.addAbsences = async (req, res) => {
 exports.editAbsences = async (req, res) => {
     try {
         const { absence_id, absence_type, status } = req.body;
+        const { absence_logo } = req.files;
         const absence = await db.Absences.findByPk(absence_id)
         if (!absence) return res.status(404).json({ status: 0, message: 'Absence Not Found' });
+        if (req.files && absence_logo) {
+            if (absence.absence_logo) { fs.unlinkSync(`public/${absence.absence_logo}`) }
+            absence.absence_logo = `absence_logo/${absence_logo[0].filename}`;
+            await absence.save();
+          }
+      
         await absence.update({ absence_type, status });
         return res.status(201).json({ status: 1, message: 'Absence update successfully', data: absence });
     } catch (error) {
@@ -40,6 +50,7 @@ exports.deleteAbsences = async (req, res) => {
         const { absence_id } = req.query;
         const absence = await db.Absences.findByPk(absence_id);
         if (!absence) return res.status(404).json({ status: 0, message: 'Absence Not Found' });
+        fs.unlinkSync(`public/${absence.absence_logo}`)
         await absence.destroy();
         return res.status(201).json({ status: 1, message: 'Absence deleted successfully' });
     } catch (error) {

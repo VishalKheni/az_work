@@ -17,6 +17,7 @@ router.get('/branch_list', companyController.branchList);
 // Company
 router.get('/detail', verifyToken, checkUserRole(['company']), companyController.companyDetail);
 router.put('/edit_company', uploadFile, checkUserRole(['company']), companyvalidation.editCompany(), companyController.editCompany);
+router.get('/get_working_hour', verifyToken, checkUserRole(['company']),  companyController.getCompanyMonthlyHours);
 
 
 // worker
@@ -29,12 +30,17 @@ router.delete('/delete_worker', verifyToken, checkUserRole(['company']), company
 router.post('/add_worker_document', verifyToken, uploadFile, checkUserRole(['company']), companyvalidation.addWorkerDocuments(), companyController.addWorkerDocuments);
 router.delete('/delete_document', verifyToken, checkUserRole(['company']), companyvalidation.deleteDocument(), companyController.deleteDocument);
 router.patch('/worker_active_deactive', verifyToken, checkUserRole(['company']), companyvalidation.workerActiveDeactive(), companyController.workerActiveDeactive);
+router.patch('/edit_worker', verifyToken, uploadFile, checkUserRole(['company']), companyvalidation.editWorkerProfile(), companyController.editWorkerProfile);
+router.get('/working_hour', verifyToken, checkUserRole(['company']), companyvalidation.getWorkerMonthlyHours(), companyController.getWorkerMonthlyHours);
+router.get('/clock_entry_list', verifyToken, checkUserRole(['company']), companyvalidation.getWorkerTimeTable(), companyController.getWorkerTimeTable);
+router.get('/clock_entry_detail', verifyToken, checkUserRole(['company']), companyvalidation.getTimetableDetail(), companyController.getTimetableDetail);
+router.patch('/edit_clock_status', verifyToken, checkUserRole(['company']), companyvalidation.editTimetableStatus(), companyController.editTimetableStatus);
 
 
 // Job category
 router.post('/add_job_category', verifyToken, checkUserRole(['company']), companyvalidation.addJobCategory(), companyController.addJobCategory);
 router.put('/edit_job_category', verifyToken, checkUserRole(['company']), companyvalidation.editJobCategory(), companyController.editJobCategory);
-router.delete('/delete_job_category', verifyToken, checkUserRole(['company']), companyvalidation.JobCategoryDetail(), companyController.deleteJobCategory);
+router.delete('/delete_job_category', verifyToken, checkUserRole(['company']), companyvalidation.deleteJobCategory(), companyController.deleteJobCategory);
 router.get('/job_category_list', verifyToken, checkUserRole(['company']), companyvalidation.getJobCategoryList(), companyController.getJobCategoryList);
 
 

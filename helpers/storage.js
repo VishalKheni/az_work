@@ -8,6 +8,7 @@ const upload = multer({
       if (file.fieldname === 'profile_image') folder = 'profile_images';
       else if (file.fieldname === 'documents') folder = 'documents';
       else if (file.fieldname === 'company_logo') folder = 'company_logo';
+      else if (file.fieldname === 'absence_logo') folder = 'absence_logo';
       else return cb(new Error('Invalid file fieldname'), false);
       const uploadPath = `./public/${folder}`;
       if (!fs.existsSync(uploadPath)) {
@@ -21,4 +22,4 @@ const upload = multer({
   })
 });
 
-module.exports = { upload };
+module.exports = { upload }; 

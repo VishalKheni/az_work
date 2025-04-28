@@ -101,13 +101,12 @@ exports.addCompany = () => {
             check("user_id").notEmpty().withMessage("User ID is required."),
             check("industry_id").notEmpty().withMessage("Industry ID is required."),
             check('company_name').not().isEmpty().withMessage("Company Name is required").trim().escape(),
-            check("email").not().isEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
             check('phone_number').not().isEmpty().withMessage("phone_number is required"),
             check('iso_code').not().isEmpty().withMessage("ISO Code is required").trim().escape(),
             check('country_code').not().isEmpty().withMessage("Country Code is required").trim().escape(),
             check("address").notEmpty().withMessage("address is required."),
         ],
-        checkForUnexpectedFields(["user_id", "industry_id", "company_logo", "company_name", "email", "phone_number", "iso_code", "country_code", "address"]),
+        checkForUnexpectedFields(["user_id", "industry_id", "company_logo", "company_name", "phone_number", "iso_code", "country_code", "address"]),
         validation
     ];
 }
