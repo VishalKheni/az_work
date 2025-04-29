@@ -1,14 +1,16 @@
 module.exports = (sequelize, DataTypes, Model) => {
-    const Absence_request = sequelize.define('absence_request_model', {
+    const absence_request = sequelize.define('absence_request_model', {
         worker_id: {
             type: DataTypes.INTEGER,
             allowNull: true,
             references: { model: 'tbl_users', key: 'id' },
             onDelete: 'CASCADE'
         },
-        absences_type: {
-            type: DataTypes.STRING,
-            allowNull: false
+        absence_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: { model: 'tbl_absences', key: 'id' },
+            onDelete: 'CASCADE'
         },
         start_date: {
             type: DataTypes.DATEONLY,
@@ -22,15 +24,14 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
-        status: {
-            type: DataTypes.ENUM('paid', 'unpaid'),
-        },
         request_status: {
-            type: DataTypes.ENUM('accepted', 'rejected'),
+            type: DataTypes.ENUM('pending', 'accepted', 'rejected'),
+            defaultValue: 'pending',
+            allowNull: true,
         },
     }, {
         tableName: "tbl_absences_request",
         timestamps: true,
     });
-    return Absence_request;
+    return absence_request;
 }

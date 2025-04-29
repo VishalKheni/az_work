@@ -101,8 +101,6 @@ exports.editCompany = async (req, res) => {
     }
 }
 
-
-
 exports.getCompanyMonthlyHours = async (req, res) => {
     try {
         const { year } = req.query;
@@ -121,43 +119,37 @@ exports.getCompanyMonthlyHours = async (req, res) => {
                 }
             ]
         });
-console.log('company', company)
         if (!company) {
             return res.status(404).json({ message: "Company not found." });
         }
 
         const branchMonthlyHours = parseFloat(company?.industry?.monthly_hours || 0);
         const workerIds = company.users.map(user => user.id); // extract all worker ids
-        console.log('workerIds', workerIds)
         const results = [];
 
         for (let month = 0; month < 12; month++) {
             const startOfMonth = moment.utc({ year, month, day: 1 }).startOf('month').toDate();
             const endOfMonth = moment.utc({ year, month, day: 1 }).endOf('month').toDate();
 
-            var workedHoursData = await db.Clock_entry.findAll({
+            const workedEntries = await db.Clock_entry.findAll({
                 where: {
                     worker_id: { [Op.in]: workerIds },
                     date: { [Op.between]: [startOfMonth, endOfMonth] },
                 },
-                // attributes: [
-                //     [
-                //         db.Sequelize.literal(`
-                //             COALESCE(SUM(
-                //                 CASE
-                //                     WHEN duration IS NOT NULL AND duration != '' THEN TIME_TO_SEC(duration)
-                //                     ELSE 0
-                //                 END
-                //             ), 0)
-                //         `),
-                //         'total_hours'
-                //     ]
-                // ],
+                attributes: ['duration'],
                 raw: true,
             });
 
-            const totalWorkingHoursInSeconds = parseFloat(workedHoursData[0]?.total_hours || 0);
-            const totalWorkingHours = (totalWorkingHoursInSeconds / 3600).toFixed(2);
+            // Manually parse and sum all durations
+            let totalSeconds = 0;
+            for (const entry of workedEntries) {
+                if (entry.duration) {
+                    const [h = 0, m = 0, s = 0] = entry.duration.split(':').map(Number);
+                    totalSeconds += (h * 3600) + (m * 60) + s;
+                }
+            }
+
+            const totalWorkingHours = (totalSeconds / 3600).toFixed(2);
             const overtime = totalWorkingHours > branchMonthlyHours ? Math.round(totalWorkingHours - branchMonthlyHours) : 0;
 
             results.push({
@@ -171,12 +163,252 @@ console.log('company', company)
         return res.status(200).json({
             status: 1,
             message: "Company Working Hours fetched successfully",
-            workedHoursData,
             working_hours: results
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("error Company Working Hours", error);
         return res.status(500).json({ status: 0, message: "Internal server error" });
     }
 };
+
+exports.getWeeklyHours = async (req, res) => {
+    try {
+        const { month, year } = req.query;
+        const userMonth = parseInt(month); // 1 (January) to 12 (December)
+        const adjustedMonth = userMonth - 1; // moment.js uses 0-indexed months
+
+        const company = await db.Company.findOne({
+            where: { owner_id: req.user.id },
+            include: [
+                { model: db.Branch, as: 'industry' },
+                { model: db.User, as: 'users', attributes: ['id'] }
+            ]
+        });
+
+        if (!company) {
+            return res.status(404).json({ message: "Company not found." });
+        }
+
+        const weeklyLimit = parseFloat(company?.industry?.weekly_hours || 0);
+        const workerIds = company.users.map(user => user.id);
+
+        const results = [];
+
+        const startOfMonth = moment.utc({ year: parseInt(year), month: adjustedMonth }).startOf('month');
+        const endOfMonth = moment.utc({ year: parseInt(year), month: adjustedMonth }).endOf('month');
+
+        // Fetch all entries for the month once
+        const allWorkedEntries = await db.Clock_entry.findAll({
+            where: {
+                worker_id: { [Op.in]: workerIds },
+                date: {
+                    [Op.between]: [
+                        startOfMonth.toDate(),
+                        endOfMonth.clone().endOf('day').toDate()
+                    ]
+                },
+            },
+            attributes: ['duration', 'date'],
+            raw: true,
+        });
+
+        let currentWeekStart = startOfMonth.clone();
+        let weekNumber = 1;
+
+        while (currentWeekStart.isSameOrBefore(endOfMonth)) {
+            let currentWeekEnd = currentWeekStart.clone().add(6, 'days');
+
+            if (currentWeekEnd.isAfter(endOfMonth)) {
+                currentWeekEnd = endOfMonth.clone().endOf('day');
+
+                // If the remaining days are less than 4, merge with previous week
+                if (endOfMonth.diff(currentWeekStart, 'days') < 4 && results.length > 0) {
+                    const lastWeek = results[results.length - 1];
+                    const workedEntries = allWorkedEntries.filter(entry => {
+                        const entryDate = moment.utc(entry.date);
+                        return entryDate.isBetween(currentWeekStart, currentWeekEnd, null, '[]');
+                    });
+
+                    let totalSeconds = 0;
+                    for (const entry of workedEntries) {
+                        if (entry.duration) {
+                            const [h = 0, m = 0, s = 0] = entry.duration.split(':').map(Number);
+                            totalSeconds += (h * 3600) + (m * 60) + s;
+                        }
+                    }
+
+                    const totalWorkingHours = totalSeconds / 3600;
+                    const newTotal = lastWeek.total_working_hours + totalWorkingHours;
+                    lastWeek.total_working_hours = parseFloat(Math.round(newTotal.toFixed(2)));
+                    lastWeek.over_time = newTotal > weeklyLimit ? Math.round(newTotal - weeklyLimit) : 0;
+                    lastWeek.week_end = currentWeekEnd.format('YYYY-MM-DD');
+                    break;
+                }
+            } else {
+                currentWeekEnd = currentWeekEnd.clone().endOf('day');
+            }
+
+            const workedEntries = allWorkedEntries.filter(entry => {
+                const entryDate = moment.utc(entry.date);
+                return entryDate.isBetween(currentWeekStart, currentWeekEnd, null, '[]');
+            });
+
+            let totalSeconds = 0;
+            for (const entry of workedEntries) {
+                if (entry.duration) {
+                    const [h = 0, m = 0, s = 0] = entry.duration.split(':').map(Number);
+                    totalSeconds += (h * 3600) + (m * 60) + s;
+                }
+            }
+
+            const totalWorkingHours = totalSeconds / 3600;
+            const overtime = totalWorkingHours > weeklyLimit ? Math.round(totalWorkingHours - weeklyLimit) : 0;
+
+            results.push({
+                week: `Week ${weekNumber}`,
+                week_start: currentWeekStart.format('YYYY-MM-DD'),
+                week_end: currentWeekEnd.format('YYYY-MM-DD'),
+                weekly_hour: parseInt(weeklyLimit),
+                total_working_hours: parseFloat(Math.round(totalWorkingHours.toFixed(2))),
+                over_time: overtime
+            });
+
+            weekNumber++;
+            currentWeekStart = currentWeekEnd.clone().add(1, 'second').startOf('day');
+        }
+
+        return res.status(200).json({
+            status: 1,
+            message: "Weekly Working Hours fetched successfully",
+            year: parseInt(year),
+            month: moment().month(adjustedMonth).format('MMMM'),
+            weekly_hours: results
+        });
+
+    } catch (error) {
+        console.error("Error in Company Weekly Working Hours:", error);
+        return res.status(500).json({ status: 0, message: "Internal server error" });
+    }
+};
+
+exports.dashboardCount = async (req, res) => {
+    try {
+
+        const company = await db.Company.findOne({
+            where: { owner_id: req.user.id },
+        });
+
+        const activeWorkers = await db.User.count({
+            where: {
+                company_id: company.id,
+                is_worker_active: true,
+                user_role: 'worker'
+            }
+        });
+        const deactiveWorkers = await db.User.count({
+            where: {
+                company_id: company.id,
+                is_worker_active: false,
+                user_role: 'worker'
+            }
+        });
+
+        const totalProject = await db.Project.count({
+            where: { company_id: company.id, }
+        });
+
+        const runningProject = await db.Project.count({
+            where: { company_id: company.id, status: "active" }
+        });
+        const completedProject = await db.Project.count({
+            where: { company_id: company.id, status: "completed" }
+        });
+        const runningProjectList = await db.Project.findAll({
+            where: { company_id: company.id, status: "active" },
+            limit: 5,
+            order: [['createdAt', 'DESC']],
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: "Dashboard count fetched successfully",
+            data: {
+                activeWorkers,
+                deactiveWorkers,
+                totalProject,
+                runningProject,
+                completedProject,
+                runningProjectList
+            }
+        });
+
+    } catch (error) {
+        console.error("error Company Weekly Working Hours", error);
+        return res.status(500).json({ status: 0, message: "Internal server error" });
+    }
+};
+
+
+exports.dashboardRequestList = async (req, res) => {
+    try {
+        let { page, limit } = req.query;
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 10;
+        const offset = (page - 1) * limit;
+
+        const company = await db.Company.findOne({
+            where: { owner_id: req.user.id },
+        });
+
+        const workers = await db.User.findAll({
+            where: {
+                company_id: company.id,
+                user_role: 'worker'
+            }
+        });
+        const workerIds = workers.map(user => user.id); // extract all worker ids
+        console.log('workerIds', workerIds)
+
+        const { count, rows: requestList } = await db.absence_request.findAndCountAll({
+            where: {
+                worker_id: {
+                    [Op.in]: workerIds
+                }
+            },
+            include: [
+                {
+                    model: db.Absences,
+                    as: 'absence',
+                    attributes: ['id', 'absence_type', 'absence_logo', 'status'],
+                },
+                {
+                    model: db.User,
+                    as: 'workers',
+                    attributes: ['id', 'firstname', 'lastname'],
+                }
+            ],
+            distinct: true,
+            limit,
+            offset,
+            order: [['createdAt', 'DESC']]
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: "Job Category List fetched successfully",
+            pagination: {
+                totalCategories: count,
+                totalPages: Math.ceil(count / limit),
+                currentPage: page,
+                limit: limit,
+            },
+            data: requestList
+        });
+
+    } catch (error) {
+        console.error('Error while fetching job category list:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+

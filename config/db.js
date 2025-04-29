@@ -10,7 +10,7 @@ db.Token = require("../models/token")(sequelize, DataTypes, Model);
 db.Branch = require("../models/branch")(sequelize, DataTypes, Model);
 db.Holiday = require("../models/holidays")(sequelize, DataTypes, Model);
 db.Absences = require("../models/absences")(sequelize, DataTypes, Model);
-db.Absence_request = require("../models/absence_request")(sequelize, DataTypes, Model);
+db.absence_request = require("../models/absence_request")(sequelize, DataTypes, Model);
 db.Company = require("../models/company")(sequelize, DataTypes, Model);
 db.Document = require("../models/documents")(sequelize, DataTypes, Model);
 db.Job_category = require("../models/job_category")(sequelize, DataTypes, Model);
@@ -73,13 +73,13 @@ db.Absences.belongsTo(db.User, {
     as: 'user'
 });
 
-db.User.hasMany(db.Absence_request, {
+db.User.hasMany(db.absence_request, {
     foreignKey: 'worker_id',
     as: 'absence_requests'
 });
-db.Absence_request.belongsTo(db.User, {
+db.absence_request.belongsTo(db.User, {
     foreignKey: 'worker_id',
-    as: 'user'
+    as: 'workers'
 });
 
 db.User.hasOne(db.Company, {
@@ -224,5 +224,14 @@ db.Clock_entry.belongsTo(db.Project, {
     as: 'project'
 });
 
+
+db.Absences.hasMany(db.absence_request, {
+    foreignKey: 'absence_id',
+    as: 'requests'
+});
+db.absence_request.belongsTo(db.Absences, {
+    foreignKey: 'absence_id',
+    as: 'absence'
+});
 
 module.exports = db;

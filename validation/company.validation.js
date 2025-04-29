@@ -551,3 +551,75 @@ exports.editTimetableStatus = () => {
     ];
 }
 
+exports.getCompanyMonthlyHours = () => {
+    return [
+        [
+            check('year').notEmpty().withMessage('Year is required').isInt().withMessage('Year must be a positive integer'),
+        ],
+        checkForUnexpectedFields(["worker_id", "year"]),
+        validation
+    ];
+}
+
+exports.getWeeklyHours = () => {
+    return [
+        [
+            check('year').notEmpty().withMessage('Year is required').isInt().withMessage('Year must be a positive integer'),
+            check('month').optional().isInt({ min: 1, max: 12 }).withMessage('Month must be a positive integer between 1 and 12'),
+        ],
+        checkForUnexpectedFields(["year", "month"]),
+        validation
+    ];
+}
+
+
+exports.dashboardRequestList = () => {
+    return [
+        [
+            check('page')
+                .notEmpty()
+                .withMessage('Page must required.')
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer.'),
+        ],
+        checkForUnexpectedFields(["page", "limit"]),
+        validation
+    ];
+}
+
+
+exports.allAbsenceRequestList = () => {
+    return [
+        [
+            check('page').notEmpty().withMessage('Page must required.').isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
+            check('year').notEmpty().withMessage('Year is required').isInt().withMessage('Year must be a positive integer'),
+            check('month').notEmpty().withMessage('Month is required').isInt({ min: 1, max: 12 }).withMessage('Month must be a positive integer between 1 and 12'),
+            check("status").optional().isIn(['accepted', 'rejected']).withMessage('Invalid value for status. Allowed values are: "accepted", "rejected".'),
+            check("search").optional().isString().withMessage("search must be string").trim(),
+        ],
+        checkForUnexpectedFields(["page", "limit", "year", "month", "status", "search"]),
+        validation
+    ];
+}
+
+exports.absenceRequestDetail = () => {
+    return [
+        [
+            check("absence_request_id").notEmpty().withMessage("Absence request ID is required."),
+        ],
+        checkForUnexpectedFields(["absence_request_id"]),
+        validation
+    ];
+}
+
+exports.approveRejectAbsenceRequest = () => {
+    return [
+        [
+            check("absence_request_id").notEmpty().withMessage("Absence request ID is required."),
+            check("status").notEmpty().withMessage("Status is required.").isIn(['accepted', 'rejected']).withMessage('Invalid value for status. Allowed values are: "accepted", "rejected".'),
+        ],
+        checkForUnexpectedFields(["absence_request_id"]),
+        validation
+    ];
+}
+

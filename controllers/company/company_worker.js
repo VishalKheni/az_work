@@ -381,7 +381,7 @@ exports.getWorkerMonthlyHours = async (req, res) => {
     try {
         const { worker_id, year } = req.query;
 
-        // Get worker details
+        // Get worker details with company and branch info
         const worker = await db.User.findOne({
             where: { id: worker_id },
             include: [{
@@ -399,35 +399,36 @@ exports.getWorkerMonthlyHours = async (req, res) => {
         }
 
         const branchMonthlyHours = parseFloat(worker.company?.industry?.monthly_hours || 0);
-
         const results = [];
+
         for (let month = 0; month < 12; month++) {
             const startOfMonth = moment.utc({ year, month, day: 1 }).startOf('month').toDate();
             const endOfMonth = moment.utc({ year, month, day: 1 }).endOf('month').toDate();
 
-            const workedHoursData = await db.Clock_entry.findAll({
+            // Fetch all duration entries for the month
+            const workedEntries = await db.Clock_entry.findAll({
                 where: {
                     worker_id,
                     date: { [Op.between]: [startOfMonth, endOfMonth] },
                 },
-                attributes: [
-                    [
-                        db.Sequelize.literal(`
-                            COALESCE(SUM(
-                                CASE
-                                    WHEN duration IS NOT NULL AND duration != '' THEN TIME_TO_SEC(duration)
-                                    ELSE 0
-                                END
-                            ), 0)
-                        `),
-                        'total_hours'
-                    ]
-                ],
+                attributes: ['duration'],
                 raw: true,
             });
-            const totalWorkingHoursInSeconds = parseFloat(workedHoursData[0]?.total_hours || 0);
-            const totalWorkingHours = (totalWorkingHoursInSeconds / 3600).toFixed(2);
-            const overtime = totalWorkingHours > branchMonthlyHours ? Math.round(totalWorkingHours - branchMonthlyHours) : 0;
+
+            // Manually parse and sum all durations
+            let totalSeconds = 0;
+            for (const entry of workedEntries) {
+                if (entry.duration) {
+                    const [h = 0, m = 0, s = 0] = entry.duration.split(':').map(Number);
+                    totalSeconds += (h * 3600) + (m * 60) + s;
+                }
+            }
+
+            const totalWorkingHours = (totalSeconds / 3600).toFixed(2);
+            const overtime = totalWorkingHours > branchMonthlyHours
+                ? Math.round(totalWorkingHours - branchMonthlyHours)
+                : 0;
+
             results.push({
                 month: moment().month(month).format("MMMM"),
                 monthly_hour: parseInt(branchMonthlyHours),
@@ -443,7 +444,7 @@ exports.getWorkerMonthlyHours = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("error while fetching worker monthly hours", error);
         return res.status(500).json({ status: 0, message: "Internal server error" });
     }
 };

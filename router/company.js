@@ -17,7 +17,10 @@ router.get('/branch_list', companyController.branchList);
 // Company
 router.get('/detail', verifyToken, checkUserRole(['company']), companyController.companyDetail);
 router.put('/edit_company', uploadFile, checkUserRole(['company']), companyvalidation.editCompany(), companyController.editCompany);
-router.get('/get_working_hour', verifyToken, checkUserRole(['company']),  companyController.getCompanyMonthlyHours);
+router.get('/get_working_hour', verifyToken, checkUserRole(['company']), companyvalidation.getCompanyMonthlyHours(), companyController.getCompanyMonthlyHours);
+router.get('/get_weakly_hour', verifyToken, checkUserRole(['company']), companyvalidation.getWeeklyHours(), companyController.getWeeklyHours);
+router.get('/dashboard_count', verifyToken, checkUserRole(['company']), companyController.dashboardCount);
+router.get('/dashboard_request_list', verifyToken, checkUserRole(['company']), companyvalidation.dashboardRequestList(), companyController.dashboardRequestList);
 
 
 // worker
@@ -69,5 +72,10 @@ router.get('/get_company_holiday_list', verifyToken, checkUserRole(['company']),
 router.put('/edit_company_holiday', verifyToken, checkUserRole(['company']), companyvalidation.editCompanyHoliday(), companyController.editCompanyHoliday);
 router.delete('/delete_company_holiday', verifyToken, checkUserRole(['company']), companyvalidation.deleteCompanyHoliday(), companyController.deleteCompanyHoliday);
 
+
+// Absences & Vacation
+router.get('/all_absence_request_list', verifyToken, checkUserRole(['company']), companyvalidation.allAbsenceRequestList(), companyController.allAbsenceRequestList);
+router.get('/absence_request_detail', verifyToken, checkUserRole(['company']), companyvalidation.absenceRequestDetail(), companyController.absenceRequestDetail);
+router.patch('/approve_reject_request', verifyToken, checkUserRole(['company']), companyvalidation.approveRejectAbsenceRequest(), companyController.approveRejectAbsenceRequest);
 
 module.exports = router;
