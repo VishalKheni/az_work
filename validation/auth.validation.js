@@ -123,6 +123,45 @@ exports.createPassword = () => {
     ];
 }
 
+exports.verifyOtpAndRegister = () => {
+    return [
+        [
+            check("company_logo").custom((value, { req }) => {
+                if (!req.files || !req.files.company_logo) {
+                    throw new Error('company logo is required');
+                }
+                if (req.files.company_logo.length > 1) {
+                    req.files.company_logo.forEach(element => {
+                        fs.unlinkSync(element.path);
+                    });
+                    throw new Error('Maximum 1 images allowed');
+                }
+                return true;
+            }),
+            check('firstname').not().isEmpty().withMessage("First Name is required")
+                .isString().withMessage('First Name must be sting').trim().escape(),
+            check('lastname').not().isEmpty().withMessage("Last Name is required")
+                .isString().withMessage('Last Name must be sting').trim().escape(),
+            check('phone_number').not().isEmpty().withMessage("phone_number is required"),
+            check('iso_code').not().isEmpty().withMessage("ISO Code is required").trim().escape(),
+            check('country_code').not().isEmpty().withMessage("Country Code is required").trim().escape(),
+            check("email").not().isEmpty().withMessage("Email is required").trim().escape(),
+            check("password").not().isEmpty().withMessage("Password is required").trim().escape(),
+            check("industry_id").notEmpty().withMessage("Industry ID is required."),
+            check('company_name').not().isEmpty().withMessage("Company Name is required").trim().escape(),
+            check('company_phone_number').not().isEmpty().withMessage("Company phone_number is required"),
+            check('company_iso_code').not().isEmpty().withMessage("Company ISO Code is required").trim().escape(),
+            check('company_country_code').not().isEmpty().withMessage("Company Country Code is required").trim().escape(),
+            check("address").notEmpty().withMessage("address is required."),
+            check("device_id").not().isEmpty().withMessage("Device ID is required").trim(),
+            check("device_type").not().isEmpty().withMessage("Device type is required").trim(),
+            check("device_token").not().isEmpty().withMessage("Device token is required").trim(),
+        ],
+        checkForUnexpectedFields(["company_logo", "firstname", "lastname", "phone_number", "iso_code", "country_code", "email", "password", "industry_id", "company_name", "company_phone_number", "company_iso_code", "company_country_code", "address", "device_id", "device_type", "device_token"]),
+        validation
+    ];
+}
+
 exports.verifyOtp = () => {
     return [
         [

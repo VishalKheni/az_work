@@ -24,6 +24,10 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: true
         },
+        is_holiday_checked: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
+        },
         created_by_admin: {
             type: DataTypes.BOOLEAN,
             defaultValue: false

@@ -6,6 +6,7 @@ db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
 db.User = require("../models/user")(sequelize, DataTypes, Model);
+db.Otp = require("../models/otp")(sequelize, DataTypes, Model);
 db.Token = require("../models/token")(sequelize, DataTypes, Model);
 db.Branch = require("../models/branch")(sequelize, DataTypes, Model);
 db.Holiday = require("../models/holidays")(sequelize, DataTypes, Model);

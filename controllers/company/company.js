@@ -412,3 +412,64 @@ exports.dashboardRequestList = async (req, res) => {
     }
 };
 
+
+exports.upcomingHolidayList = async (req, res) => {
+    try {
+        let { page, limit, month, year } = req.query;
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 10;
+        const offset = (page - 1) * limit;
+        const monthIndex = parseInt(month) - 1;
+
+
+        const company = await db.Company.findOne({
+            where: { owner_id: req.user.id },
+        });
+
+        if (!company) {
+            return res.status(404).json({ status: 0, message: "Company not found" });
+        }
+
+
+        const startOfMonth = moment.utc({ year: parseInt(year), month: monthIndex, day: 1 }).startOf('month').toDate();
+        const endOfMonth = moment.utc({ year: parseInt(year), month: monthIndex, day: 1 }).endOf('month').toDate();
+
+        const holidays = await db.Holiday.findAndCountAll({
+            where: {
+                is_holiday_checked: true,
+                [Op.and]: [
+                    {
+                        [Op.or]: [
+                            { company_id: null },
+                            { company_id: company.id },
+                            { user_id: req.user.id }
+                        ]
+                    },
+                ],
+                date: {
+                    [Op.between]: [startOfMonth, endOfMonth]
+                }
+            },
+            distinct: true,
+            limit,
+            offset,
+            order: [['id', 'DESC']],
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: "Upcoming Holidays fetched successfully",
+            pagination: {
+                totalItems: holidays.count,
+                totalPages: Math.ceil(holidays.count / limit),
+                currentPage: parseInt(page),
+                limit: parseInt(limit),
+            },
+            data: holidays.rows
+        });
+    } catch (error) {
+        console.error('Error while fetching holidays:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+

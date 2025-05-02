@@ -2,7 +2,7 @@ require('dotenv').config()
 const db = require("../../config/db");
 const bcrypt = require('bcrypt')
 const moment = require('moment');
-const { Op, where, Sequelize, col } = require("sequelize");
+const { Op, where, Sequelize, col, fn } = require("sequelize");
 const fs = require('fs');
 const path = require('path');
 
@@ -113,7 +113,7 @@ exports.deleteProject = async (req, res) => {
 
 exports.getProjectList = async (req, res) => {
     try {
-        let { page, limit, search } = req.query;
+        let { page, limit, search, status } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
@@ -129,8 +129,13 @@ exports.getProjectList = async (req, res) => {
         if (search) {
             whereCondition[Op.or] = [
                 { project_name: { [Op.like]: `%${search}%` } },
+                { '$client.client_name$': { [Op.like]: `%${search}%` } },
             ];
         }
+
+        if (status) {
+            whereCondition.status = { [Op.like]: `%${status}%` }
+        };
 
         const { count, rows: project } = await db.Project.findAndCountAll({
             where: { ...whereCondition },
@@ -169,7 +174,7 @@ exports.getProjectDetail = async (req, res) => {
     try {
         let { project_id } = req.query;
 
-        const project = await db.Project.findByPk(project_id, {
+        const projectDetail = await db.Project.findByPk(project_id, {
             include: [
                 {
                     model: db.Client,
@@ -178,13 +183,12 @@ exports.getProjectDetail = async (req, res) => {
                 },
             ],
         });
-        if (!project) return res.status(400).json({ status: 0, message: 'Project Not Found' });
-
+        if (!projectDetail) return res.status(400).json({ status: 0, message: 'Project Not Found' });
 
         return res.status(200).json({
             status: 1,
             message: "Project detail fetched Successfully",
-            data: project
+            data: projectDetail,
         });
 
     } catch (error) {
@@ -192,6 +196,37 @@ exports.getProjectDetail = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 }
+
+exports.addProjectDocuments = async (req, res) => {
+    try {
+        const { project_id, title } = req.body;
+        const { documents } = req.files;
+
+        const project = await db.Project.findByPk(project_id);
+        if (!project) return res.status(400).json({ status: 0, message: 'Project Not Found' });
+
+
+        let documentsData;
+        if (documents && documents.length > 0) {
+            documentsData = documents.map(doc => ({
+                project_id: project.id,
+                document_url: `documents/${doc.filename}`,
+                title: title,
+                date: moment().toDate()
+            }));
+            await db.Document.bulkCreate(documentsData);
+        }
+
+        return res.status(201).json({
+            status: 1,
+            message: "Project document added successfully",
+            documents: documentsData
+        });
+    } catch (error) {
+        console.error('Error while create project:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
 
 
 exports.projectDocumentList = async (req, res) => {
@@ -216,7 +251,7 @@ exports.projectDocumentList = async (req, res) => {
 
         const { count, rows: documents } = await db.Document.findAndCountAll({
             where: { ...whereCondition },
-            attributes: { exclude: ['worker_id'] },
+            attributes: { exclude: ['worker_id', 'type'] },
             limit,
             offset,
             order: [['createdAt', 'DESC']]
@@ -226,7 +261,7 @@ exports.projectDocumentList = async (req, res) => {
             status: 1,
             message: "Project document fetched Successfully",
             pagination: {
-                totalProject: count,
+                totalDocuments: count,
                 totalPages: Math.ceil(count / limit),
                 currentPage: page,
                 limit: limit,
@@ -241,35 +276,6 @@ exports.projectDocumentList = async (req, res) => {
 }
 
 
-exports.addProjectDocuments = async (req, res) => {
-    try {
-        const { project_id, title } = req.body;
-        const { documents } = req.files;
-
-        const project = await db.Project.findByPk(project_id);
-        if (!project) return res.status(400).json({ status: 0, message: 'Project Not Found' });
-
-        let documentsData;
-        if (documents && documents.length > 0) {
-            documentsData = documents.map(doc => ({
-                project_id: project.id,
-                document_url: `documents/${doc.filename}`,
-                title: title,
-                date: moment().toDate()
-            }));
-            await db.Document.bulkCreate(documentsData, { returning: true });
-        }
-
-        return res.status(201).json({
-            status: 1,
-            message: "Project document added successfully",
-            documents: documentsData
-        });
-    } catch (error) {
-        console.error('Error while create project:', error);
-        return res.status(500).json({ status: 0, message: 'Internal server error' });
-    }
-};
 
 exports.projectClientList = async (req, res) => {
     try {
@@ -288,7 +294,61 @@ exports.projectClientList = async (req, res) => {
         });
     } catch (error) {
         console.error('Error while fetching client list:', error);
-        return res.status(500).json({ status: 0, message: 'Internal server error' }); 
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 };
 
+exports.projectImagesList = async (req, res) => {
+    try {
+        let { project_id, page, limit, search } = req.query;
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 10;
+        const offset = (page - 1) * limit;
+
+        const project = await db.Project.findByPk(project_id);
+        if (!project) return res.status(400).json({ status: 0, message: 'Project Not Found' });
+
+        let whereCondition = {
+            project_id: project.id,
+            type: 'image'
+        };
+
+        if (search) {
+            whereCondition[Op.or] = [
+                { title: { [Op.like]: `%${search}%` } },
+                { '$user.firstname$': { [Op.like]: `%${search}%` } },
+                { '$user.lastname$': { [Op.like]: `%${search}%` } },
+            ];
+        }
+
+        const { count, rows: documents } = await db.Document.findAndCountAll({
+            where: { ...whereCondition },
+            include: [
+                {
+                    model: db.User,
+                    as: 'user',
+                    attributes: ['id', 'firstname', 'lastname']
+                }
+            ],
+            limit,
+            offset,
+            order: [['createdAt', 'DESC']]
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: "Project images fetched Successfully",
+            pagination: {
+                totalImages: count,
+                totalPages: Math.ceil(count / limit),
+                currentPage: page,
+                limit: limit,
+            },
+            data: documents
+        });
+
+    } catch (error) {
+        console.error('Error while get project document:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+}

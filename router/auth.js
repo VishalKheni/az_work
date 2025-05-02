@@ -11,6 +11,9 @@ const uploadFile = upload.fields([
     { name: 'company_logo' },
 ]);
 
+router.post('/sent_otp', authController.sendOtpEmail);
+router.post('/register_company', uploadFile, authvalidation.verifyOtpAndRegister(), authController.verifyOtpAndRegister);
+
 router.get('/refresh_token', authController.refreshToken);
 router.post('/login', authvalidation.login(), authController.login);
 router.post('/signup', authvalidation.signUp(), authController.signUp);

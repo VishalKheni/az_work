@@ -95,8 +95,11 @@ exports.getJobCategoryList = async (req, res) => {
         };
 
         if (search) {
-            whereCondition.category_name = { [Op.like]: `%${search}%` };
+            whereCondition[Op.or] = [
+                { category_name: { [Op.like]: `%${search}%` } },
+            ];
         }
+        
 
         const { count, rows: categories } = await db.Job_category.findAndCountAll({
             where: { ...whereCondition },
@@ -106,7 +109,7 @@ exports.getJobCategoryList = async (req, res) => {
                     as: 'job_titles',
                 }
             ],
-            distinct: true,
+            distinct: true, 
             limit,
             offset,
             order: [['createdAt', 'DESC']]

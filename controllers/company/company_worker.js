@@ -5,7 +5,7 @@ const moment = require('moment');
 const { validateMobile, } = require('../../helpers/twilio');
 const { sendEmailToWorker } = require("../../helpers/email");
 const { validateFiles } = require('../../helpers/fileValidation');
-const { Op, where, Sequelize, col } = require("sequelize");
+const { Op, where, Sequelize, col, fn } = require("sequelize");
 const path = require('path');
 const fs = require('fs');
 
@@ -20,6 +20,11 @@ exports.addWorker = async (req, res) => {
         if (!company) {
             return res.status(400).json({ status: 0, message: 'Company Not Found' });
         }
+        const existingWorker = await db.User.findOne({ where: { email: req.body.email, company_id: company.id, user_role: "worker" } });
+        if (existingWorker) {
+            return res.status(400).json({ status: 0, message: 'Worker with this email already exists' });
+        }
+
         const job_category = await db.Job_category.findByPk(job_category_id)
         if (!job_category) {
             return res.status(400).json({ status: 0, message: 'Job Category Not Found' });
@@ -58,10 +63,9 @@ exports.addWorker = async (req, res) => {
         }
 
         const emailData = {
-            username: `${worker.firstname} ${worker.lastname}`,
-            company_name: company.company_name,
             email: worker.email,
-            password: password
+            password: password,
+            company_name: company.company_name,
         }
         await sendEmailToWorker(emailData);
         return res.status(200).json({
@@ -565,3 +569,79 @@ exports.editTimetableStatus = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 };
+
+
+exports.getTimeTableList = async (req, res) => {
+    try {
+        let { page, limit, search, month, year } = req.query;
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 10;
+        const offset = (page - 1) * limit;
+        const startOfMonth = moment.utc({ year, month, day: 1 }).startOf('month').toDate();
+        const endOfMonth = moment.utc({ year, month, day: 1 }).endOf('month').toDate();
+
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+
+        if (!company) {
+            return res.status(400).json({ status: 0, message: 'Company Not Found' });
+        }
+
+        let whereCondition = {};
+
+        if (search) {
+            whereCondition[Op.or] = [
+                { firstname: { [Op.like]: `%${search}%` } },
+                { lastname: { [Op.like]: `%${search}%` } },
+                where(
+                    fn('CONCAT', col('firstname'), ' ', col('lastname')),
+                    {
+                        [Op.like]: `%${search}%`
+                    }
+                )
+        
+            ];
+        }
+
+        const { count, rows: worker } = await db.User.findAndCountAll({
+            where: { ...whereCondition, user_role: "worker", company_id: company.id },
+            attributes: ['id', 'firstname', 'lastname',],
+            include: [
+                {
+                    model: db.absence_request,
+                    as: 'absence_requests',
+                    where: {
+                        request_status: "accepted",
+                        createdAt: { [Op.between]: [startOfMonth, endOfMonth] },
+                    },
+                    include: [
+                        {
+                            model: db.Absences,
+                            as:'absence',
+                            attributes: ["id",  "absence_type", "absence_logo", "status"]
+                        }
+                    ]
+                },
+            ],
+            distinct: true,
+            limit,
+            offset,
+            order: [['id', 'DESC']]
+        })
+
+        return res.status(200).json({
+            status: 1,
+            message: "Time table List fetched Successfully",
+            pagination: {
+                totalTimetable: count,
+                totalPages: Math.ceil(count / limit),
+                currentPage: page,
+                limit: limit,
+            },
+            data: worker
+        });
+
+    } catch (error) {
+        console.error('Error while add worker detail:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+}

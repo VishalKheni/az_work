@@ -60,7 +60,10 @@ exports.companyList = async (req, res) => {
         }
 
         if (search) {
-            whereCondition.company_name = { [Op.like]: `%${search}%` };
+            whereCondition[Op.or] = [
+                { company_name: { [Op.like]: `%${search}%` } },
+                { '$owner.email$': { [Op.like]: `%${search}%` } }
+            ];
         }
 
         let branchCondition = {};
@@ -74,7 +77,7 @@ exports.companyList = async (req, res) => {
                 {
                     model: db.User,
                     as: 'owner',
-                    attributes: ['id', 'firstname', 'lastname', 'country_code', 'iso_code', 'phone_number']
+                    attributes: ['id', 'firstname', 'lastname', 'email', 'country_code', 'iso_code', 'phone_number']
                 },
                 {
                     model: db.Branch,

@@ -376,8 +376,9 @@ exports.getProjectList = () => {
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
             check("search").optional().isString().withMessage("search must be string").trim(),
+            check("status").optional().isIn(['active', 'deactive', 'completed', 'cancelled']).withMessage('Invalid value for user_role. Allowed values are: "active", "deactive", "completed", "cancelled".'),
         ],
-        checkForUnexpectedFields(["page", "limit", "search"]),
+        checkForUnexpectedFields(["page", "limit", "search", "status"]),
         validation
     ];
 }
@@ -392,6 +393,7 @@ exports.projectDocumentList = () => {
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
             check("search").optional().isString().withMessage("search must be string").trim(),
+
         ],
         checkForUnexpectedFields(["project_id", "page", "limit", "search"]),
         validation
@@ -623,3 +625,32 @@ exports.approveRejectAbsenceRequest = () => {
     ];
 }
 
+exports.upcomingHolidayList = () => {
+    return [
+        [
+            check('page').notEmpty().withMessage('Page must required.').isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
+            check('year').notEmpty().withMessage('Year is required').isInt().withMessage('Year must be a positive integer'),
+            check('month').notEmpty().withMessage('Month is required').isInt({ min: 1, max: 12 }).withMessage('Month must be a positive integer between 1 and 12'),
+        ],
+        checkForUnexpectedFields(["page", "limit", "year", "month"]),
+        validation
+    ];
+}
+ 
+exports.getTimeTableList = () => {
+    return [
+        [
+            check('page')
+                .notEmpty()
+                .withMessage('Page must required.')
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer.'),
+            check("search").optional().isString().withMessage("search must be string").trim(),
+            check('year').notEmpty().withMessage('Year is required').isInt().withMessage('Year must be a positive integer'),
+            check('month').notEmpty().withMessage('Month is required').isInt({ min: 1, max: 12 }).withMessage('Month must be a positive integer between 1 and 12'),
+
+        ],
+        checkForUnexpectedFields(["page", "limit", "search", "year", "month"]),
+        validation
+    ];
+}

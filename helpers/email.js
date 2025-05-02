@@ -8,15 +8,15 @@ let smtpHost = process.env.SMTPHOST
 const transporter = nodemailer.createTransport({
   host: smtpHost,
   port: 465,
-  secure: true, 
+  secure: true,
   auth: {
     user: smtpUser,
     pass: smtpPass,
-  },             
+  },
 });
 
 const sendOTPVerificationEmail = async (email, otp) => {
-  // console.log("EMAIL AND OTP====>>>>", email, otp)
+  console.log("EMAIL AND OTP====>>>>", email, otp)
   let htmlContent = signupEmail(otp);
 
   let mail_option = {
@@ -31,17 +31,17 @@ const sendOTPVerificationEmail = async (email, otp) => {
     console.log('Email sent successfully:', info.response);
     return info;
   } catch (error) {
-    console.error('Failed to send email:', error);    
+    console.error('Failed to send email:', error);
     throw error;
   }
 };
 
-const sendEmailToWorker = async ({email, username, company_name, password}) => {
-  let htmlContent = sendWorkerEmail({email, username, company_name, password});
+const sendEmailToWorker = async ({ email, password, company_name }) => {
+  let htmlContent = sendWorkerEmail({ email, company_name, password });
   let mail_option = {
     from: `AZ Work <${smtpUser}>`,
     to: email,
-    subject: `${company_name} - Worker Account Created`,
+    subject: `${company_name} - Account Created`,
     html: htmlContent,
   };
 

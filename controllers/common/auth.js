@@ -10,6 +10,7 @@ const { Op, where, Sequelize, col } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
 let path = require('path');
 let fs = require('fs');
+const { validateAndSendOTPToMail } = require('../../helpers/storage');
 
 const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
 
@@ -168,6 +169,117 @@ exports.verifyOtpEmail = async (req, res) => {
   } catch (error) {
     console.error('Error verifying OTP:', error);
     return res.status(500).json({ status: 0, message: 'Internal server error' });
+  }
+};
+
+exports.sendOtpEmail = async (req, res) => {
+  const { email, type } = req.body;
+
+  try {
+    if (parseInt(type) === 0) {
+      const user = await validateAndSendOTPToMail(email);
+      await sendOTPVerificationEmail(email, user.otp);
+
+      return res.status(200).json({
+        status: 1,
+        message: user.message,
+        otp: user.otp
+      });
+    }
+    if (parseInt(type) === 1) {
+      const finduser = await db.User.findOne({ where: { email: email } });
+      if (!finduser) return res.status(404).json({ status: 0, message: "Email is not registered." });
+      const user = await validateAndSendOTPToMail(email);
+      await sendOTPVerificationEmail(email, user.otp);
+      return res.status(200).json({ status: 1, message: user.message, otp: user.otp });
+    }
+    res.status(200).json({ status: 0, message: "type is not valid" });
+
+  } catch (error) {
+    console.error('Error sending OTP:', error);
+    return res.status(500).json({ status: 0, message: 'Internal server error' });
+  }
+};
+
+exports.verifyOtpAndRegister = async (req, res) => {
+  const { firstname, lastname, country_code, iso_code, phone_number, company_country_code, company_iso_code, company_phone_number, email, password, otp, industry_id, company_name, address, device_id, device_token, device_type
+  } = req.body;
+
+  const { company_logo } = req.files;
+
+  try {
+    const temp = await db.Otp.findOne({ where: { email } });
+    if (!temp) return res.status(404).json({ status: 0, message: "OTP not requested for this email" });
+
+    if (parseInt(otp) !== temp.otp) {
+      return res.status(400).json({ status: 0, message: "Invalid OTP" });
+    }
+
+    const otpAge = (new Date() - temp.updatedAt) / (1000 * 60);
+    if (otpAge > 1) {
+      await temp.destroy();
+      return res.status(400).json({ status: 0, message: "OTP expired" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await db.User.create({
+      firstname,
+      lastname,
+      country_code,
+      iso_code,
+      phone_number,
+      email,
+      password: hashedPassword,
+      user_role: "company",
+      is_account_created: true,
+      is_email_verified: true,
+      is_password_add: true,
+      is_company_add: true
+    });
+
+    let company = null;
+    const branch = await db.Branch.findByPk(industry_id);
+    if (!branch) return res.status(400).json({ status: 0, message: 'Branch not found' });
+
+    const fileValidation = await validateFiles(company_logo, ["jpg", "jpeg", "png", "webp"], 15 * 1024 * 1024);
+    if (!fileValidation.valid) return res.status(400).json({ status: 0, message: fileValidation.message });
+
+    company = await db.Company.create({
+      owner_id: user.id,
+      industry_id,
+      company_name,
+      company_logo: `company_logo/${company_logo[0].filename}`,
+      country_code: company_country_code,
+      iso_code: company_iso_code,
+      phone_number: company_phone_number,
+      address,
+      is_company_active: true
+    });
+
+    const tokenRecord = await db.Token.create({
+      user_id: user.id,
+      device_id,
+      device_token,
+      device_type,
+      refresh_token: uuidv4(),
+      token_expire_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    });
+
+    const accessToken = jwt.sign({ user_id: user.id, token_id: tokenRecord.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+
+    await temp.destroy(); // clear OTP record
+
+    return res.status(200).json({
+      status: 1,
+      message: "Company registered successfully",
+      access_token: accessToken,
+      refresh_token: tokenRecord.refresh_token,
+      user
+    });
+
+  } catch (error) {
+    console.error("Error during OTP verification and registration:", error);
+    return res.status(500).json({ status: 0, message: "Internal server error" });
   }
 };
 

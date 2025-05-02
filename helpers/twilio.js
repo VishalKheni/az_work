@@ -1,7 +1,7 @@
 require("dotenv").config();
-const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const { db } = require("../config/db");
 const twilio = require("twilio");
+const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const phoneUtil = PhoneNumberUtil.getInstance();
 
 const validateMobile = async (iso_code, phone_number) => {

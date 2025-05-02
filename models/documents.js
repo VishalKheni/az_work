@@ -21,8 +21,12 @@ module.exports = (sequelize, DataTypes, Model) => {
             allowNull: true,
         },
         document_url: {
-            type: DataTypes.STRING,
+            type: DataTypes.STRING, 
             allowNull: false
+        },
+        type: {
+            type: DataTypes.STRING,
+            allowNull: true
         },
     }, {
         tableName: "tbl_document",

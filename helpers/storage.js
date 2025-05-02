@@ -1,5 +1,6 @@
 const multer = require('multer');
 const fs = require('fs')
+const db = require("../config/db");
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -22,4 +23,40 @@ const upload = multer({
   })
 });
 
-module.exports = { upload }; 
+const validateAndSendOTPToMail = async (email) => {
+  const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
+  const otp = generateOTP();
+
+  // Check if an OTP record already exists
+  const existingOTP = await db.Otp.findOne({
+    where: { email }
+  });
+
+  if (existingOTP) {
+    // Update the existing OTP record
+    await db.Otp.update(
+      { otp },
+      {
+        where: { email }
+      }
+    );
+  } else {
+    // Create a new OTP record
+    await db.Otp.create({
+      email,
+      otp,
+    });
+  }
+
+  try {
+    return { status: 1, message: "OTP sent to your email",  otp };
+  } catch (error) {
+    return {
+      status: 0,
+      message: "Failed to send OTP. Please try again later.",
+      error: error.message
+    };
+  }
+};
+
+module.exports = { upload, validateAndSendOTPToMail }; 
