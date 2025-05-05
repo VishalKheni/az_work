@@ -1,3 +1,4 @@
+
 module.exports = (sequelize, DataTypes, Model) => {
     const Clock_entry = sequelize.define('clock_entry_model', {
         worker_id: {
@@ -6,7 +7,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             references: { model: 'tbl_users', key: 'id' },
             onDelete: 'CASCADE'
         },
-        project_id: { 
+        project_id: {
             type: DataTypes.INTEGER,
             allowNull: true,
             references: { model: 'tbl_project', key: 'id' },
@@ -14,11 +15,11 @@ module.exports = (sequelize, DataTypes, Model) => {
         },
         date: {
             type: DataTypes.DATE,
-            allowNull: true, 
+            allowNull: true,
         },
         clock_in_time: {
             type: DataTypes.DATE,
-            allowNull: true, 
+            allowNull: true,
         },
         clock_out_time: {
             type: DataTypes.DATE,
@@ -26,15 +27,19 @@ module.exports = (sequelize, DataTypes, Model) => {
         },
         duration: {
             type: DataTypes.STRING,
-            allowNull: true, 
+            allowNull: true,
         },
-        address: {
+        break_time: {
             type: DataTypes.STRING,
-            allowNull: true, 
+            allowNull: true,
         },
-        reason: {
+        clock_in_address: {
             type: DataTypes.STRING,
-            allowNull: true, 
+            allowNull: true,
+        },
+        clock_out_address: {
+            type: DataTypes.STRING,
+            allowNull: true,
         },
         latitude: {
             type: DataTypes.DECIMAL(10, 8),
@@ -44,13 +49,17 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.DECIMAL(11, 8),
             allowNull: true,
         },
-        // type: {
-        //     type: DataTypes.ENUM('clock_in', 'clock_out'),
-        //     allowNull: true,
-        // },
         status: {
             type: DataTypes.ENUM('pending', 'approved', 'rejected'),
             defaultValue: 'pending',
+        },
+        status: {
+            type: DataTypes.ENUM('clock_in', 'clock_out'),
+            allowNull: true,
+        },
+        reason: {
+            type: DataTypes.STRING,
+            allowNull: true,
         },
     }, {
         tableName: "tbl_clock_entry",

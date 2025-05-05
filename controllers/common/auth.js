@@ -333,14 +333,22 @@ exports.login = async (req, res) => {
     if (user.user_role == "company") {
       // Check if email is verified
       if (!user.is_email_verified) {
-        const otp = generateOTP();
-        const otpCreatedAt = moment().toDate();
-        await user.update({
-          otp: otp,
-          otp_created_at: otpCreatedAt
-        });
-        await sendOTPVerificationEmail(email, otp);
-        return res.status(400).json({ status: 2, message: "Email is not verified. Please verify your email.", otp });
+        const user = await validateAndSendOTPToMail(email);
+        await sendOTPVerificationEmail(email, user.otp);
+  
+        return res.status(200).json({
+          status: 1,
+          message: user.message,
+          otp: user.otp
+        });  
+        // const otp = generateOTP();
+        // const otpCreatedAt = moment().toDate();
+        // await user.update({
+        //   otp: otp,
+        //   otp_created_at: otpCreatedAt
+        // });
+        // await sendOTPVerificationEmail(email, otp);
+        // return res.status(400).json({ status: 2, message: "Email is not verified. Please verify your email.", otp });
       }
 
       if (!user.is_account_created) return res.status(400).json({ status: 3, message: "Please add account detail first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
@@ -361,7 +369,6 @@ exports.login = async (req, res) => {
     return res.status(500).json({ message: "Internal server error." });
   }
 };
-
 
 exports.changePassword = async (req, res) => {
   const { oldPassword, newPassword } = req.body;
@@ -430,20 +437,35 @@ exports.verifyOtpForResetPassword = async (req, res) => {
   const { email, otp } = req.body;
 
   try {
-    const user = await db.User.findOne({ where: { email: email } });
+    const temp = await db.Otp.findOne({ where: { email } });
+    if (!temp) return res.status(404).json({ status: 0, message: "OTP not requested for this email" });
 
-    if (!user) return res.status(404).json({ status: 0, message: "User not found" });
-
-    if (user.otp !== parseInt(otp)) return res.status(400).json({ status: 0, message: "Invalid OTP" });
-
-    const currentTime = new Date();
-    const otpAgeInMinutes = (currentTime - user.otp_created_at) / (1000 * 60);
-
-    if (otpAgeInMinutes > 1) {
-      await user.update({ otp: null, otp_created_at: null });
-      return res.status(400).json({ status: 0, message: "OTP has expired" });
+    if (parseInt(otp) !== temp.otp) {
+      return res.status(400).json({ status: 0, message: "Invalid OTP" });
     }
-    await user.update({ otp: null, otp_created_at: null, is_email_verified: true });
+
+    const otpAge = (new Date() - temp.updatedAt) / (1000 * 60);
+    if (otpAge > 1) {
+      await temp.destroy();
+      return res.status(400).json({ status: 0, message: "OTP expired" });
+    }
+
+    await temp.destroy();
+
+    // const user = await db.User.findOne({ where: { email: email } });
+
+    // if (!user) return res.status(404).json({ status: 0, message: "User not found" });
+
+    // if (user.otp !== parseInt(otp)) return res.status(400).json({ status: 0, message: "Invalid OTP" });
+
+    // const currentTime = new Date();
+    // const otpAgeInMinutes = (currentTime - user.otp_created_at) / (1000 * 60);
+
+    // if (otpAgeInMinutes > 1) {
+    //   await user.update({ otp: null, otp_created_at: null });
+    //   return res.status(400).json({ status: 0, message: "OTP has expired" });
+    // }
+    // await user.update({ otp: null, otp_created_at: null, is_email_verified: true });
     return res.status(200).json({
       status: 1,
       message: 'OTP verified successfully.',

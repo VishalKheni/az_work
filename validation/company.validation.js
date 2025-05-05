@@ -224,8 +224,8 @@ exports.getJobCategoryList = () => {
                 .withMessage('Page must required.')
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
-            check("search").optional().isString().withMessage("search must be string").trim(),
-        ],
+                check("search").optional().isString().withMessage("Search must be a string.").trim()
+            ],
         checkForUnexpectedFields(["page", "limit", "search"]),
         validation
     ];
@@ -596,7 +596,7 @@ exports.allAbsenceRequestList = () => {
             check('page').notEmpty().withMessage('Page must required.').isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
             check('year').notEmpty().withMessage('Year is required').isInt().withMessage('Year must be a positive integer'),
             check('month').notEmpty().withMessage('Month is required').isInt({ min: 1, max: 12 }).withMessage('Month must be a positive integer between 1 and 12'),
-            check("status").optional().isIn(['accepted', 'rejected']).withMessage('Invalid value for status. Allowed values are: "accepted", "rejected".'),
+            check("status").optional().isIn(['accepted', 'rejected']).withMessage('Invalid value for status. Allowed values are: pending, accepted, rejected.'),
             check("search").optional().isString().withMessage("search must be string").trim(),
         ],
         checkForUnexpectedFields(["page", "limit", "year", "month", "status", "search"]),
@@ -620,7 +620,7 @@ exports.approveRejectAbsenceRequest = () => {
             check("absence_request_id").notEmpty().withMessage("Absence request ID is required."),
             check("status").notEmpty().withMessage("Status is required.").isIn(['accepted', 'rejected']).withMessage('Invalid value for status. Allowed values are: "accepted", "rejected".'),
         ],
-        checkForUnexpectedFields(["absence_request_id"]),
+        checkForUnexpectedFields(["absence_request_id", "status"]),
         validation
     ];
 }
@@ -636,7 +636,7 @@ exports.upcomingHolidayList = () => {
         validation
     ];
 }
- 
+
 exports.getTimeTableList = () => {
     return [
         [

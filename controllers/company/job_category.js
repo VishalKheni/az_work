@@ -2,7 +2,7 @@ require('dotenv').config()
 const db = require("../../config/db");
 const bcrypt = require('bcrypt')
 const moment = require('moment');
-const { Op, where, Sequelize, col } = require("sequelize");
+const { Op, where, Sequelize, fn, col } = require("sequelize");
 
 
 function normalizeString(str) {
@@ -97,9 +97,10 @@ exports.getJobCategoryList = async (req, res) => {
         if (search) {
             whereCondition[Op.or] = [
                 { category_name: { [Op.like]: `%${search}%` } },
+                { '$job_titles.Job_title$': { [Op.like]: `%${search}%` } }
             ];
         }
-        
+
 
         const { count, rows: categories } = await db.Job_category.findAndCountAll({
             where: { ...whereCondition },
@@ -107,9 +108,11 @@ exports.getJobCategoryList = async (req, res) => {
                 {
                     model: db.Job_title,
                     as: 'job_titles',
+                    required: false,
                 }
             ],
-            distinct: true, 
+            distinct: true,
+            subQuery: false,
             limit,
             offset,
             order: [['createdAt', 'DESC']]

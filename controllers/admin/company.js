@@ -62,7 +62,8 @@ exports.companyList = async (req, res) => {
         if (search) {
             whereCondition[Op.or] = [
                 { company_name: { [Op.like]: `%${search}%` } },
-                { '$owner.email$': { [Op.like]: `%${search}%` } }
+                { '$owner.email$': { [Op.like]: `%${search}%` } },
+                // { '$industry.branch_name$': { [Op.like]: `%${search}%` } },
             ];
         }
 

@@ -5,7 +5,7 @@ const moment = require('moment');
 const { validateMobile, } = require('../../helpers/twilio');
 const { sendEmailToWorker } = require("../../helpers/email");
 const { validateFiles } = require('../../helpers/fileValidation');
-const { Op, where, Sequelize, col, fn } = require("sequelize");
+const { Op, where, Sequelize, col, fn, literal } = require("sequelize");
 const path = require('path');
 const fs = require('fs');
 
@@ -70,7 +70,7 @@ exports.addWorker = async (req, res) => {
         await sendEmailToWorker(emailData);
         return res.status(200).json({
             status: 1,
-            message: "worker detail add Successfully",
+            message: "Worker detail add Successfully",
             worker,
             documentsData
         });
@@ -99,7 +99,10 @@ exports.getWorkerList = async (req, res) => {
         if (search) {
             whereCondition[Op.or] = [
                 { firstname: { [Op.like]: `%${search}%` } },
-                { lastname: { [Op.like]: `%${search}%` } }
+                { lastname: { [Op.like]: `%${search}%` } },
+                literal(`CONCAT(firstname, ' ', lastname) LIKE '%${search}%'`),
+                { '$job_category.category_name$': { [Op.like]: `%${search}%` } },
+                { '$job_title.job_title$': { [Op.like]: `%${search}%` } }
             ];
         }
 
@@ -126,13 +129,14 @@ exports.getWorkerList = async (req, res) => {
                     as: 'job_title',
                     attributes: ['id', 'job_title'],
                 },
-                {
-                    model: db.Document,
-                    as: 'documents',
-                    attributes: { exclude: ['project_id'] },
-                }
+                // {
+                //     model: db.Document,
+                //     as: 'documents',
+                //     attributes: { exclude: ['project_id'] },
+                // }
             ],
             distinct: true,
+            subQuery: false,
             limit,
             offset,
             order: [['createdAt', 'DESC']]
@@ -293,14 +297,13 @@ exports.addWorkerDocuments = async (req, res) => {
     }
 };
 
-
 exports.deleteDocument = async (req, res) => {
     try {
         const { document_id } = req.query;
 
         const document = await db.Document.findByPk(document_id);
         if (!document) return res.status(400).json({ status: 0, message: 'Document Not Found' });
-        fs.unlinkSync(`public/${document.document_url}`);
+        if (document.document_url) { fs.unlinkSync(`public/${document.document_url}`); }
         await document.destroy();
         return res.status(200).json({
             status: 1,
@@ -433,11 +436,14 @@ exports.getWorkerMonthlyHours = async (req, res) => {
                 ? Math.round(totalWorkingHours - branchMonthlyHours)
                 : 0;
 
+            const totalHour = parseInt(branchMonthlyHours) + overtime
+
             results.push({
                 month: moment().month(month).format("MMMM"),
                 monthly_hour: parseInt(branchMonthlyHours),
-                total_working_hours: parseInt(totalWorkingHours),
+                // work_hour: parseInt(totalWorkingHours),
                 over_time: overtime,
+                total_hour: totalHour
             });
         }
 
@@ -592,13 +598,7 @@ exports.getTimeTableList = async (req, res) => {
             whereCondition[Op.or] = [
                 { firstname: { [Op.like]: `%${search}%` } },
                 { lastname: { [Op.like]: `%${search}%` } },
-                where(
-                    fn('CONCAT', col('firstname'), ' ', col('lastname')),
-                    {
-                        [Op.like]: `%${search}%`
-                    }
-                )
-        
+                where(fn('CONCAT', col('firstname'), ' ', col('lastname')), { [Op.like]: `%${search}%` })
             ];
         }
 
@@ -616,8 +616,8 @@ exports.getTimeTableList = async (req, res) => {
                     include: [
                         {
                             model: db.Absences,
-                            as:'absence',
-                            attributes: ["id",  "absence_type", "absence_logo", "status"]
+                            as: 'absence',
+                            attributes: ["id", "absence_type", "absence_logo", "status"]
                         }
                     ]
                 },

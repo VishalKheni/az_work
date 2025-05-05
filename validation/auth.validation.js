@@ -123,6 +123,15 @@ exports.createPassword = () => {
     ];
 }
 
+exports.sendOtpToEmail = () => {
+    return [
+        [
+            check("email").not().isEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
+        ],
+        checkForUnexpectedFields(["email"]),
+        validation
+    ];
+}
 exports.verifyOtpAndRegister = () => {
     return [
         [
@@ -157,7 +166,7 @@ exports.verifyOtpAndRegister = () => {
             check("device_type").not().isEmpty().withMessage("Device type is required").trim(),
             check("device_token").not().isEmpty().withMessage("Device token is required").trim(),
         ],
-        checkForUnexpectedFields(["company_logo", "firstname", "lastname", "phone_number", "iso_code", "country_code", "email", "password", "industry_id", "company_name", "company_phone_number", "company_iso_code", "company_country_code", "address", "device_id", "device_type", "device_token"]),
+        checkForUnexpectedFields(["company_logo", "firstname", "lastname", "phone_number", "iso_code", "country_code", "email", "password", "industry_id", "company_name", "company_phone_number", "company_iso_code", "company_country_code", "address", "otp", "device_id", "device_type", "device_token"]),
         validation
     ];
 }
@@ -204,15 +213,6 @@ exports.changePassword = () => {
 }
 
 
-exports.sendOtpToEmail = () => {
-    return [
-        [
-            check("email").not().isEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
-        ],
-        checkForUnexpectedFields(["email"]),
-        validation
-    ];
-}
 exports.verifyOtpForResetPassword = () => {
     return [
         [

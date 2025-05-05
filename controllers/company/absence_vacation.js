@@ -104,7 +104,15 @@ exports.absenceRequestDetail = async (req, res) => {
                 {
                     model: db.User,
                     as: 'workers',
-                    attributes: ['id', 'firstname', 'lastname'],
+                    attributes: ['id', 'firstname', 'lastname', 'profile_image'],
+                    include:[
+                        {
+                            model: db.Job_title,
+                            as: 'job_title',
+                            attributes: ['id', 'Job_title'],
+                            required: false
+                        }
+                    ]
                 }
             ]
         });
@@ -129,10 +137,10 @@ exports.approveRejectAbsenceRequest = async (req, res) => {
 
         // Update the status of the absence request
         if (status === 'accepted') {
-            absenceRequest.status = 'accepted';
+            absenceRequest.request_status = 'accepted';
             await absenceRequest.save();
         } else if (status === 'rejected') {
-            absenceRequest.status = 'rejected';
+            absenceRequest.request_status = 'rejected';
             await absenceRequest.save();
         }
 

@@ -114,7 +114,7 @@ exports.getCompanyMonthlyHours = async (req, res) => {
                 },
                 {
                     model: db.User,
-                    as: 'users',
+                    as: 'worker',
                     attributes: ['id', 'company_id']
                 }
             ]
@@ -124,7 +124,7 @@ exports.getCompanyMonthlyHours = async (req, res) => {
         }
 
         const branchMonthlyHours = parseFloat(company?.industry?.monthly_hours || 0);
-        const workerIds = company.users.map(user => user.id); // extract all worker ids
+        const workerIds = company.worker.map(user => user.id); // extract all worker ids
         const results = [];
 
         for (let month = 0; month < 12; month++) {
@@ -151,12 +151,14 @@ exports.getCompanyMonthlyHours = async (req, res) => {
 
             const totalWorkingHours = (totalSeconds / 3600).toFixed(2);
             const overtime = totalWorkingHours > branchMonthlyHours ? Math.round(totalWorkingHours - branchMonthlyHours) : 0;
+            const totalHour = parseInt(branchMonthlyHours) + overtime
 
             results.push({
                 month: moment().month(month).format("MMMM"),
                 monthly_hour: parseInt(branchMonthlyHours),
-                total_working_hours: parseInt(totalWorkingHours),
+                // total_working_hours: parseInt(totalWorkingHours),
                 over_time: overtime,
+                total_hour: totalHour
             });
         }
 
@@ -175,23 +177,22 @@ exports.getCompanyMonthlyHours = async (req, res) => {
 exports.getWeeklyHours = async (req, res) => {
     try {
         const { month, year } = req.query;
-        const userMonth = parseInt(month); // 1 (January) to 12 (December)
-        const adjustedMonth = userMonth - 1; // moment.js uses 0-indexed months
+        const userMonth = parseInt(month);
+        const adjustedMonth = userMonth - 1;
 
         const company = await db.Company.findOne({
             where: { owner_id: req.user.id },
             include: [
                 { model: db.Branch, as: 'industry' },
-                { model: db.User, as: 'users', attributes: ['id'] }
+                { model: db.User, as: 'worker', attributes: ['id'] }
             ]
         });
-
         if (!company) {
-            return res.status(404).json({ message: "Company not found." });
+            return res.status(404).json({ status: 0, message: "Company not found." });
         }
 
         const weeklyLimit = parseFloat(company?.industry?.weekly_hours || 0);
-        const workerIds = company.users.map(user => user.id);
+        const workerIds = company.worker.map(user => user.id);
 
         const results = [];
 
@@ -267,8 +268,8 @@ exports.getWeeklyHours = async (req, res) => {
 
             results.push({
                 week: `Week ${weekNumber}`,
-                week_start: currentWeekStart.format('YYYY-MM-DD'),
-                week_end: currentWeekEnd.format('YYYY-MM-DD'),
+                // week_start: currentWeekStart.format('YYYY-MM-DD'),
+                // week_end: currentWeekEnd.format('YYYY-MM-DD'),
                 weekly_hour: parseInt(weeklyLimit),
                 total_working_hours: parseFloat(Math.round(totalWorkingHours.toFixed(2))),
                 over_time: overtime
@@ -283,7 +284,7 @@ exports.getWeeklyHours = async (req, res) => {
             message: "Weekly Working Hours fetched successfully",
             year: parseInt(year),
             month: moment().month(adjustedMonth).format('MMMM'),
-            weekly_hours: results
+            weekly_hours: results,
         });
 
     } catch (error) {
@@ -349,7 +350,6 @@ exports.dashboardCount = async (req, res) => {
     }
 };
 
-
 exports.dashboardRequestList = async (req, res) => {
     try {
         let { page, limit } = req.query;
@@ -368,7 +368,6 @@ exports.dashboardRequestList = async (req, res) => {
             }
         });
         const workerIds = workers.map(user => user.id); // extract all worker ids
-        console.log('workerIds', workerIds)
 
         const { count, rows: requestList } = await db.absence_request.findAndCountAll({
             where: {
@@ -396,9 +395,9 @@ exports.dashboardRequestList = async (req, res) => {
 
         return res.status(200).json({
             status: 1,
-            message: "Job Category List fetched successfully",
+            message: "Absences List fetched successfully",
             pagination: {
-                totalCategories: count,
+                totalAbsences: count,
                 totalPages: Math.ceil(count / limit),
                 currentPage: page,
                 limit: limit,

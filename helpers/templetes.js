@@ -60,7 +60,7 @@ const signupEmail = (otp) => `<!DOCTYPE html>
                            <img
                            src="https://app.arbeitszeit.swiss:8800/app_logo.png"
                           alt="App Logo"
-                            style="width: 50px; height: auto"
+                            style="width: 70px; height: auto"
                            />
                         </div>
                         <h2

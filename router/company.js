@@ -79,7 +79,8 @@ router.patch('/check_holiday', verifyToken, checkUserRole(['company']), companyv
 // Absences & Vacation
 router.get('/all_absence_request_list', verifyToken, checkUserRole(['company']), companyvalidation.allAbsenceRequestList(), companyController.allAbsenceRequestList);
 router.get('/absence_request_detail', verifyToken, checkUserRole(['company']), companyvalidation.absenceRequestDetail(), companyController.absenceRequestDetail);
-router.patch('/approve_reject_request', verifyToken, checkUserRole(['company']), companyvalidation.approveRejectAbsenceRequest(), companyController.approveRejectAbsenceRequest);
+router.patch('/absence_approve_reject', verifyToken, checkUserRole(['company']), companyvalidation.approveRejectAbsenceRequest(), companyController.approveRejectAbsenceRequest);
+
 
 // Time table list
 router.get('/get_time_table_list', verifyToken, checkUserRole(['company']), companyvalidation.getTimeTableList(), companyController.getTimeTableList);

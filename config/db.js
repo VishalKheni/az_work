@@ -32,7 +32,7 @@ db.Token.belongsTo(db.User, {
 
 db.Company.hasMany(db.User, {
     foreignKey: 'company_id',
-    as: 'users'
+    as: 'worker'
 });
 db.User.belongsTo(db.Company, {
     foreignKey: 'company_id',

@@ -27,7 +27,7 @@ const verifyToken = async (req, res, next) => {
             });
         }
 
-        const { exp, user_id, token_id } = decoded.payload;
+        const { exp } = decoded.payload;
         const currentTime = Math.floor(Date.now() / 1000);
 
         // Manual expiration check
@@ -46,11 +46,6 @@ const verifyToken = async (req, res, next) => {
             return res.status(401).json({ status: 0, message: "Invalid token" });
         }
 
-        if (!user_id || !token_id) {
-            return res
-                .status(401)
-                .json({ status: 0, message: "Invalid token payload" });
-        }
         const user = await db.User.findByPk(verifiedToken.user_id);
         const tokens = await db.Token.findByPk(verifiedToken.token_id);
 
