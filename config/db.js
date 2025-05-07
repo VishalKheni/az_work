@@ -208,14 +208,14 @@ db.Clock_entry.belongsTo(db.User, {
     foreignKey: 'worker_id',
     as: 'worker'
 });
-// db.Company.hasMany(db.Clock_entry, {
-//     foreignKey: 'company_id',
-//     as: 'company_clock_entries'
-// });
-// db.Clock_entry.belongsTo(db.Company, {
-//     foreignKey: 'company_id',
-//     as: 'company'
-// });
+db.Company.hasMany(db.Clock_entry, {
+    foreignKey: 'company_id',
+    as: 'company_clock_entries'
+});
+db.Clock_entry.belongsTo(db.Company, {
+    foreignKey: 'company_id',
+    as: 'company'
+});
 db.Project.hasMany(db.Clock_entry, {
     foreignKey: 'project_id',
     as: 'project_clock_entries'

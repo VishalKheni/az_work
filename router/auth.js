@@ -2,8 +2,8 @@ const express = require('express');
 const authController = require('../controllers/common/auth');
 const authvalidation = require('../validation/auth.validation');
 const { verifyToken } = require('../middleware/verifyToken');
-const { upload } = require('../helpers/storage');
 const router = express.Router();
+const { upload } = require('../helpers/storage');
 
 const uploadFile = upload.fields([
     { name: 'profile_image' },

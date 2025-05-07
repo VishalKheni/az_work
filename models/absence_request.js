@@ -29,6 +29,10 @@ module.exports = (sequelize, DataTypes, Model) => {
             defaultValue: 'pending',
             allowNull: true,
         },
+        type: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
     }, {
         tableName: "tbl_absences_request",
         timestamps: true,

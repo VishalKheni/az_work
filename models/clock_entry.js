@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             onDelete: 'CASCADE'
         },
         date: {
-            type: DataTypes.DATE,
+            type: DataTypes.DATEONLY,
             allowNull: true,
         },
         clock_in_time: {
@@ -53,7 +53,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.ENUM('pending', 'approved', 'rejected'),
             defaultValue: 'pending',
         },
-        status: {
+        type: {
             type: DataTypes.ENUM('clock_in', 'clock_out'),
             allowNull: true,
         },

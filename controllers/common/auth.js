@@ -312,7 +312,16 @@ exports.login = async (req, res) => {
   const { email, password, device_id, device_type, device_token, user_role } = req.body;
 
   try {
-    const user = await db.User.findOne({ where: { email: email } });
+    const user = await db.User.findOne({ where: { email: email },
+      include:[
+        {
+          model: db.Job_title,
+          as: 'job_title',
+          attributes: ['id', 'job_title'],
+          required: false
+        }
+      ]
+     });
     if (!user) return res.status(404).json({ status: 0, message: "This email is not registerd!please registerd first.." });
 
 
@@ -335,12 +344,12 @@ exports.login = async (req, res) => {
       if (!user.is_email_verified) {
         const user = await validateAndSendOTPToMail(email);
         await sendOTPVerificationEmail(email, user.otp);
-  
+
         return res.status(200).json({
           status: 1,
           message: user.message,
           otp: user.otp
-        });  
+        });
         // const otp = generateOTP();
         // const otpCreatedAt = moment().toDate();
         // await user.update({
@@ -356,6 +365,9 @@ exports.login = async (req, res) => {
       else if (!user.is_password_add || user.password == null) return res.status(400).json({ status: 5, message: "Please create a password first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
     }
 
+    if (user.user_role == "worker" && user.job_title_id) {
+      let job_totle = await db.Job_title.findByPk(user.job_title_id)
+    }
     return res.status(200).json({
       status: 1,
       message: "Login successful.",

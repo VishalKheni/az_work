@@ -46,6 +46,14 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.DATEONLY,
             allowNull: true,
         },
+        vacation_days: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        experience: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
         password: {
             type: DataTypes.STRING,
             allowNull: true,
@@ -62,13 +70,13 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
-        otp: {
-            type: DataTypes.INTEGER,
-        },
-        otp_created_at: {
-            type: DataTypes.DATE,
-            allowNull: true,
-        },
+        // otp: {
+        //     type: DataTypes.INTEGER,
+        // },
+        // otp_created_at: {
+        //     type: DataTypes.DATE,
+        //     allowNull: true,
+        // },
         is_email_verified: {
             type: DataTypes.BOOLEAN,
             defaultValue: false
