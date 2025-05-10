@@ -247,7 +247,7 @@ exports.editProfile = () => {
                     throw new Error('Maximum 1 image allowed');
                 }
                 return true;
-            }).optional(),
+            }),
             check('firstname').optional().isString().withMessage('First Name must be sting').trim().escape(),
             check('lastname').optional().isString().withMessage('Last Name must be sting').trim().escape(),
         ],

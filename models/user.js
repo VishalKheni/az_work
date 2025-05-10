@@ -47,7 +47,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             allowNull: true,
         },
         vacation_days: {
-            type: DataTypes.STRING,
+            type: DataTypes.INTEGER,
             allowNull: true,
         },
         experience: {

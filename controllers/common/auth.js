@@ -346,18 +346,10 @@ exports.login = async (req, res) => {
         await sendOTPVerificationEmail(email, user.otp);
 
         return res.status(200).json({
-          status: 1,
+          status: 2,
           message: user.message,
           otp: user.otp
         });
-        // const otp = generateOTP();
-        // const otpCreatedAt = moment().toDate();
-        // await user.update({
-        //   otp: otp,
-        //   otp_created_at: otpCreatedAt
-        // });
-        // await sendOTPVerificationEmail(email, otp);
-        // return res.status(400).json({ status: 2, message: "Email is not verified. Please verify your email.", otp });
       }
 
       if (!user.is_account_created) return res.status(400).json({ status: 3, message: "Please add account detail first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
@@ -365,9 +357,6 @@ exports.login = async (req, res) => {
       else if (!user.is_password_add || user.password == null) return res.status(400).json({ status: 5, message: "Please create a password first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
     }
 
-    if (user.user_role == "worker" && user.job_title_id) {
-      let job_totle = await db.Job_title.findByPk(user.job_title_id)
-    }
     return res.status(200).json({
       status: 1,
       message: "Login successful.",
@@ -517,7 +506,7 @@ exports.resetPassword = async (req, res) => {
 exports.editProfile = async (req, res) => {
   try {
     const { firstname, lastname } = req.body;
-    const { profile_image } = req.files;
+    const profile_image = req.files?.profile_image;
 
     const user = await db.User.findByPk(req.user.id, {
       attributes: ['id', 'firstname', 'lastname', 'profile_image', 'updatedAt'],
@@ -528,7 +517,11 @@ exports.editProfile = async (req, res) => {
     if (req.files && profile_image) {
       const validation = await validateFiles(profile_image, ["jpg", "jpeg", "png", "webp"], 15 * 1024 * 1024);
       if (!validation.valid) return res.status(400).json({ status: 0, message: validation.message });
-      if (user.profile_image) { fs.unlinkSync(`public/${user.profile_image}`) }
+      if (user.profile_image) {
+        const oldImagePath = `public/${user.profile_image}`;
+        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+      }
+      // if (user.profile_image) { fs.unlinkSync(`public/${user.profile_image}`) }
       user.profile_image = `profile_images/${profile_image[0].filename}`;
       await user.save();
     }

@@ -57,10 +57,15 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.ENUM('clock_in', 'clock_out'),
             allowNull: true,
         },
-        reason: {
+        clock_in_reason: {
             type: DataTypes.STRING,
             allowNull: true,
         },
+        clock_out_reason: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+
     }, {
         tableName: "tbl_clock_entry",
         timestamps: true,

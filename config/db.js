@@ -235,4 +235,14 @@ db.absence_request.belongsTo(db.Absences, {
     as: 'absence'
 });
 
+db.Clock_entry.hasMany(db.Document, {
+    foreignKey: 'clock_entry_id',
+    as: 'clock_images'
+});
+db.Document.belongsTo(db.Clock_entry, {
+    foreignKey: 'clock_entry_id',
+    as: 'images'
+});
+
+
 module.exports = db;

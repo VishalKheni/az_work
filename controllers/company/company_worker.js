@@ -13,7 +13,7 @@ const fs = require('fs');
 
 exports.addWorker = async (req, res) => {
     try {
-        const { job_category_id, job_title_id, iso_code, phone_number, password } = req.body;
+        const { job_category_id, job_title_id, iso_code, phone_number, password, vacation_days } = req.body;
         const { profile_image, documents } = req.files;
 
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
@@ -48,6 +48,7 @@ exports.addWorker = async (req, res) => {
             job_title_id: job_title.id,
             password: hashedPassword,
             profile_image: `profile_images/${profile_image[0].filename}`,
+            vacation_days: parseInt(vacation_days),
             is_email_verified: true,
             is_worker_active: true,
         })
@@ -339,7 +340,7 @@ exports.workerActiveDeactive = async (req, res) => {
 
 exports.editWorkerProfile = async (req, res) => {
     try {
-        const { worker_id, job_category_id, job_title_id, firstname, lastname, phone_number, country_code, iso_code, address, insurance_number, employment_date, password } = req.body;
+        const { worker_id, job_category_id, job_title_id, firstname, lastname, phone_number, country_code, iso_code, address, insurance_number, employment_date, password, vacation_days, experience } = req.body;
 
         const worker = await db.User.findByPk(worker_id, {
             attributes: ['id', 'firstname', 'lastname', 'profile_image', 'phone_number', 'country_code', 'iso_code', 'address', 'job_category_id', 'job_title_id', 'insurance_number', 'employment_date', 'password'],
@@ -369,6 +370,8 @@ exports.editWorkerProfile = async (req, res) => {
             job_title_id: parseInt(job_title_id) || worker.job_title_id,
             insurance_number: insurance_number || worker.insurance_number,
             employment_date: employment_date || worker.employment_date,
+            vacation_days: parseInt(vacation_days) || worker.vacation_days,
+            experience: experience || worker.experience
         }
 
         await worker.update(updatedData);

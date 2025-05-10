@@ -133,8 +133,10 @@ exports.addWorker = () => {
             check("insurance_number").not().isEmpty().withMessage("Insurance Number is required").isString().withMessage('Insurance Number must be sting').trim().escape(),
             check("employment_date").notEmpty().withMessage('Employment Date is required.').isISO8601().withMessage("Employment Date must be a valid date (YYYY-MM-DD)."),
             check("password").not().isEmpty().withMessage("Password is required").trim().escape(),
+            check("vacation_days").not().isEmpty().withMessage("Vacation day is required").isInt().withMessage('Vacation day must number').trim(),
+            check("experience").not().isEmpty().withMessage("Experience is required").isString().withMessage('Experience must be sting').trim(),
         ],
-        checkForUnexpectedFields(["profile_image", "documents", "job_category_id", "job_title_id", "firstname", "lastname", "phone_number", "iso_code", "country_code", "email", "address", "insurance_number", "employment_date", "password"]),
+        checkForUnexpectedFields(["profile_image", "documents", "job_category_id", "job_title_id", "firstname", "lastname", "phone_number", "iso_code", "country_code", "email", "address", "insurance_number", "employment_date", "password", "experience", "vacation_days"]),
         validation
     ];
 }
@@ -500,8 +502,10 @@ exports.editWorkerProfile = () => {
             check("address").optional().isString().withMessage("address must be string.").trim(),
             check("insurance_number").optional().isString().withMessage('Insurance Number must be sting').trim(),
             check("employment_date").optional().isISO8601().withMessage("Employment Date must be a valid date (YYYY-MM-DD)."),
+            check("vacation_days").optional().isInt().withMessage('Vacation day must number').trim(),
+            check("experience").optional().isString().withMessage('Experience must be sting').trim(),
         ],
-        checkForUnexpectedFields(["worker_id", "profile_image", "job_category_id", "job_title_id", "firstname", "lastname", "password", "phone_number", "iso_code", "country_code", "email", "address", "insurance_number", "employment_date"]),
+        checkForUnexpectedFields(["worker_id", "profile_image", "job_category_id", "job_title_id", "firstname", "lastname", "password", "phone_number", "iso_code", "country_code", "email", "address", "insurance_number", "employment_date", "vacation_days", "experience"]),
         validation
     ];
 }

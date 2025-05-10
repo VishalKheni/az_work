@@ -12,6 +12,12 @@ module.exports = (sequelize, DataTypes, Model) => {
             references: { model: 'tbl_project', key: 'id' },
             onDelete: 'CASCADE'
         },
+        clock_entry_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: { model: 'tbl_clock_entry', key: 'id' },
+            onDelete: 'CASCADE'
+        },
         title: {
             type: DataTypes.STRING,
             allowNull: true
