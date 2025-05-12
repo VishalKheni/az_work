@@ -6,7 +6,7 @@ exports.addBranch = async (req, res) => {
     try {
         const user_id = req.user.id;
 
-        const { branch_name, weekly_hours, monthly_hours, yearly_hours, over_time } = req.body;
+        const { branch_name, weekly_hours, monthly_hours, yearly_hours } = req.body;
 
         const branch = await db.Branch.create({
             user_id,
@@ -14,7 +14,6 @@ exports.addBranch = async (req, res) => {
             weekly_hours,
             monthly_hours,
             yearly_hours,
-            over_time
         });
 
         return res.status(201).json({ status: 1, message: 'Branch added successfully', data: branch });
@@ -58,7 +57,7 @@ exports.allBranchList = async (req, res) => {
 }
 
 exports.editBranch = async (req, res) => {
-    const { branch_id, branch_name, weekly_hours, monthly_hours, yearly_hours, over_time } = req.body;
+    const { branch_id, branch_name, weekly_hours, monthly_hours, yearly_hours } = req.body;
 
     try {
         const branch = await db.Branch.findByPk(branch_id);
@@ -71,7 +70,6 @@ exports.editBranch = async (req, res) => {
             weekly_hours,
             monthly_hours,
             yearly_hours,
-            over_time
         })
 
         return res.status(200).json({ status: 1, message: 'Branch update successfully', data: branch });

@@ -128,11 +128,8 @@ exports.addBranch = () => {
             check('yearly_hours')
                 .notEmpty().withMessage('Yearly hours is required')
                 .isNumeric().withMessage('Yearly hours must be a number'),
-            check('over_time')
-                .notEmpty().withMessage('Over time is required')
-                .isNumeric().withMessage('Overtime must be a number')
         ],
-        checkForUnexpectedFields(["branch_name", "weekly_hours", "monthly_hours", "yearly_hours", "over_time"]),
+        checkForUnexpectedFields(["branch_name", "weekly_hours", "monthly_hours", "yearly_hours"]),
         validation
     ];
 }
@@ -158,9 +155,8 @@ exports.editBranch = () => {
             check('weekly_hours').optional().isNumeric().withMessage('Weekly hours must be a number'),
             check('monthly_hours').optional().isNumeric().withMessage('Monthly hours must be a number'),
             check('yearly_hours').optional().isNumeric().withMessage('Yearly hours must be a number'),
-            check('over_time').optional().isNumeric().withMessage('Overtime must be a number')
         ],
-        checkForUnexpectedFields(["branch_id", "branch_name", "weekly_hours", "monthly_hours", "yearly_hours", "over_time"]),
+        checkForUnexpectedFields(["branch_id", "branch_name", "weekly_hours", "monthly_hours", "yearly_hours"]),
         validation
     ];
 }

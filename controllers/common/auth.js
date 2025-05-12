@@ -538,3 +538,22 @@ exports.editProfile = async (req, res) => {
     return res.status(500).json({ status: 0, message: 'Internal server error' });
   }
 };
+
+exports.getAdminProfile = async (req, res) => {
+  try {
+    const user = await db.User.findByPk(req.user.id, {
+      attributes: ['id', 'firstname', 'lastname', 'profile_image', 'email'],
+    });
+
+    if (!user) return res.status(404).json({ status: 0, message: 'User Not Found' });
+
+    return res.status(200).json({
+      status: 1,
+      message: "Profile fetched successfully",
+      data: user
+    });
+  } catch (error) {
+    console.error('Error while get Admin Profile:', error);
+    return res.status(500).json({ status: 0, message: 'Internal server error' });
+  }
+};

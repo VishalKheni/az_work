@@ -22,10 +22,10 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: true
         },
-        over_time: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
+        // over_time: {
+        //     type: DataTypes.STRING,
+        //     allowNull: true
+        // },
     }, {
         tableName: "tbl_branch",
         timestamps: true,

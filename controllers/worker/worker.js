@@ -397,6 +397,13 @@ exports.addclockEntrry = async (req, res) => {
         const now = moment.utc(); // Get current time in UTC
         const today = now.format('YYYY-MM-DD'); // Format in UTC date
 
+        let project = await db.Project.findByPk(project_id, {
+            attributes: ['id', 'project_name']
+        })
+        if (!project) {
+            return res.status(404).json({ status: 0, message: "Project Not found" })
+        }
+
         if (type === 'clock_in') {
             const lastClockIn = await db.Clock_entry.findOne({
                 where: {
@@ -412,7 +419,7 @@ exports.addclockEntrry = async (req, res) => {
             }
             const clockin = await db.Clock_entry.create({
                 worker_id,
-                project_id,
+                project_id: project.id,
                 date: today,
                 company_id,
                 clock_in_time: now.toDate(),
@@ -421,7 +428,7 @@ exports.addclockEntrry = async (req, res) => {
                 longitude,
                 type,
             });
-            return res.status(201).json({ status: 0, message: 'Clock-in successful', data: clockin });
+            return res.status(201).json({ status: 0, message: 'Clock-in successful', data: clockin, project });
         }
         if (type === 'clock_out') {
             const lastClockIn = await db.Clock_entry.findOne({
@@ -481,7 +488,7 @@ exports.addclockEntrry = async (req, res) => {
                 message: 'Clock out successful',
                 workDuration: msToHHMMSS(sessionDurationMs),
                 breakDuration: msToHHMMSS(breakMs),
-                data: lastClockIn,
+                data: lastClockIn, project,
             });
         }
 
@@ -1049,11 +1056,11 @@ exports.homeScreenCount = async (req, res) => {
         });
         const mappedSessions = todaySessions.map(session => ({
             id: session.id,
+            project_id: session.project_id,
             type: session.type,
             clock_in_time: session.clock_in_time,
             clock_out_time: session.clock_out_time,
         }));
-
 
         const todayDate = moment.utc().format('YYYY-MM-DD');
         const DAILY_FIXED_HOURS = company?.industry?.weekly_hours
@@ -1115,6 +1122,10 @@ exports.homeScreenCount = async (req, res) => {
             if (firstSession.clock_in_time && !firstSession.clock_out_time) {
                 clock_in_time = moment(firstSession.clock_in_time).utc().format('HH:mm:ss');
             }
+            var project = await db.Project.findByPk(mappedSessions[0].project_id, {
+                attributes: ['id', 'project_name']
+            })
+
         }
 
         return res.status(200).json({
@@ -1124,6 +1135,7 @@ exports.homeScreenCount = async (req, res) => {
                 clock_entry_id: mappedSessions.length > 0 ? mappedSessions[0].id : null,
                 type: mappedSessions.length > 0 ? mappedSessions[0].type : 'clock_in',
                 clock_in_time: clock_in_time,
+                project: project,
                 total_monthly_hours: parseInt(totalMonthlyHours),
                 monthly_worked_time: totalRoundedHours,
                 over_time: overTime,
