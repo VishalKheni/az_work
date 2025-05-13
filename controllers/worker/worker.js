@@ -428,7 +428,7 @@ exports.addclockEntrry = async (req, res) => {
                 longitude,
                 type,
             });
-            return res.status(201).json({ status: 0, message: 'Clock-in successful', data: clockin, project });
+            return res.status(201).json({ status: 1, message: 'Clock-in successful', data: clockin, project });
         }
         if (type === 'clock_out') {
             const lastClockIn = await db.Clock_entry.findOne({
@@ -1385,12 +1385,26 @@ exports.absencesScreenCount = async (req, res) => {
             presentDates.add(moment(entry.date).format('YYYY-MM-DD'));
         });
 
+        let totalDays = 0;
+
+        for (const absence of absences) {
+            if (absence.type === 0 && absence.start_date) {
+                totalDays += 1;
+            } else if (absence.type === 1 && absence.start_date && absence.end_date) {
+                const start = moment(absence.start_date).startOf('day');
+                const end = moment(absence.end_date).startOf('day');
+                const days = end.diff(start, 'days') + 1; // Inclusive
+                totalDays += days > 0 ? days : 0;
+            }
+        }
+        
         // 5. Final calculations
-        const totalAbsentDays = absentDates.size;
+        // const totalAbsentDays = absentDates.size; absences
         const totalPresentDays = presentDates.size;
         // const totalCountedDays = totalPresentDays + totalAbsentDays;
         const attendancePercentage = totalWorkingDays === 0 ? '0.00' :
             ((totalPresentDays / totalWorkingDays) * 100).toFixed(2);
+
 
 
         return res.status(200).json({
@@ -1405,7 +1419,7 @@ exports.absencesScreenCount = async (req, res) => {
                 vacation_remaining: remainingDays,
                 percentage: parseFloat(attendancePercentage),
                 total_present_days: totalPresentDays,
-                total_absent_days: totalAbsentDays,
+                total_absent_days: totalDays,
             }
         });
 
