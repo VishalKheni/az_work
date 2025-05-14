@@ -135,6 +135,7 @@ exports.getCompanyMonthlyHours = async (req, res) => {
                 where: {
                     worker_id: { [Op.in]: workerIds },
                     date: { [Op.between]: [startOfMonth, endOfMonth] },
+                    status: "approved"
                 },
                 attributes: ['duration'],
                 raw: true,
@@ -153,7 +154,7 @@ exports.getCompanyMonthlyHours = async (req, res) => {
             const overtime = totalWorkingHours > branchMonthlyHours ? Math.round(totalWorkingHours - branchMonthlyHours) : 0;
             const totalHour = parseInt(branchMonthlyHours) + overtime
 
-            results.push({
+            results.push({  
                 month: moment().month(month).format("MMMM"),
                 monthly_hour: parseInt(branchMonthlyHours),
                 // total_working_hours: parseInt(totalWorkingHours),
@@ -303,14 +304,14 @@ exports.dashboardCount = async (req, res) => {
         const activeWorkers = await db.User.count({
             where: {
                 company_id: company.id,
-                is_worker_active: true,
+                is_worker_active: "Active",
                 user_role: 'worker'
             }
         });
         const deactiveWorkers = await db.User.count({
             where: {
                 company_id: company.id,
-                is_worker_active: false,
+                is_worker_active: "Deactive",
                 user_role: 'worker'
             }
         });

@@ -335,10 +335,8 @@ exports.addProject = () => {
             check("start_date").notEmpty().withMessage('Start Date is required.').isISO8601().withMessage("Start Date must be a valid date (YYYY-MM-DD)."),
             check("end_date").notEmpty().withMessage('End Date is required.').isISO8601().withMessage("End Date must be a valid date (YYYY-MM-DD)."),
             check("address").notEmpty().withMessage("address is required.").isString().withMessage('Address must be sting').trim(),
-            check("status").not().isEmpty().withMessage("Status is required").trim()
-                .isIn(['active', 'deactive', 'completed', 'cancelled']).withMessage("Invalid value for status. Allowed values are 'active' or 'deactive' or 'completed' or 'cancelled' "),
         ],
-        checkForUnexpectedFields(["documents", "client_id", "project_name", "start_date", "end_date", "address", "status"]),
+        checkForUnexpectedFields(["documents", "client_id", "project_name", "start_date", "end_date", "address"]),
         validation
     ];
 }

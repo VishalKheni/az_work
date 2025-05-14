@@ -465,10 +465,16 @@ exports.addclockEntrry = async (req, res) => {
                 order: [['clock_out_time', 'DESC']],
             });
 
+            // let breakMs = 0;
+            // if (previousEntry) {
+            //     const prevClockOut = moment.utc(previousEntry.clock_out_time);
+            //     breakMs = clockInTime.diff(prevClockOut);
+            // }
             let breakMs = 0;
             if (previousEntry) {
                 const prevClockOut = moment.utc(previousEntry.clock_out_time);
                 breakMs = clockInTime.diff(prevClockOut);
+                if (breakMs < 0) breakMs = 0; // 👈 Fix: Prevent negative break time
             }
 
             function msToHHMMSS(ms) {
@@ -1125,7 +1131,6 @@ exports.homeScreenCount = async (req, res) => {
             var project = await db.Project.findByPk(mappedSessions[0].project_id, {
                 attributes: ['id', 'project_name']
             })
-
         }
 
         return res.status(200).json({
@@ -1133,9 +1138,9 @@ exports.homeScreenCount = async (req, res) => {
             message: "Home screen count fetched successfully",
             work_summary: {
                 clock_entry_id: mappedSessions.length > 0 ? mappedSessions[0].id : null,
-                type: mappedSessions.length > 0 ? mappedSessions[0].type : 'clock_in',
+                type: mappedSessions.length > 0 ? mappedSessions[0].type : null,
                 clock_in_time: clock_in_time,
-                project: project,
+                project:  mappedSessions.length > 0 ? project : null,
                 total_monthly_hours: parseInt(totalMonthlyHours),
                 monthly_worked_time: totalRoundedHours,
                 over_time: overTime,
@@ -1262,7 +1267,7 @@ exports.absencesScreenCount = async (req, res) => {
         let plannedDays = 0;
         plannedRequests.forEach(request => {
             const startDate = moment(request.start_date);
-            const endDate = request.type === 0 || !request.end_date
+            const endDate = request.type === 0 || !request.end_date10
                 ? startDate
                 : moment(request.end_date);
 
@@ -1270,57 +1275,6 @@ exports.absencesScreenCount = async (req, res) => {
             plannedDays += diffDays;
         });
         const remainingDays = parseInt(user.vacation_days) - usedDays - plannedDays;
-
-
-        // let totalWorkingDays = 0;
-        // let dayCursor = moment(startOfMonth);
-        // while (dayCursor.isSameOrBefore(endOfMonth)) {
-        //     const dayOfWeek = dayCursor.isoWeekday(); // 1 (Mon) - 7 (Sun)
-        //     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-        //         totalWorkingDays++;
-        //     }
-        //     dayCursor.add(1, 'day');
-        // }
-
-        // // 3. Fetch accepted absences
-        // const absences = await db.absence_request.findAll({
-        //     where: {
-        //         worker_id: req.user.id,
-        //         request_status: 'accepted',
-        //         createdAt: {
-        //             [Op.between]: [startOfMonth, endOfMonth]
-        //         }
-        //     }
-        // });
-
-        // // 4. Mark absent days (excluding weekends)
-        // const absentDates = new Set();
-
-        // absences.forEach(abs => {
-        //     const startDate = moment(abs.start_date);
-        //     const endDate = abs.type === 0 || !abs.end_date
-        //         ? startDate
-        //         : moment(abs.end_date);
-
-        //     let current = moment(startDate);
-        //     while (current.isSameOrBefore(endDate)) {
-        //         const dateStr = current.format('YYYY-MM-DD');
-        //         const dayOfWeek = current.isoWeekday();
-        //         if (
-        //             current.isSameOrAfter(startOfMonth, 'day') &&
-        //             current.isSameOrBefore(endOfMonth, 'day') &&
-        //             dayOfWeek >= 1 && dayOfWeek <= 5 // Only Mon-Fri
-        //         ) {
-        //             absentDates.add(dateStr);
-        //         }
-        //         current.add(1, 'day');
-        //     }
-        // });
-
-        // // 5. Calculate attendance
-        // const totalAbsentDays = absentDates.size;
-        // const totalPresentDays = totalWorkingDays - totalAbsentDays;
-        // const attendancePercentage = ((totalPresentDays / totalWorkingDays) * 100).toFixed(2);
 
         const today = moment(); // Or use moment() in production
         const startMonth = moment(today).startOf('month');

@@ -50,7 +50,7 @@ exports.addWorker = async (req, res) => {
             profile_image: `profile_images/${profile_image[0].filename}`,
             vacation_days: parseInt(vacation_days),
             is_email_verified: true,
-            is_worker_active: true,
+            is_worker_active: "Active",
         })
         let documentsData;
         if (documents && documents.length > 0) {
@@ -108,17 +108,17 @@ exports.getWorkerList = async (req, res) => {
         }
 
 
-        if (status === 'active') {
-            whereCondition.is_worker_active = true;
-        } else if (status === 'inactive') {
-            whereCondition.is_worker_active = false;
-        }
 
+        if (status === 'active') {
+            whereCondition.is_worker_active = 'Active';
+        } else if (status === 'inactive') {
+            whereCondition.is_worker_active = 'Deactive';
+        } 
 
 
         const { count, rows: worker } = await db.User.findAndCountAll({
             where: { ...whereCondition, user_role: "worker", company_id: company.id },
-            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add', 'password'] },
+            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add', 'password', 'is_company_active','is_company_blocked'] },
             include: [
                 {
                     model: db.Job_category,
@@ -130,11 +130,6 @@ exports.getWorkerList = async (req, res) => {
                     as: 'job_title',
                     attributes: ['id', 'job_title'],
                 },
-                // {
-                //     model: db.Document,
-                //     as: 'documents',
-                //     attributes: { exclude: ['project_id'] },
-                // }
             ],
             distinct: true,
             subQuery: false,
@@ -167,7 +162,7 @@ exports.getWorkerDetail = async (req, res) => {
         const { worker_id } = req.query;
 
         const worker = await db.User.findByPk(worker_id, {
-            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add'] },
+            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add', 'is_company_active','is_company_blocked'] },
             include: [
                 {
                     model: db.Job_category,
@@ -323,12 +318,12 @@ exports.workerActiveDeactive = async (req, res) => {
         const worker = await db.User.findByPk(worker_id);
         if (!worker) return res.status(404).json({ status: 0, message: 'Worker not found' });
 
-        const active = worker.is_worker_active === true ? false : true;
+        const active = worker.is_worker_active === 'Active' ? 'Deactive' : 'Active';
 
         await worker.update({ is_worker_active: active });
         return res.status(200).json({
             status: 1,
-            message: active ? 'Worker activated successfully' : 'Worker deactivated successfully',
+            message: worker.is_worker_active === 'Active' ? 'Worker activated successfully' : 'Worker deactivated successfully',
             is_worker_active: worker.is_worker_active
         });
 

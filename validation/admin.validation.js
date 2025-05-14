@@ -79,13 +79,6 @@ exports.companyList = () => {
                 .isIn(["active", 'inactive', 'blocked'])
                 .withMessage("Invalid value for user_role. Allowed values are 'active' or 'inactive' or 'blocked "),
             check("branch_name").optional().isString().withMessage("Branch name must be string").trim()
-            // check("branch_name")
-            // .optional()
-            // .customSanitizer(value => decodeURIComponent(value)) // Decode URL encoding
-            // .isString() 
-            // .withMessage("Branch name must be a string")
-            // .trim()
-
         ],
         checkForUnexpectedFields(["page", "limit", "search", "status", "branch_name"]),
         validation
@@ -100,13 +93,23 @@ exports.companyDetail = () => {
         validation
     ];
 }
+exports.companyowner = () => {
+    return [
+        [
+            check("owner_id").notEmpty().withMessage("Owner ID is required."),
+        ],
+        checkForUnexpectedFields(["owner_id"]),
+        validation
+    ];
+}
+
 exports.changeCompanyPassword = () => {
     return [
         [
-            check("user_id").notEmpty().withMessage("User ID is required."),
+            check("owner_id").notEmpty().withMessage("Owner ID is required."),
             check("newPassword").not().isEmpty().withMessage("New Password is required").trim().escape(),
         ],
-        checkForUnexpectedFields(["user_id", "newPassword"]),
+        checkForUnexpectedFields(["owner_id", "newPassword"]),
         validation
     ];
 }

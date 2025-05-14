@@ -102,8 +102,16 @@ module.exports = (sequelize, DataTypes, Model) => {
             defaultValue: false,
         },
         is_worker_active: {
-            type: DataTypes.BOOLEAN,
-            defaultValue: false,
+            type: DataTypes.ENUM('Active', 'Deactive'),
+            defaultValue: null, 
+        },
+        is_company_active: {
+            type: DataTypes.ENUM('Active', 'Deactive'),
+            defaultValue: 'Active',
+        },
+        is_company_blocked: {
+            type: DataTypes.ENUM('Block', 'Unblock'),
+            defaultValue: 'Unblock',
         },
     }, {
         tableName: "tbl_users",

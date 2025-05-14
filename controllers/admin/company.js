@@ -12,7 +12,7 @@ let fs = require('fs');
 
 exports.dashboard = async (req, res) => {
     try {
-        const totalCompany = await db.User.count({ where: { user_role: "company", is_company_add: true } })
+        const totalCompany = await db.Company.count()
         const totalWorker = await db.User.count({ where: { user_role: "worker" } })
         const totalUsers = await db.User.count({
             where: {
@@ -49,16 +49,17 @@ exports.companyList = async (req, res) => {
 
         let whereCondition = {};
 
-        if (status === 'active') {
-            whereCondition.is_company_active = true;
-            whereCondition.is_company_blocked = false;
-        } else if (status === 'inactive') {
-            whereCondition.is_company_active = false;
-            whereCondition.is_company_blocked = false;
-        } else if (status === 'blocked') {
-            whereCondition.is_company_blocked = true;
-        }
 
+        if (status === 'active') {
+            whereCondition['$owner.is_company_active$'] = 'Active';
+            whereCondition['$owner.is_company_blocked$'] = 'Unblock';
+        } else if (status === 'inactive') {
+            whereCondition['$owner.is_company_active$'] = 'Deactive';
+            whereCondition['$owner.is_company_blocked$'] = 'Unblock';
+        } else if (status === 'blocked') {
+            whereCondition['$owner.is_company_blocked$'] = 'Block';
+        }
+        
         if (search) {
             whereCondition[Op.or] = [
                 { company_name: { [Op.like]: `%${search}%` } },
@@ -78,7 +79,7 @@ exports.companyList = async (req, res) => {
                 {
                     model: db.User,
                     as: 'owner',
-                    attributes: ['id', 'firstname', 'lastname', 'email', 'country_code', 'iso_code', 'phone_number']
+                    attributes: ['id', 'firstname', 'lastname', 'email', 'country_code', 'iso_code', 'phone_number', 'is_company_active', 'is_company_blocked']
                 },
                 {
                     model: db.Branch,
@@ -119,7 +120,7 @@ exports.companyDetail = async (req, res) => {
                 {
                     model: db.User,
                     as: 'owner',
-                    attributes: ['id', 'firstname', 'lastname', 'email', 'country_code', 'iso_code', 'phone_number', 'password', 'user_role']
+                    attributes: ['id', 'firstname', 'lastname', 'email', 'country_code', 'iso_code', 'phone_number', 'password', 'user_role', 'is_company_active', 'is_company_blocked']
                 },
                 {
                     model: db.Branch,
@@ -144,17 +145,17 @@ exports.companyDetail = async (req, res) => {
 
 exports.companyActiveDeactive = async (req, res) => {
     try {
-        const { company_id } = req.body;
+        const { owner_id } = req.body;
 
-        const company = await db.Company.findByPk(company_id);
+        const company = await db.User.findByPk(owner_id);
         if (!company) return res.status(404).json({ status: 0, message: 'Company not found' });
 
-        const active = company.is_company_active === true ? false : true;
+        const active = company.is_company_active === 'Active' ? 'Deactive' : 'Active';
 
         await company.update({ is_company_active: active });
         return res.status(200).json({
             status: 1,
-            message: active ? 'Company activated successfully' : 'Company deactivated successfully',
+            message: company.is_company_active === 'Active' ? 'Company activated successfully' : 'Company deactivated successfully',
             is_company_active: company.is_company_active
         });
 
@@ -167,17 +168,20 @@ exports.companyActiveDeactive = async (req, res) => {
 
 exports.companyBockUnblock = async (req, res) => {
     try {
-        const { company_id } = req.body;
+        const { owner_id } = req.body;
 
-        const company = await db.Company.findByPk(company_id);
+        const company = await db.User.findByPk(owner_id);
         if (!company) return res.status(404).json({ status: 0, message: 'Company not found' });
 
-        const blobked_unbloced = company.is_company_blocked === true ? false : true;
+        const blobked_unbloced = company.is_company_blocked === "Block" ? "Unblock" : "Block";
 
         await company.update({ is_company_blocked: blobked_unbloced });
+        if (company.is_company_blocked === "block") {
+            await db.Token.destroy({ where: { user_id: owner_id } });
+        }
         return res.status(200).json({
             status: 1,
-            message: blobked_unbloced ? 'Company Blocked successfully' : 'Company Unblocked successfully',
+            message: company.is_company_blocked === "Block" ? 'Company Blocked successfully' : 'Company Unblocked successfully',
             is_company_blocked: company.is_company_blocked
         });
 
@@ -188,10 +192,10 @@ exports.companyBockUnblock = async (req, res) => {
 }
 
 exports.changeCompanyPassword = async (req, res) => {
-    const { user_id, newPassword } = req.body;
+    const { owner_id, newPassword } = req.body;
     try {
-        const user = await db.User.findByPk(user_id);
-        if (!user) return res.status(404).json({ status: 0, message: 'User not found.' });
+        const user = await db.User.findByPk(owner_id);
+        if (!user) return res.status(404).json({ status: 0, message: 'Owner not found.' });
 
         const isSamePassword = await bcrypt.compare(newPassword, user.password);
         if (isSamePassword) return res.status(400).json({ status: 0, message: 'New password cannot be the same as the old password.' });
@@ -205,3 +209,18 @@ exports.changeCompanyPassword = async (req, res) => {
     }
 };
 
+exports.adminbranchList = async (req, res) => {
+    try {
+        const branch = await db.Branch.findAll({
+            attributes: ['id', 'branch_name'],
+        });
+        return res.status(200).json({
+            status: 1,
+            message: "branch List fetched Successfully",
+            branch
+        });
+    } catch (error) {
+        console.error('Error while signup:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+}

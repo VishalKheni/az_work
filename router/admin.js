@@ -16,8 +16,8 @@ router.get('/dashboard', verifyToken, checkUserRole(['admin']), admincontroller.
 // Company
 router.get('/all_company_list', verifyToken, checkUserRole(['admin']), adminvalidation.companyList(), admincontroller.companyList);
 router.get('/company_detail', verifyToken, checkUserRole(['admin']), adminvalidation.companyDetail(), admincontroller.companyDetail);
-router.patch('/active_deactive', verifyToken, checkUserRole(['admin']), adminvalidation.companyDetail(), admincontroller.companyActiveDeactive);
-router.patch('/block_unblock', verifyToken, checkUserRole(['admin']), adminvalidation.companyDetail(), admincontroller.companyBockUnblock);
+router.patch('/active_deactive', verifyToken, checkUserRole(['admin']), adminvalidation.companyowner(), admincontroller.companyActiveDeactive);
+router.patch('/block_unblock', verifyToken, checkUserRole(['admin']), adminvalidation.companyowner(), admincontroller.companyBockUnblock);
 router.patch('/edit_password', verifyToken, checkUserRole(['admin', 'company']), adminvalidation.changeCompanyPassword(), admincontroller.changeCompanyPassword);
 
 // branch
@@ -25,6 +25,7 @@ router.post('/add_branch', verifyToken, checkUserRole(['admin']), adminvalidatio
 router.get('/all_branch_list', verifyToken, checkUserRole(['admin']), adminvalidation.allBranchList(), admincontroller.allBranchList);
 router.put('/edit_branch', verifyToken, checkUserRole(['admin']), adminvalidation.editBranch(), admincontroller.editBranch);
 router.delete('/delete_branch', verifyToken, checkUserRole(['admin']), adminvalidation.deleteBranch(), admincontroller.deleteBranch);
+router.get('/branch_list', verifyToken, checkUserRole(['admin']), admincontroller.adminbranchList);
 
 // Holiday
 router.post('/add_holiday', verifyToken, checkUserRole(['admin']), adminvalidation.addHoliday(), admincontroller.addHoliday);

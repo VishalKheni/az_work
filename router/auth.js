@@ -11,22 +11,17 @@ const uploadFile = upload.fields([
     { name: 'company_logo' },
 ]);
 
-router.post('/sent_otp', authController.sendOtpEmail);
+router.post('/sent_otp', authvalidation.sendOtpToEmail(), authController.sendOtpEmail);
 router.post('/register_company', uploadFile, authvalidation.verifyOtpAndRegister(), authController.verifyOtpAndRegister);
 
 router.get('/refresh_token', authController.refreshToken);
 router.post('/login', authvalidation.login(), authController.login);
-router.post('/signup', authvalidation.signUp(), authController.signUp);
-router.post('/add_company', uploadFile, authvalidation.addCompany(), authController.addCompany);
-router.post('/create_password', authvalidation.createPassword(), authController.createPassword);
-router.post('/verify_signup_otp', authvalidation.verifyOtp(), authController.verifyOtpEmail);
 
 
 
 router.post('/change_password', verifyToken, authvalidation.changePassword(), authController.changePassword);
 router.post('/logout', verifyToken, authController.logOut);
 
-router.post('/send_otp_email', authvalidation.sendOtpToEmail(), authController.sendOtpToEmail);
 router.post('/verify_otp_email', authvalidation.verifyOtpForResetPassword(), authController.verifyOtpForResetPassword);
 router.post('/reset_password', authvalidation.resetPassword(), authController.resetPassword);
 

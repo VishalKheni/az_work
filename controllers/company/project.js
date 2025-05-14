@@ -9,7 +9,7 @@ const path = require('path');
 
 exports.addProject = async (req, res) => {
     try {
-        const { client_id, project_name, start_date, end_date, status, address } = req.body;
+        const { client_id, project_name, start_date, end_date, address } = req.body;
         const { documents } = req.files;
 
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
@@ -29,7 +29,7 @@ exports.addProject = async (req, res) => {
             project_name,
             start_date,
             end_date,
-            status,
+            status: "active",
             address
         });
 
@@ -119,13 +119,9 @@ exports.getProjectList = async (req, res) => {
         const offset = (page - 1) * limit;
 
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
-
-        if (!company) {
-            return res.status(400).json({ status: 0, message: 'Company Not Found' });
-        }
+        if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
 
         let whereCondition = {};
-
         if (search) {
             whereCondition[Op.or] = [
                 { project_name: { [Op.like]: `%${search}%` } },
@@ -352,3 +348,23 @@ exports.projectImagesList = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 }
+
+
+// exports.ProjectworkingHourCount = async (req, res) => {
+//     try {
+//         let { project_id } = req.query;
+
+//         const projectDetail = await db.Project.findByPk(project_id);
+//         if (!projectDetail) return res.status(400).json({ status: 0, message: 'Project Not Found' });
+
+//         return res.status(200).json({
+//             status: 1,
+//             message: "Project detail fetched Successfully",
+//             data: projectDetail,
+//         });
+
+//     } catch (error) {
+//         console.error('Error while get project detail:', error);
+//         return res.status(500).json({ status: 0, message: 'Internal server error' });
+//     }
+// }
