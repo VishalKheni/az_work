@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const moment = require('moment');
 const { sendOTPVerificationEmail } = require("../../helpers/email");
 const { validateMobile, } = require('../../helpers/twilio');
-const { Op, where, Sequelize, col } = require("sequelize");
+const { Op, where, Sequelize, col, literal } = require("sequelize");
 let path = require('path');
 let fs = require('fs');
 
@@ -42,7 +42,7 @@ exports.dashboard = async (req, res) => {
 
 exports.companyList = async (req, res) => {
     try {
-        let { page, limit, status, branch_name, search } = req.query;
+        let { page, limit, status, branch_name, search, filter } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
@@ -59,7 +59,7 @@ exports.companyList = async (req, res) => {
         } else if (status === 'blocked') {
             whereCondition['$owner.is_company_blocked$'] = 'Block';
         }
-        
+
         if (search) {
             whereCondition[Op.or] = [
                 { company_name: { [Op.like]: `%${search}%` } },
@@ -71,6 +71,31 @@ exports.companyList = async (req, res) => {
         let branchCondition = {};
         if (branch_name) {
             branchCondition.branch_name = { [Op.like]: `%${branch_name}%` };
+        }
+
+        let order;
+        if (filter === 'name_ASC') {
+            order = [['company_name', 'ASC']];
+        } if (filter === 'name_DESC') {
+            order = [['company_name', 'DESC']];
+        } 
+        else if (filter === 'email_ASC') {
+            order = [literal('`owner`.`email` ASC')];
+        } 
+        else if (filter === 'email_DESC') {
+            order = [literal('`owner`.`email` DESC')];
+        } 
+        else if (filter === 'branch_ASC') {
+            order = [literal('`industry`.`branch_name` ASC')];
+        } 
+        else if (filter === 'branch_DESC') {
+            order = [literal('`industry`.`branch_name` DESC')];
+        } 
+        else if (filter === 'id_ASC') {
+            order = [['createdAt', 'ASC']];
+        }
+        else if (filter === 'id_DESC') {
+            order = [['createdAt', 'DESC']];
         }
 
         const { count, rows: companies } = await db.Company.findAndCountAll({
@@ -88,7 +113,7 @@ exports.companyList = async (req, res) => {
                     attributes: ['id', 'branch_name', 'createdAt']
                 }
             ],
-            order: [['createdAt', 'DESC']],
+            order,
             limit,
             offset,
         });

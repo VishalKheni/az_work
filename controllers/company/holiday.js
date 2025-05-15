@@ -36,15 +36,26 @@ exports.addCompanyHoliday = async (req, res) => {
 
 exports.getCompanyHolidaysList = async (req, res) => {
     try {
-        let { page, limit } = req.query;
+        let { page, limit, filter} = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
 
+        let order;
+        if (filter === 'id_ASC') {
+            order = [['createdAt', 'ASC']];
+        } else if (filter === 'holiday_name_ASC') {
+            order = [['holiday_name', 'ASC']];
+        } else if (filter === 'date_ASC') {
+            order = [['date', 'ASC']];
+        } else if (filter === 'day_ASC') {
+            order = [['day', 'ASC']];
+        }
+
         const { count, rows: holidays } = await db.Holiday.findAndCountAll({
             limit,
             offset,
-            order: [['id', 'Desc']],
+            order: order ? order : [['createdAt', 'DESC']],
         });
 
         return res.status(200).json({

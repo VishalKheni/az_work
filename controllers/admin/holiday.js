@@ -37,17 +37,28 @@ exports.addHoliday = async (req, res) => {
 
 exports.getHolidaysList = async (req, res) => {
     try {
-        let { page, limit } = req.query;
+        let { page, limit, filter } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
 
+        let order;
+        if (filter === 'id_ASC') {
+            order = [['createdAt', 'ASC']];
+        } else if (filter === 'holiday_name_ASC') {
+            order = [['holiday_name', 'ASC']];
+        } else if (filter === 'date_ASC') {
+            order = [['date', 'ASC']];
+        } else if (filter === 'day_ASC') {
+            order = [['day', 'ASC']];
+        }
+
         const { count, rows: holidays } = await db.Holiday.findAndCountAll({
-            where: { created_by_admin: true },
+            where: { user_id: req.user.id, created_by_admin: true },
             attributes: { exclude: ['company_id'] },
             limit,
             offset,
-            order: [['createdAt', 'Desc']],
+            order: order ? order : [['createdAt', 'DESC']],
         });
 
         return res.status(200).json({
@@ -61,7 +72,6 @@ exports.getHolidaysList = async (req, res) => {
             },
             data: holidays,
         });
-
     } catch (error) {
         console.error('Error while fetching holidays:', error);
         return res.status(500).json({ status: 0, message: 'Internal server error' });

@@ -12,7 +12,7 @@ exports.addAbsences = async (req, res) => {
         const absence = await db.Absences.create({
             user_id,
             absence_type,
-            absence_logo: `absence_logo/${absence_logo[0].filename}` ,
+            absence_logo: `absence_logo/${absence_logo[0].filename}`,
             status,
             created_by_admin: true
         });
@@ -35,8 +35,8 @@ exports.editAbsences = async (req, res) => {
             if (absence.absence_logo) { fs.unlinkSync(`public/${absence.absence_logo}`) }
             absence.absence_logo = `absence_logo/${absence_logo[0].filename}`;
             await absence.save();
-          }
-      
+        }
+
         await absence.update({ absence_type, status });
         return res.status(201).json({ status: 1, message: 'Absence update successfully', data: absence });
     } catch (error) {
@@ -61,15 +61,31 @@ exports.deleteAbsences = async (req, res) => {
 
 exports.getAbsencesList = async (req, res) => {
     try {
-        let { page, limit } = req.query;
+        let { page, limit, filter } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
 
+        let order;
+        if (filter === 'absence_type_ASC') {
+            order = [['absence_type', 'ASC']];
+        } else if (filter === 'paid_ASC') {
+            order = [[db.sequelize.literal(`CASE WHEN status = 'paid' THEN 0 ELSE 1 END`), 'ASC']];
+        } else if (filter === 'unpaid_ASC') {
+            order = [[db.sequelize.literal(`CASE WHEN status = 'unpaid' THEN 0 ELSE 1 END`), 'ASC']];
+        } else if (filter === 'absence_type_DESC') {
+            order = [['absence_type', 'DESC']];
+        } else if (filter === 'paid_DESC') {
+            order = [[db.sequelize.literal(`CASE WHEN status = 'paid' THEN 0 ELSE 1 END`), 'DESC']];
+        } else if (filter === 'unpaid_DESC') {
+            order = [[db.sequelize.literal(`CASE WHEN status = 'unpaid' THEN 0 ELSE 1 END`), 'DESC']];
+        }
+
+
         const { count, rows: absence } = await db.Absences.findAndCountAll({
             limit,
             offset,
-            order: [['createdAt', 'Desc']],
+            order
         });
 
         return res.status(200).json({

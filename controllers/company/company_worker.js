@@ -84,7 +84,7 @@ exports.addWorker = async (req, res) => {
 
 exports.getWorkerList = async (req, res) => {
     try {
-        let { page, limit, search, status } = req.query;
+        let { page, limit, search, status, filter } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
@@ -113,12 +113,23 @@ exports.getWorkerList = async (req, res) => {
             whereCondition.is_worker_active = 'Active';
         } else if (status === 'inactive') {
             whereCondition.is_worker_active = 'Deactive';
-        } 
+        }
+
+        let order;
+        if (filter === 'name_ASC') {
+            order = [['company_name', 'ASC']];
+        }if (filter === 'email_ASC') {
+            order = [literal('`owner`.`email` ASC')];
+        } else if (filter === 'branch_ASC') {
+            order = [literal('`industry`.`branch_name` ASC')];
+        } else if (filter === 'id_ASC') {
+            order = [['createdAt', 'ASC']];
+        }
 
 
         const { count, rows: worker } = await db.User.findAndCountAll({
             where: { ...whereCondition, user_role: "worker", company_id: company.id },
-            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add', 'password', 'is_company_active','is_company_blocked'] },
+            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add', 'password', 'is_company_active', 'is_company_blocked'] },
             include: [
                 {
                     model: db.Job_category,
@@ -162,7 +173,7 @@ exports.getWorkerDetail = async (req, res) => {
         const { worker_id } = req.query;
 
         const worker = await db.User.findByPk(worker_id, {
-            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add', 'is_company_active','is_company_blocked'] },
+            attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add', 'is_company_active', 'is_company_blocked'] },
             include: [
                 {
                     model: db.Job_category,
@@ -472,33 +483,28 @@ exports.getWorkerTimeTable = async (req, res) => {
 
         const whereCondition = {
             worker_id,
+            clock_out_time: { [Op.ne]: null },
             [db.Sequelize.Op.and]: [
-                db.sequelize.where(db.sequelize.fn('MONTH', db.sequelize.col('clock_in_time')), month),
-                db.sequelize.where(db.sequelize.fn('YEAR', db.sequelize.col('clock_in_time')), year)
+                db.sequelize.where(db.sequelize.fn('MONTH', db.sequelize.col('date')), month),
+                db.sequelize.where(db.sequelize.fn('YEAR', db.sequelize.col('date')), year)
             ]
         };
 
         // Step 2: Get clock entries from ClockEntry directly
         const { count, rows: clockEntries } = await db.Clock_entry.findAndCountAll({
-            where: {
-                ...whereCondition
-            },
+            where: { ...whereCondition },
+            include: [
+                {
+                    model: db.Project,
+                    as: 'project',
+                    attributes: ['id', 'project_name'],
+                    required: false
+                }
+            ],
             limit,
             offset,
-            order: [['date', 'DESC']]
+            order: [['id', 'DESC']]
         });
-
-        // const totalDurationResult = await db.Clock_entry.findOne({
-        //     where: { ...whereCondition },
-        //     attributes: [
-        //         [
-        //             db.sequelize.literal(`SEC_TO_TIME(SUM(TIME_TO_SEC(duration)))`),
-        //             'total_duration'
-        //         ]
-        //     ],
-        //     raw: true
-        // });
-
 
         return res.status(200).json({
             status: 1,
@@ -573,7 +579,6 @@ exports.editTimetableStatus = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 };
-
 
 exports.getTimeTableList = async (req, res) => {
     try {

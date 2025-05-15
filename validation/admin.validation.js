@@ -77,10 +77,12 @@ exports.companyList = () => {
             check("search").optional().isString().withMessage("search must be string").trim(),
             check("status").optional().isString().withMessage("status must be string").trim()
                 .isIn(["active", 'inactive', 'blocked'])
-                .withMessage("Invalid value for user_role. Allowed values are 'active' or 'inactive' or 'blocked "),
-            check("branch_name").optional().isString().withMessage("Branch name must be string").trim()
+                .withMessage("Invalid value for user_role. Allowed values are active or inactive or blocked "),
+            check("branch_name").optional().isString().withMessage("Branch name must be string").trim(),
+            check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be string")
+                .isIn(['name_ASC', 'name_DESC', 'email_ASC', 'email_DESC', 'branch_ASC', 'branch_DESC', 'id_ASC', 'id_DESC']).withMessage("Invalid value for user_role. Allowed values are name_ASC,name_DESC, email_ASC, email_DESC, branch_ASC, branch_DESC, id_ASC, id_DESC").trim()
         ],
-        checkForUnexpectedFields(["page", "limit", "search", "status", "branch_name"]),
+        checkForUnexpectedFields(["page", "limit", "search", "status", "branch_name", "filter"]),
         validation
     ];
 }
@@ -145,8 +147,11 @@ exports.allBranchList = () => {
                 .withMessage('Page must required.')
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
+            check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be string")
+                .isIn(['branch_ASC', 'branch_DESC', 'id_ASC', 'id_DESC', 'weekly_hours_ASC', 'weekly_hours_DESC', 'monthly_hours_ASC', 'monthly_hours_DESC', 'yearly_hours_ASC', 'yearly_hours_DESC'])
+                .withMessage("Invalid value for filter. Allowed values are  branch_ASC,branch_DESC, id_ASC,id_DESC, weekly_hours_ASC, weekly_hours_DESC ,monthly_hours_ASC,monthly_hours_DESC, yearly_hours_ASC, yearly_hours_DESC").trim()
         ],
-        checkForUnexpectedFields(["page", "limit"]),
+        checkForUnexpectedFields(["page", "limit", "filter"]),
         validation
     ];
 }
@@ -193,8 +198,11 @@ exports.getHolidaysList = () => {
                 .withMessage('Page must required.')
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
+            check("filter").optional().isString().withMessage("filter must be string")
+                .isIn(['holiday_name_ASC', 'date_ASC', 'day_ASC'])
+                .withMessage("Invalid value for filter. Allowed values are  holiday_name_ASC, date_ASC, day_ASC.").trim()
         ],
-        checkForUnexpectedFields(["page", "limit"]),
+        checkForUnexpectedFields(["page", "limit", "filter"]),
         validation
     ];
 }
@@ -249,17 +257,17 @@ exports.editAbsences = () => {
     return [
         [
             check("absence_logo").custom((value, { req }) => {
-            if (req.files && req.files.absence_logo && req.files.absence_logo.length > 1) {
-                req.files.absence_logo.forEach(element => {
-                    fs.unlinkSync(element.path);
-                });
-                throw new Error('Maximum 1 image allowed');
-            }
-            return true;
-        }).optional(),
-        check("absence_id").notEmpty().withMessage("Absence ID is required."),
-        check('absence_type').optional().isString().withMessage('Absences type must be a string'),
-        check("status").optional().isIn(["paid", "unpaid"]).withMessage("Invalid value for user_role. Allowed values are 'paid' or 'unpaid' "),
+                if (req.files && req.files.absence_logo && req.files.absence_logo.length > 1) {
+                    req.files.absence_logo.forEach(element => {
+                        fs.unlinkSync(element.path);
+                    });
+                    throw new Error('Maximum 1 image allowed');
+                }
+                return true;
+            }).optional(),
+            check("absence_id").notEmpty().withMessage("Absence ID is required."),
+            check('absence_type').optional().isString().withMessage('Absences type must be a string'),
+            check("status").optional().isIn(["paid", "unpaid"]).withMessage("Invalid value for user_role. Allowed values are 'paid' or 'unpaid' "),
         ],
         checkForUnexpectedFields(["absence_id", "absence_type", "status", "absence_logo"]),
         validation
@@ -282,8 +290,11 @@ exports.getAbsencesList = () => {
                 .withMessage('Page must required.')
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
+            check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be string")
+                .isIn(['absence_type_ASC', 'paid_ASC', 'unpaid_ASC', 'absence_type_DESC', 'paid_DESC', 'unpaid_DESC'])
+                .withMessage("Invalid value for filter. Allowed values are  absence_type_ASC, paid_ASC, unpaid_ASC, absence_type_DESC, paid_DESC, unpaid_DESC.").trim()
         ],
-        checkForUnexpectedFields(["page", "limit"]),
+        checkForUnexpectedFields(["page", "limit", "filter"]),
         validation
     ];
 }

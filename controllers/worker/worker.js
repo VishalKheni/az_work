@@ -796,6 +796,92 @@ exports.sendAbsencesRequest = async (req, res) => {
             return res.status(404).json({ status: 0, message: "Absence Not found" })
         }
 
+
+        // let requestedDays = 0;
+        // if (type === 0) {
+        //     requestedDays = 1;
+        // } else if (type === 1) {
+        //     const start = moment(start_date).startOf('day');
+        //     const end = moment(end_date).startOf('day');
+        //     requestedDays = end.diff(start, 'days') + 1;
+        // }
+        // console.log('requestedDays', requestedDays)
+
+        let requestedDays = 0;
+        const start = moment(start_date).startOf('day');
+        const end = type === 1 ? moment(end_date).startOf('day') : start.clone();
+
+        if (type === 0) {
+            requestedDays = 1;
+        } else if (type === 1) {
+            requestedDays = end.diff(start, 'days') + 1;
+        }
+
+        const overlappingRequests = await db.absence_request.findAll({
+            where: {
+                worker_id: req.user.id,
+                request_status: { [Op.in]: ['pending', 'accepted'] },
+                [Op.or]: [
+                    {
+                        type: 0,
+                        start_date: {
+                            [Op.between]: [start.toDate(), end.toDate()]
+                        }
+                    },
+                    {
+                        type: 1,
+                        start_date: { [Op.lte]: end.toDate() },
+                        end_date: { [Op.gte]: start.toDate() }
+                    }
+                ]
+            }
+        });
+
+        if (overlappingRequests.length > 0) {
+            return res.status(400).json({
+                status: 0,
+                message: "You've already applied for leave during these dates. Try selecting a different range."
+            });
+        }
+
+
+        if (absence.absence_type === "Vacation") {
+            // Fetch previous requests that are vacation type by joining the absence table
+            const previousRequests = await db.absence_request.findAll({
+                where: {
+                    worker_id: req.user.id,
+                    absence_id: absence_id,
+                    request_status: { [Op.in]: ['pending', 'accepted'] },
+                },
+                include: [{
+                    model: db.Absences,
+                    as: 'absence',
+                    where: { absence_type: 'Vacation' },
+                    attributes: ['absence_type'] // no need to fetch full absence details
+                }]
+            });
+
+            let totalUsedVacationDays = 0;
+
+            previousRequests.forEach(request => {
+                if (request.type === 0) {
+                    totalUsedVacationDays += 1;
+                } else if (request.type === 1) {
+                    const start = moment(request.start_date).startOf('day');
+                    const end = moment(request.end_date).startOf('day');
+                    const days = end.diff(start, 'days') + 1;
+                    totalUsedVacationDays += days;
+                }
+            });
+            const availableVacationDays = req.user.vacation_days || 0;
+            if (totalUsedVacationDays + requestedDays > availableVacationDays) {
+                return res.status(400).json({
+                    status: 0,
+                    message: `Your vacation day limit has been reached.`
+                });
+            }
+        }
+
         const absenceRequest = await db.absence_request.create({
             worker_id: req.user.id,
             absence_id: absence.id,
@@ -981,18 +1067,14 @@ exports.homeScreenCount = async (req, res) => {
                     [Op.between]: [
                         moment.utc().year(selectedYear).startOf('year').format('YYYY-MM-DD'),
                         moment.utc().year(selectedYear).endOf('year').format('YYYY-MM-DD')
-                        // moment.utc().startOf('year').format('YYYY-MM-DD'),
-                        // moment.utc().endOf('year').format('YYYY-MM-DD')
                     ]
                 },
-                // createdAt: { [Op.lte]: moment().format('YYYY-MM-DD') },
-                // end_date: { [Op.lte]: moment().format('YYYY-MM-DD') },
             },
             include: [
                 {
                     model: db.Absences,
                     as: 'absence',
-                    where: { absence_type: 'vacation' },
+                    where: { absence_type: 'Vacation' },
                     // required: false
                 },
             ]
@@ -1018,8 +1100,6 @@ exports.homeScreenCount = async (req, res) => {
                     [Op.between]: [
                         moment.utc().year(selectedYear).startOf('year').format('YYYY-MM-DD'),
                         moment.utc().year(selectedYear).endOf('year').format('YYYY-MM-DD')
-                        // moment.utc().startOf('year').format('YYYY-MM-DD'),
-                        // moment.utc().endOf('year').format('YYYY-MM-DD')
                     ]
                 },
                 // start_date: { [Op.gt]: moment().format('YYYY-MM-DD') },
@@ -1028,7 +1108,7 @@ exports.homeScreenCount = async (req, res) => {
                 {
                     model: db.Absences,
                     as: 'absence',
-                    where: { absence_type: 'vacation' },
+                    where: { absence_type: 'Vacation' },
                     // required: false
                 },
             ]
@@ -1140,7 +1220,7 @@ exports.homeScreenCount = async (req, res) => {
                 clock_entry_id: mappedSessions.length > 0 ? mappedSessions[0].id : null,
                 type: mappedSessions.length > 0 ? mappedSessions[0].type : null,
                 clock_in_time: clock_in_time,
-                project:  mappedSessions.length > 0 ? project : null,
+                project: mappedSessions.length > 0 ? project : null,
                 total_monthly_hours: parseInt(totalMonthlyHours),
                 monthly_worked_time: totalRoundedHours,
                 over_time: overTime,
@@ -1351,7 +1431,7 @@ exports.absencesScreenCount = async (req, res) => {
                 totalDays += days > 0 ? days : 0;
             }
         }
-        
+
         // 5. Final calculations
         // const totalAbsentDays = absentDates.size; absences
         const totalPresentDays = presentDates.size;
