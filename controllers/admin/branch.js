@@ -44,8 +44,7 @@ exports.allBranchList = async (req, res) => {
         order = [['createdAt', 'DESC']];
     } else if (filter === 'branch_ASC') {
         order = [['branch_name', 'ASC']];
-    }
-    else if (filter === 'branch_DESC') {
+    } else if (filter === 'branch_DESC') {
         order = [['branch_name', 'DESC']];
     } else if (filter === 'weekly_hours_ASC') {
         order = [['weekly_hours', 'ASC']];
@@ -55,8 +54,7 @@ exports.allBranchList = async (req, res) => {
         order = [['monthly_hours', 'ASC']];
     } else if (filter === 'monthly_hours_DESC') {
         order = [['monthly_hours', 'DESC']];
-    }
-    else if (filter === 'yearly_hours_ASC') {
+    } else if (filter === 'yearly_hours_ASC') {
         order = [['yearly_hours', 'ASC']];
     } else if (filter === 'yearly_hours_DESC') {
         order = [['yearly_hours', 'DESC']];

@@ -76,25 +76,19 @@ exports.companyList = async (req, res) => {
         let order;
         if (filter === 'name_ASC') {
             order = [['company_name', 'ASC']];
-        } if (filter === 'name_DESC') {
+        } else if (filter === 'name_DESC') {
             order = [['company_name', 'DESC']];
-        } 
-        else if (filter === 'email_ASC') {
+        } else if (filter === 'email_ASC') {
             order = [literal('`owner`.`email` ASC')];
-        } 
-        else if (filter === 'email_DESC') {
+        } else if (filter === 'email_DESC') {
             order = [literal('`owner`.`email` DESC')];
-        } 
-        else if (filter === 'branch_ASC') {
+        } else if (filter === 'branch_ASC') {
             order = [literal('`industry`.`branch_name` ASC')];
-        } 
-        else if (filter === 'branch_DESC') {
+        } else if (filter === 'branch_DESC') {
             order = [literal('`industry`.`branch_name` DESC')];
-        } 
-        else if (filter === 'id_ASC') {
+        } else if (filter === 'id_ASC') {
             order = [['createdAt', 'ASC']];
-        }
-        else if (filter === 'id_DESC') {
+        } else if (filter === 'id_DESC') {
             order = [['createdAt', 'DESC']];
         }
 

@@ -67,18 +67,20 @@ exports.getAbsencesList = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let order;
-        if (filter === 'absence_type_ASC') {
+        if (filter === 'id_DESC') {
+            order = [['id', 'DESC']];
+        }else if (filter === 'absence_type_ASC') {
             order = [['absence_type', 'ASC']];
         } else if (filter === 'paid_ASC') {
-            order = [[db.sequelize.literal(`CASE WHEN status = 'paid' THEN 0 ELSE 1 END`), 'ASC']];
+            order = [[db.sequelize.literal(`CASE WHEN status = 'paid' THEN 0 ELSE 1 END`), 'ASC'], ['createdAt', 'ASC']];
         } else if (filter === 'unpaid_ASC') {
-            order = [[db.sequelize.literal(`CASE WHEN status = 'unpaid' THEN 0 ELSE 1 END`), 'ASC']];
+            order = [[db.sequelize.literal(`CASE WHEN status = 'unpaid' THEN 0 ELSE 1 END`), 'ASC'], ['createdAt', 'ASC']];
         } else if (filter === 'absence_type_DESC') {
             order = [['absence_type', 'DESC']];
         } else if (filter === 'paid_DESC') {
-            order = [[db.sequelize.literal(`CASE WHEN status = 'paid' THEN 0 ELSE 1 END`), 'DESC']];
+            order = [[db.sequelize.literal(`CASE WHEN status = 'paid' THEN 0 ELSE 1 END`), 'DESC'], ['createdAt', 'DESC']];
         } else if (filter === 'unpaid_DESC') {
-            order = [[db.sequelize.literal(`CASE WHEN status = 'unpaid' THEN 0 ELSE 1 END`), 'DESC']];
+            order = [[db.sequelize.literal(`CASE WHEN status = 'unpaid' THEN 0 ELSE 1 END`), 'DESC'], ['createdAt', 'DESC']];
         }
 
 

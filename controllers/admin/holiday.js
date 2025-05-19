@@ -45,12 +45,20 @@ exports.getHolidaysList = async (req, res) => {
         let order;
         if (filter === 'id_ASC') {
             order = [['createdAt', 'ASC']];
+        } else if (filter === 'id_DESC') {
+            order = [['createdAt', 'DESC']];
         } else if (filter === 'holiday_name_ASC') {
             order = [['holiday_name', 'ASC']];
+        } else if (filter === 'holiday_name_DESC') {
+            order = [['holiday_name', 'DESC']];
         } else if (filter === 'date_ASC') {
             order = [['date', 'ASC']];
+        } else if (filter === 'date_DESC') {
+            order = [['date', 'DESC']];
         } else if (filter === 'day_ASC') {
             order = [['day', 'ASC']];
+        } else if (filter === 'day_DESC') {
+            order = [['day', 'DESC']];
         }
 
         const { count, rows: holidays } = await db.Holiday.findAndCountAll({

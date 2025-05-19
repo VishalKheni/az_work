@@ -1,7 +1,7 @@
 const { check, validationResult } = require("express-validator");
 const { verifyToken } = require('../middleware/verifyToken');
 const fs = require("fs");
-
+const moment = require("moment");
 
 const validation = (req, res, next) => {
     console.log("<<input>>req.query", req.query);
@@ -185,6 +185,14 @@ exports.addHoliday = () => {
             check('holiday_name').notEmpty().withMessage('Holiday name is required').isString().withMessage('Holiday name must be a string'),
             check("date").notEmpty().withMessage('Date is required.').isISO8601().withMessage("Date must be a valid date (YYYY-MM-DD)."),
             check('day').notEmpty().withMessage('Day is required').isString().withMessage('Day must be a string'),
+            // check("date")
+            //     .notEmpty().withMessage("Date is required.")
+            //     .custom(value => {
+            //         if (!moment(value, "MM-DD-YYYY", true).isValid()) {
+            //             throw new Error("Date must be in MM-DD-YYYY format.");
+            //         }
+            //         return true;
+            //     })
         ],
         checkForUnexpectedFields(["holiday_name", "date", "day"]),
         validation
@@ -198,9 +206,9 @@ exports.getHolidaysList = () => {
                 .withMessage('Page must required.')
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
-            check("filter").optional().isString().withMessage("filter must be string")
-                .isIn(['holiday_name_ASC', 'date_ASC', 'day_ASC'])
-                .withMessage("Invalid value for filter. Allowed values are  holiday_name_ASC, date_ASC, day_ASC.").trim()
+            check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be string")
+                .isIn(['holiday_name_ASC', 'date_ASC', 'day_ASC', 'holiday_name_DESC', 'date_DESC', 'day_DESC'])
+                .withMessage("Invalid value for filter. Allowed values are  holiday_name_ASC, date_ASC, day_ASC, 'holiday_name_DESC', 'date_DESC', 'day_DESC'.").trim()
         ],
         checkForUnexpectedFields(["page", "limit", "filter"]),
         validation
@@ -291,8 +299,8 @@ exports.getAbsencesList = () => {
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
             check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be string")
-                .isIn(['absence_type_ASC', 'paid_ASC', 'unpaid_ASC', 'absence_type_DESC', 'paid_DESC', 'unpaid_DESC'])
-                .withMessage("Invalid value for filter. Allowed values are  absence_type_ASC, paid_ASC, unpaid_ASC, absence_type_DESC, paid_DESC, unpaid_DESC.").trim()
+                .isIn(['id_DESC', 'absence_type_ASC', 'paid_ASC', 'unpaid_ASC', 'absence_type_DESC', 'paid_DESC', 'unpaid_DESC'])
+                .withMessage("Invalid value for filter. Allowed values are id_DESC,  absence_type_ASC, paid_ASC, unpaid_ASC, absence_type_DESC, paid_DESC, unpaid_DESC.").trim()
         ],
         checkForUnexpectedFields(["page", "limit", "filter"]),
         validation

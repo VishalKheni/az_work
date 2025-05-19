@@ -797,25 +797,58 @@ exports.sendAbsencesRequest = async (req, res) => {
         }
 
 
-        // let requestedDays = 0;
-        // if (type === 0) {
-        //     requestedDays = 1;
-        // } else if (type === 1) {
-        //     const start = moment(start_date).startOf('day');
-        //     const end = moment(end_date).startOf('day');
-        //     requestedDays = end.diff(start, 'days') + 1;
-        // }
-        // console.log('requestedDays', requestedDays)
-
         let requestedDays = 0;
         const start = moment(start_date).startOf('day');
         const end = type === 1 ? moment(end_date).startOf('day') : start.clone();
 
+        // if (type === 0) {
+        //     requestedDays = 1;
+        // } else if (type === 1) {
+        //     requestedDays = end.diff(start, 'days') + 1;
+        // }
+
         if (type === 0) {
+            // single day absence
+            if (start.day() === 0 || start.day() === 6) {
+                return res.status(400).json({
+                    status: 0,
+                    message: "Cannot apply for absence on weekends (Saturday or Sunday)."
+                });
+            }
             requestedDays = 1;
         } else if (type === 1) {
             requestedDays = end.diff(start, 'days') + 1;
         }
+
+        // let requestedDays = 0;
+        // const start = moment(start_date).startOf('day');
+        // const end = type === 1 ? moment(end_date).startOf('day') : start.clone();
+
+        // // Check for weekends in the requested days
+        // if (type === 0) {
+        //     // single day absence
+        //     if (start.day() === 0 || start.day() === 6) {
+        //         return res.status(400).json({
+        //             status: 0,
+        //             message: "Cannot apply for absence on weekends (Saturday or Sunday)."
+        //         });
+        //     }
+        //     requestedDays = 1;
+        // } else if (type === 1) {
+        //     // multiple days absence
+        //     // Loop through each day in the range to check if any day is weekend
+        //     for (let m = start.clone(); m.isSameOrBefore(end); m.add(1, 'days')) {
+        //         if (m.day() === 0 || m.day() === 6) {
+        //             return res.status(400).json({
+        //                 status: 0,
+        //                 message: "Cannot apply for absence on weekends (Saturday or Sunday)."
+        //             });
+        //         }
+        //     }
+        //     requestedDays = end.diff(start, 'days') + 1;
+        // }
+
+
 
         const overlappingRequests = await db.absence_request.findAll({
             where: {
@@ -1371,13 +1404,33 @@ exports.absencesScreenCount = async (req, res) => {
             dayCursor.add(1, 'day');
         }
 
+        // present day count
+        const clockentries = await db.Clock_entry.findAll({
+            where: {
+                worker_id: req.user.id,
+                status: "approved",
+                date: {
+                    [Op.between]: [startMonth.format('YYYY-MM-DD'), endOfRange.format('YYYY-MM-DD')]
+                },
+                duration: {
+                    [Op.ne]: null
+                }
+            },
+            attributes: ['date'] // Only need date to count unique days
+        });
+        const presentDates = new Set();
+        clockentries.forEach(entry => {
+            presentDates.add(moment(entry.date).format('YYYY-MM-DD'));
+        });
+        // -----------------------------------------
+
         // 2. Fetch accepted absences in current month (only up to today)
         const absences = await db.absence_request.findAll({
             where: {
                 worker_id: req.user.id,
                 request_status: 'accepted',
-                createdAt: {
-                    [Op.between]: [startMonth, endOfRange]
+                updatedAt: {
+                    [Op.between]: [startOfMonth, endOfMonth]
                 }
             }
         });
@@ -1400,45 +1453,45 @@ exports.absencesScreenCount = async (req, res) => {
             }
         });
 
-        // 4. Count present days from Clock_entry with valid duration (up to today)
-        const clockentries = await db.Clock_entry.findAll({
-            where: {
-                worker_id: req.user.id,
-                status: "approved",
-                date: {
-                    [Op.between]: [startMonth.format('YYYY-MM-DD'), endOfRange.format('YYYY-MM-DD')]
-                },
-                duration: {
-                    [Op.ne]: null
-                }
-            },
-            attributes: ['date'] // Only need date to count unique days
-        });
-        const presentDates = new Set();
-        clockentries.forEach(entry => {
-            presentDates.add(moment(entry.date).format('YYYY-MM-DD'));
-        });
+        // let totalDays = 0;
+        // for (const absence of absences) {
+        //     if (absence.type === 0 && absence.start_date) {
+        //         totalDays += 1;
+        //     } else if (absence.type === 1 && absence.start_date && absence.end_date) {
+        //         const start = moment(absence.start_date).startOf('day');
+        //         const end = moment(absence.end_date).startOf('day');
+        //         const days = end.diff(start, 'days') + 1; // Inclusive
+        //         totalDays += days > 0 ? days : 0;
+        //     }
+        // }
 
-        let totalDays = 0;
-
+        let totalAbsenceDays = 0;
         for (const absence of absences) {
             if (absence.type === 0 && absence.start_date) {
-                totalDays += 1;
+                const day = moment(absence.start_date).isoWeekday();
+                if (day >= 1 && day <= 5) {
+                    totalAbsenceDays += 1;
+                }
             } else if (absence.type === 1 && absence.start_date && absence.end_date) {
                 const start = moment(absence.start_date).startOf('day');
                 const end = moment(absence.end_date).startOf('day');
-                const days = end.diff(start, 'days') + 1; // Inclusive
-                totalDays += days > 0 ? days : 0;
+
+                let current = moment(start);
+                while (current.isSameOrBefore(end, 'day') && current.isSameOrBefore(endOfMonth, 'day')) {
+                    const dayOfWeek = current.isoWeekday();
+                    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                        totalAbsenceDays += 1;
+                    }
+                    current.add(1, 'day');
+                }
             }
         }
 
-        // 5. Final calculations
+
         // const totalAbsentDays = absentDates.size; absences
         const totalPresentDays = presentDates.size;
-        // const totalCountedDays = totalPresentDays + totalAbsentDays;
         const attendancePercentage = totalWorkingDays === 0 ? '0.00' :
             ((totalPresentDays / totalWorkingDays) * 100).toFixed(2);
-
 
 
         return res.status(200).json({
@@ -1453,7 +1506,7 @@ exports.absencesScreenCount = async (req, res) => {
                 vacation_remaining: remainingDays,
                 percentage: parseFloat(attendancePercentage),
                 total_present_days: totalPresentDays,
-                total_absent_days: totalDays,
+                total_absent_days: totalAbsenceDays,
             }
         });
 
@@ -1615,3 +1668,6 @@ exports.editClockEntry = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+
+// const updatebreakTimec = cron.schedule('0 */6 * * *', async () => {});
