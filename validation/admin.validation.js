@@ -207,8 +207,8 @@ exports.getHolidaysList = () => {
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
             check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be string")
-                .isIn(['holiday_name_ASC', 'date_ASC', 'day_ASC', 'holiday_name_DESC', 'date_DESC', 'day_DESC'])
-                .withMessage("Invalid value for filter. Allowed values are  holiday_name_ASC, date_ASC, day_ASC, 'holiday_name_DESC', 'date_DESC', 'day_DESC'.").trim()
+                .isIn(['id_ASC', 'id_DESC', 'holiday_name_ASC', 'date_ASC', 'day_ASC', 'holiday_name_DESC', 'date_DESC', 'day_DESC'])
+                .withMessage("Invalid value for filter. Allowed values are id_ASC,id_DESC   holiday_name_ASC, date_ASC, day_ASC, holiday_name_DESC, date_DESC, day_DESC.").trim()
         ],
         checkForUnexpectedFields(["page", "limit", "filter"]),
         validation

@@ -8,7 +8,7 @@ const moment = require('moment');
 
 exports.allAbsenceRequestList = async (req, res) => {
     try {
-        let { page, limit, status, search, month, year } = req.query;
+        let { page, limit, status, search, month, year, filter } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
@@ -52,6 +52,25 @@ exports.allAbsenceRequestList = async (req, res) => {
             whereCondition.request_status = { [Op.like]: `%${status}%` };
         }
 
+        let order;
+        if (filter === 'id_ASC') {
+            order = [['id', 'ASC']];
+        } else if (filter === 'id_DESC') {
+            order = [['id', 'DESC']];
+        } else if (filter === 'worker_name_ASC') {
+            order = [[Sequelize.literal("CONCAT(`workers`.`firstname`, ' ', `workers`.`lastname`)"), 'ASC']];
+        } else if (filter === 'worker_name_DESC') {
+            order = [[Sequelize.literal("CONCAT(`workers`.`firstname`, ' ', `workers`.`lastname`)"), 'DESC']];
+        } else if (filter === 'absence_type_ASC') {
+            order = [[Sequelize.literal("`absence`.`absence_type`"), 'ASC']];
+        } else if (filter === 'absence_type_DESC') {
+            order = [[Sequelize.literal("`absence`.`absence_type`"), 'DESC']];
+        } else if (filter === 'date_ASC') {
+            order = [['start_date', 'ASC']];
+        } else if (filter === 'date_DESC') {
+            order = [['start_date', 'DESC']];
+        }
+
         const { count, rows: requestList } = await db.absence_request.findAndCountAll({
             where: { ...whereCondition },
             include: [
@@ -69,7 +88,7 @@ exports.allAbsenceRequestList = async (req, res) => {
             distinct: true,
             limit,
             offset,
-            order: [['createdAt', 'DESC']]
+            order
         });
 
         return res.status(200).json({
@@ -105,7 +124,7 @@ exports.absenceRequestDetail = async (req, res) => {
                     model: db.User,
                     as: 'workers',
                     attributes: ['id', 'firstname', 'lastname', 'profile_image'],
-                    include:[
+                    include: [
                         {
                             model: db.Job_title,
                             as: 'job_title',
@@ -131,6 +150,13 @@ exports.absenceRequestDetail = async (req, res) => {
 exports.approveRejectAbsenceRequest = async (req, res) => {
     try {
         const { absence_request_id, status } = req.body;
+
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
 
         const absenceRequest = await db.absence_request.findByPk(absence_request_id);
         if (!absenceRequest) return res.status(400).json({ status: 0, message: 'Request Not Found' });

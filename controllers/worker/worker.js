@@ -498,76 +498,6 @@ exports.addclockEntrry = async (req, res) => {
             });
         }
 
-        // if (type === 'clock_out') {
-        //     const lastClockIn = await db.Clock_entry.findOne({
-        //         where: {
-        //             worker_id,
-        //             date: today,
-        //             type: 'clock_in',
-        //             clock_out_time: null,
-        //         },
-        //     });
-        //     if (!lastClockIn) {
-        //         return res.status(400).json({ status: 0, message: 'No active clock-in found' });
-        //     }
-
-        //     lastClockIn.clock_out_time = now.toDate();
-        //     lastClockIn.clock_out_address = address;
-        //     lastClockIn.latitude = latitude;
-        //     lastClockIn.longitude = longitude;
-        //     lastClockIn.type = 'clock_out';
-        //     await lastClockIn.save();
-
-        //     const allEntries = await db.Clock_entry.findAll({
-        //         where: {
-        //             worker_id,
-        //             date: today,
-        //             clock_in_time: { [Op.not]: null },
-        //             clock_out_time: { [Op.not]: null },
-        //         },
-        //         order: [['clock_in_time', 'ASC']],
-        //     });
-
-        //     function msToHHMMSS(ms) {
-        //         const totalSeconds = Math.floor(ms / 1000);
-        //         const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
-        //         const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
-        //         const seconds = (totalSeconds % 60).toString().padStart(2, '0');
-        //         return `${hours}:${minutes}:${seconds}`;
-        //     }
-
-        //     let totalWorkMs = 0;
-        //     let totalBreakMs = 0;
-
-        //     for (let i = 0; i < allEntries.length; i++) {
-        //         const entry = allEntries[i];
-        //         const clockIn = moment.utc(entry.clock_in_time);
-        //         const clockOut = moment.utc(entry.clock_out_time);
-
-        //         const sessionMs = clockOut.diff(clockIn);
-        //         totalWorkMs += sessionMs;
-
-        //         if (i > 0) {
-        //             const prev = allEntries[i - 1];
-        //             const prevClockOut = moment.utc(prev.clock_out_time);
-        //             const breakMs = clockIn.diff(prevClockOut);
-        //             totalBreakMs += breakMs;
-        //         }
-        //     }
-
-        //     lastClockIn.duration = msToHHMMSS(totalWorkMs);
-        //     lastClockIn.break_time = msToHHMMSS(totalBreakMs);
-        //     await lastClockIn.save();
-
-        //     return res.status(200).json({
-        //         status: 1,
-        //         message: 'Clock-out recorded',
-        //         workDuration: msToHHMMSS(totalWorkMs),
-        //         breakDuration: msToHHMMSS(totalBreakMs),
-        //         lastClockIn,
-        //     });
-        // }
-
         return res.status(400).json({ status: 0, message: 'Invalid clock type' });
     } catch (err) {
         console.error(err);
@@ -652,7 +582,6 @@ exports.getHistrory = async (req, res) => {
                 project_id,
                 clock_in_time: { [Op.ne]: null },
                 clock_out_time: { [Op.ne]: null }
-
             },
             attributes: { exclude: ['type'] },
             include: [

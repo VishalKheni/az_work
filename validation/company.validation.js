@@ -153,8 +153,18 @@ exports.getworkerList = () => {
             check("status").optional().isString().withMessage("status must be string").trim()
                 .isIn(["active", 'inactive', 'blocked'])
                 .withMessage("Invalid value for user_role. Allowed values are 'active' or 'inactive' or 'blocked "),
+            check("filter")
+                .notEmpty().withMessage('filter is required.')
+                .isString().withMessage("filter must be a string")
+                .isIn([
+                    'id_ASC', 'id_DESC',
+                    'worker_name_ASC', 'worker_name_DESC',
+                    'employment_date_ASC', 'employment_date_DESC',
+                    'category_ASC', 'category_DESC',
+                    'title_ASC', 'title_DESC'
+                ]).withMessage("Invalid value for filter. Allowed values are: id_ASC, id_DESC, worker_name_ASC, worker_name_DESC, employment_date_ASC, employment_date_DESC, category_ASC, category_DESC, title_ASC, title_DESC").trim()
         ],
-        checkForUnexpectedFields(["page", "limit", "search", "status"]),
+        checkForUnexpectedFields(["page", "limit", "search", "status", "filter"]),
         validation
     ];
 }
@@ -221,14 +231,13 @@ exports.JobCategoryDetail = () => {
 exports.getJobCategoryList = () => {
     return [
         [
-            check('page')
-                .notEmpty()
-                .withMessage('Page must required.')
-                .isInt({ min: 1 })
-                .withMessage('Page must be a positive integer.'),
-                check("search").optional().isString().withMessage("Search must be a string.").trim()
-            ],
-        checkForUnexpectedFields(["page", "limit", "search"]),
+            check('page').notEmpty().withMessage('Page must required.').isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
+            check("search").optional().isString().withMessage("Search must be a string.").trim(),
+            check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be a string")
+                .isIn(['id_ASC', 'id_DESC', 'category_name_ASC', 'category_name_DESC', 'Job_title_ASC', 'Job_title_DESC'])
+                .withMessage("Invalid value for filter. Allowed values are: id_ASC, id_DESC, category_name_ASC, category_name_DESC, Job_title_ASC, Job_title_DESC").trim()
+        ],
+        checkForUnexpectedFields(["page", "limit", "search", "filter"]),
         validation
     ];
 }
@@ -311,8 +320,11 @@ exports.clientList = () => {
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
             check("search").optional().isString().withMessage("search must be string").trim(),
+            check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be a string")
+                .isIn(['id_ASC', 'id_DESC', 'company_name_ASC', 'company_name_DESC', 'client_name_ASC', 'client_name_DESC', 'email_ASC', 'email_DESC'])
+                .withMessage("Invalid value for filter. Allowed values are: id_ASC, id_DESC, company_name_ASC, company_name_DESC, client_name_ASC, client_name_DESC, email_ASC, email_DESC").trim()
         ],
-        checkForUnexpectedFields(["page", "limit", "search"]),
+        checkForUnexpectedFields(["page", "limit", "search", "filter"]),
         validation
     ];
 }
@@ -377,8 +389,16 @@ exports.getProjectList = () => {
                 .withMessage('Page must be a positive integer.'),
             check("search").optional().isString().withMessage("search must be string").trim(),
             check("status").optional().isIn(['active', 'deactive', 'completed', 'cancelled']).withMessage('Invalid value for user_role. Allowed values are: "active", "deactive", "completed", "cancelled".'),
+            check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be a string")
+                .isIn([
+                    'id_ASC', 'id_DESC',
+                    'project_name_DESC', 'project_name_ASC',
+                    'client_name_ASC', 'client_name_DESC',
+                    'start_date_ASC', 'start_date_DESC',
+                    'end_date_ASC', 'end_date_DESC'
+                ]).withMessage("Invalid value for filter. Allowed values are: id_ASC, id_DESC, project_name_DESC, project_name_ASC, client_name_ASC, client_name_DESC, start_date_ASC, start_date_DESC, end_date_ASC, end_date_DESC").trim()
         ],
-        checkForUnexpectedFields(["page", "limit", "search", "status"]),
+        checkForUnexpectedFields(["page", "limit", "search", "status", "filter"]),
         validation
     ];
 }
@@ -393,9 +413,8 @@ exports.projectDocumentList = () => {
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
             check("search").optional().isString().withMessage("search must be string").trim(),
-
         ],
-        checkForUnexpectedFields(["project_id", "page", "limit", "search"]),
+        checkForUnexpectedFields(["project_id", "page", "limit", "search", "filter"]),
         validation
     ];
 }
@@ -448,8 +467,11 @@ exports.getCompanyHolidaysList = () => {
                 .withMessage('Page must required.')
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
+            check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be string")
+                .isIn(['id_ASC', 'id_DESC', 'holiday_name_ASC', 'date_ASC', 'day_ASC', 'holiday_name_DESC', 'date_DESC', 'day_DESC'])
+                .withMessage("Invalid value for filter. Allowed values are id_ASC, id_DESC,   holiday_name_ASC, date_ASC, day_ASC, holiday_name_DESC, date_DESC, day_DESC.").trim()
         ],
-        checkForUnexpectedFields(["page", "limit"]),
+        checkForUnexpectedFields(["page", "limit", "filter"]),
         validation
     ];
 }
@@ -600,8 +622,11 @@ exports.allAbsenceRequestList = () => {
             check('month').notEmpty().withMessage('Month is required').isInt({ min: 1, max: 12 }).withMessage('Month must be a positive integer between 1 and 12'),
             check("status").optional().isIn(['accepted', 'rejected']).withMessage('Invalid value for status. Allowed values are: pending, accepted, rejected.'),
             check("search").optional().isString().withMessage("search must be string").trim(),
+            check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be string")
+                .isIn(['id_ASC', 'id_DESC', 'worker_name_ASC', 'worker_name_DESC', 'absence_type_ASC', 'absence_type_DESC', 'date_ASC', 'date_DESC',])
+                .withMessage("Invalid value for filter. Allowed values are id_ASC, id_DESC, worker_name_ASC, worker_name_DESC, absence_type_ASC, absence_type_DESC, date_ASC, date_DESC.").trim()
         ],
-        checkForUnexpectedFields(["page", "limit", "year", "month", "status", "search"]),
+        checkForUnexpectedFields(["page", "limit", "year", "month", "status", "search", "filter"]),
         validation
     ];
 }

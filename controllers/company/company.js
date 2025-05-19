@@ -73,6 +73,13 @@ exports.editCompany = async (req, res) => {
         const owner = await db.User.findByPk(company.owner_id, { attributes: ['id', 'firstname', 'lastname', 'email', 'country_code', 'iso_code', 'phone_number', 'updatedAt'] });
         if (!owner) return res.status(400).json({ status: 0, message: 'Owner not found' });
 
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
+
         if (industry_id) {
             const branch = await db.Branch.findByPk(industry_id);
             if (!branch) return res.status(404).json({ status: 0, message: 'Industry not found' });
@@ -154,7 +161,7 @@ exports.getCompanyMonthlyHours = async (req, res) => {
             const overtime = totalWorkingHours > branchMonthlyHours ? Math.round(totalWorkingHours - branchMonthlyHours) : 0;
             const totalHour = parseInt(branchMonthlyHours) + overtime
 
-            results.push({  
+            results.push({
                 month: moment().month(month).format("MMMM"),
                 monthly_hour: parseInt(branchMonthlyHours),
                 // total_working_hours: parseInt(totalWorkingHours),

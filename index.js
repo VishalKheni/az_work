@@ -6,6 +6,7 @@ const PORT = process.env.PORT;
 const HOST = process.env.NODE_ENV == "LOCAL" ? process.env.LOCALHOST : process.env.SERVERHOST;
 const routes = require('./router/index');
 const db = require('./config/db');
+const { updateBreakTime } = require('./helpers/cron');
 const http = require("http");
 const https = require("https");
 const fs = require('fs');
@@ -29,7 +30,7 @@ const options = {
     }),
 };
 
-const server = process.env.NODE_ENV == "LOCAL" ? http.createServer(app) : https.createServer(options,app);
+const server = process.env.NODE_ENV == "LOCAL" ? http.createServer(app) : https.createServer(options, app);
 
 app.get("/", (req, res) => {
     res.send(`<h1>AZ Work Running!</h1>`);
@@ -45,6 +46,8 @@ const start = async () => {
             console.log(`AZ Work running on ${process.env.NODE_ENV == "LOCAL" ? "http" : "https"}://${HOST}:${PORT}/ ...`);
             console.log("........................................................................")
         });
+        updateBreakTime.start();
+        console.log("update Break Time cron job started...");
     } catch (error) {
         console.error('Unable to connect to the database:', error);
     }

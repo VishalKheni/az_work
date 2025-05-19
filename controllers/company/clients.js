@@ -9,6 +9,13 @@ exports.addClient = async (req, res) => {
     try {
         const { iso_code, phone_number } = req.body;
 
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
+
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
         if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
 
@@ -34,6 +41,13 @@ exports.addClient = async (req, res) => {
 exports.editClient = async (req, res) => {
     try {
         const { client_id, iso_code, phone_number } = req.body;
+
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
 
         const client = await db.Client.findByPk(client_id)
         if (!client) return res.status(400).json({ status: 0, message: 'Client Not Found' });
@@ -64,6 +78,13 @@ exports.deleteClient = async (req, res) => {
     try {
         const { client_id } = req.query;
 
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
+
         const client = await db.Client.findByPk(client_id)
         if (!client) return res.status(400).json({ status: 0, message: 'Client Not Found' });
 
@@ -82,7 +103,7 @@ exports.deleteClient = async (req, res) => {
 
 exports.clientList = async (req, res) => {
     try {
-        let { page, limit, search } = req.query;
+        let { page, limit, search, filter } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
@@ -93,14 +114,34 @@ exports.clientList = async (req, res) => {
             whereCondition[Op.or] = [
                 { client_name: { [Op.like]: `%${search}%` } },
                 { company_name: { [Op.like]: `%${search}%` } }
-            ];                    
+            ];
         }
 
+        let order;
+        if (filter === 'id_ASC') {
+            order = [['id', 'ASC']];
+        } else if (filter === 'id_DESC') {
+            order = [['id', 'DESC']];
+        } else if (filter === 'company_name_ASC') {
+            order = [['company_name', 'ASC']];
+        } else if (filter === 'company_name_DESC') {
+            order = [['company_name', 'DESC']];
+        }else if (filter === 'client_name_ASC') {
+            order = [['client_name', 'ASC']];
+        } else if (filter === 'client_name_DESC') {
+            order = [['client_name', 'DESC']];
+        }else if (filter === 'email_ASC') {
+            order = [['email', 'ASC']];
+        } else if (filter === 'email_DESC') {
+            order = [['email', 'DESC']];
+        }
+
+        
         const { count, rows: client } = await db.Client.findAndCountAll({
             where: { ...whereCondition },
             limit,
             offset,
-            order: [['createdAt', 'DESC']]
+            order
         });
 
         return res.status(200).json({

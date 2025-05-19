@@ -20,6 +20,12 @@ exports.addWorker = async (req, res) => {
         if (!company) {
             return res.status(400).json({ status: 0, message: 'Company Not Found' });
         }
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
         const existingWorker = await db.User.findOne({ where: { email: req.body.email, company_id: company.id, user_role: "worker" } });
         if (existingWorker) {
             return res.status(400).json({ status: 0, message: 'Worker with this email already exists' });
@@ -116,16 +122,27 @@ exports.getWorkerList = async (req, res) => {
         }
 
         let order;
-        if (filter === 'name_ASC') {
-            order = [['company_name', 'ASC']];
-        }if (filter === 'email_ASC') {
-            order = [literal('`owner`.`email` ASC')];
-        } else if (filter === 'branch_ASC') {
-            order = [literal('`industry`.`branch_name` ASC')];
-        } else if (filter === 'id_ASC') {
-            order = [['createdAt', 'ASC']];
+        if (filter === 'id_ASC') {
+            order = [['id', 'ASC']];
+        } else if (filter === 'id_DESC') {
+            order = [['id', 'DESC']];
+        } else if (filter === 'worker_name_ASC') {
+            order = [[Sequelize.literal("CONCAT(firstname, ' ', lastname)"), 'ASC']];
+        } else if (filter === 'worker_name_DESC') {
+            order = [[Sequelize.literal("CONCAT(firstname, ' ', lastname)"), 'DESC']];
+        } else if (filter === 'employment_date_ASC') {
+            order = [['employment_date', 'ASC']];
+        } else if (filter === 'employment_date_DESC') {
+            order = [['employment_date', 'DESC']];
+        } else if (filter === 'category_DESC') {
+            order = [[Sequelize.literal('`job_category`.`category_name`'), 'DESC']];
+        } else if (filter === 'category_ASC') {
+            order = [[Sequelize.literal('`job_category`.`category_name`'), 'ASC']];
+        } else if (filter === 'title_DESC') {
+            order = [[Sequelize.literal('`job_title`.`job_title`'), 'DESC']];
+        } else if (filter === 'title_ASC') {
+            order = [[Sequelize.literal('`job_title`.`job_title`'), 'ASC']];
         }
-
 
         const { count, rows: worker } = await db.User.findAndCountAll({
             where: { ...whereCondition, user_role: "worker", company_id: company.id },
@@ -146,7 +163,7 @@ exports.getWorkerList = async (req, res) => {
             subQuery: false,
             limit,
             offset,
-            order: [['createdAt', 'DESC']]
+            order
         })
 
         return res.status(200).json({
@@ -208,6 +225,13 @@ exports.getWorkerDetail = async (req, res) => {
 exports.deleteWorker = async (req, res) => {
     try {
         const { worker_id } = req.query;
+
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
 
         const worker = await db.User.findByPk(worker_id);
         if (!worker) return res.status(400).json({ status: 0, message: 'Worker not found' });
@@ -276,6 +300,13 @@ exports.addWorkerDocuments = async (req, res) => {
         const { worker_id, title } = req.body;
         const { documents } = req.files;
 
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
+
         const worker = await db.User.findByPk(worker_id);
         if (!worker) return res.status(400).json({ status: 0, message: 'Worker Not Found' });
 
@@ -307,6 +338,12 @@ exports.addWorkerDocuments = async (req, res) => {
 exports.deleteDocument = async (req, res) => {
     try {
         const { document_id } = req.query;
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
 
         const document = await db.Document.findByPk(document_id);
         if (!document) return res.status(400).json({ status: 0, message: 'Document Not Found' });
@@ -325,6 +362,13 @@ exports.deleteDocument = async (req, res) => {
 exports.workerActiveDeactive = async (req, res) => {
     try {
         const { worker_id } = req.body;
+
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
 
         const worker = await db.User.findByPk(worker_id);
         if (!worker) return res.status(404).json({ status: 0, message: 'Worker not found' });
@@ -347,6 +391,13 @@ exports.workerActiveDeactive = async (req, res) => {
 exports.editWorkerProfile = async (req, res) => {
     try {
         const { worker_id, job_category_id, job_title_id, firstname, lastname, phone_number, country_code, iso_code, address, insurance_number, employment_date, password, vacation_days, experience } = req.body;
+
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
 
         const worker = await db.User.findByPk(worker_id, {
             attributes: ['id', 'firstname', 'lastname', 'profile_image', 'phone_number', 'country_code', 'iso_code', 'address', 'job_category_id', 'job_title_id', 'insurance_number', 'employment_date', 'password'],
@@ -555,6 +606,13 @@ exports.getTimetableDetail = async (req, res) => {
 exports.editTimetableStatus = async (req, res) => {
     try {
         let { clock_entry_id, status } = req.body;
+
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
 
         const clockEntries = await db.Clock_entry.findByPk(clock_entry_id)
         if (!clockEntries) return res.status(404).json({ status: 0, message: "Clock Entries not found" })

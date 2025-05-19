@@ -17,6 +17,13 @@ exports.addJobCategory = async (req, res) => {
     try {
         let { category_name, Job_title } = req.body;
 
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
+
         // Trim and normalize input
         category_name = normalizeString(category_name);
         Job_title = normalizeString(Job_title);
@@ -78,7 +85,7 @@ exports.addJobCategory = async (req, res) => {
 
 exports.getJobCategoryList = async (req, res) => {
     try {
-        let { page, limit, search } = req.query;
+        let { page, limit, search, filter } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
@@ -101,6 +108,20 @@ exports.getJobCategoryList = async (req, res) => {
             ];
         }
 
+        let order;
+        if (filter === 'id_ASC') {
+            order = [['id', 'ASC']];
+        } else if (filter === 'id_DESC') {
+            order = [['id', 'DESC']];
+        } else if (filter === 'category_name_ASC') {
+            order = [['category_name', 'ASC']];
+        } else if (filter === 'category_name_DESC') {
+            order = [['category_name', 'DESC']];
+        } else if (filter === 'Job_title_ASC') {
+            order = [[Sequelize.literal("`job_titles`.`Job_title`"), 'ASC']];
+        } else if (filter === 'Job_title_DESC') {
+            order = [[Sequelize.literal("`job_titles`.`Job_title`"), 'DESC']];
+        }
 
         const { count, rows: categories } = await db.Job_category.findAndCountAll({
             where: { ...whereCondition },
@@ -115,7 +136,7 @@ exports.getJobCategoryList = async (req, res) => {
             subQuery: false,
             limit,
             offset,
-            order: [['createdAt', 'DESC']]
+            order
         });
 
         return res.status(200).json({
@@ -141,6 +162,12 @@ exports.editJobCategory = async (req, res) => {
     try {
         let { category_id, job_title_id, category_name, Job_title } = req.body;
 
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
         // Trim and normalize input
         const normalizedCategoryName = normalizeString(category_name);
         const normalizedJobTitle = normalizeString(Job_title);
@@ -231,6 +258,13 @@ exports.editJobCategory = async (req, res) => {
 exports.deleteJobCategory = async (req, res) => {
     try {
         const { job_title_id } = req.query;
+
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
 
         // Find company of current user
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });

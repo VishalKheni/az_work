@@ -44,9 +44,9 @@ exports.getHolidaysList = async (req, res) => {
 
         let order;
         if (filter === 'id_ASC') {
-            order = [['createdAt', 'ASC']];
+            order = [['id', 'ASC']];
         } else if (filter === 'id_DESC') {
-            order = [['createdAt', 'DESC']];
+            order = [['id', 'DESC']];
         } else if (filter === 'holiday_name_ASC') {
             order = [['holiday_name', 'ASC']];
         } else if (filter === 'holiday_name_DESC') {

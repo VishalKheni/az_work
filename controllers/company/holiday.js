@@ -7,6 +7,13 @@ exports.addCompanyHoliday = async (req, res) => {
         const { holiday_name, date, day } = req.body;
         const user_id = req.user.id;
 
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
+
         const existingHoliday = await db.Holiday.findOne({
             where: {
                 user_id,
@@ -36,26 +43,35 @@ exports.addCompanyHoliday = async (req, res) => {
 
 exports.getCompanyHolidaysList = async (req, res) => {
     try {
-        let { page, limit, filter} = req.query;
+        let { page, limit, filter } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
 
         let order;
         if (filter === 'id_ASC') {
-            order = [['createdAt', 'ASC']];
+            order = [['id', 'ASC']];
+        } else if (filter === 'id_DESC') {
+            order = [['id', 'DESC']];
         } else if (filter === 'holiday_name_ASC') {
             order = [['holiday_name', 'ASC']];
+        } else if (filter === 'holiday_name_DESC') {
+            order = [['holiday_name', 'DESC']];
         } else if (filter === 'date_ASC') {
             order = [['date', 'ASC']];
+        } else if (filter === 'date_DESC') {
+            order = [['date', 'DESC']];
         } else if (filter === 'day_ASC') {
             order = [['day', 'ASC']];
+        } else if (filter === 'day_DESC') {
+            order = [['day', 'DESC']];
         }
+
 
         const { count, rows: holidays } = await db.Holiday.findAndCountAll({
             limit,
             offset,
-            order: order ? order : [['createdAt', 'DESC']],
+            order,
         });
 
         return res.status(200).json({
@@ -79,6 +95,13 @@ exports.getCompanyHolidaysList = async (req, res) => {
 exports.editCompanyHoliday = async (req, res) => {
     try {
         const { holiday_id, holiday_name, date, day } = req.body;
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
+
         const holiday = await db.Holiday.findByPk(holiday_id, { attributes: { exclude: ['company_id'] } });
         if (!holiday) return res.status(404).json({ status: 0, message: 'Company Holiday Not Found' });
         if (holiday.created_by_admin) return res.status(403).json({ status: 0, message: 'Cannot edit holiday created by admin' });
@@ -104,6 +127,13 @@ exports.editCompanyHoliday = async (req, res) => {
 exports.deleteCompanyHoliday = async (req, res) => {
     try {
         const { holiday_id } = req.query;
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
+
         const holiday = await db.Holiday.findByPk(holiday_id);
         if (!holiday) return res.status(404).json({ status: 0, message: 'Company Holiday Not Found' });
         if (holiday.created_by_admin) return res.status(403).json({ status: 0, message: 'Cannot delete holiday created by admin' });
@@ -118,6 +148,12 @@ exports.deleteCompanyHoliday = async (req, res) => {
 exports.checkIsHoliday = async (req, res) => {
     try {
         const { holiday_id } = req.body;
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
         const holiday = await db.Holiday.findByPk(holiday_id);
         if (!holiday) return res.status(404).json({ status: 0, message: 'Company Holiday Not Found' });
         const check = holiday.is_holiday_checked == false ? true : false;

@@ -2,7 +2,7 @@ require('dotenv').config()
 const db = require("../../config/db");
 const bcrypt = require('bcrypt')
 const moment = require('moment');
-const { Op, where, Sequelize, col, fn } = require("sequelize");
+const { Op, where, Sequelize, col, fn, literal } = require("sequelize");
 const fs = require('fs');
 const path = require('path');
 
@@ -11,6 +11,12 @@ exports.addProject = async (req, res) => {
     try {
         const { client_id, project_name, start_date, end_date, address } = req.body;
         const { documents } = req.files;
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
 
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
 
@@ -59,6 +65,12 @@ exports.addProject = async (req, res) => {
 exports.editProject = async (req, res) => {
     try {
         const { project_id, client_id, project_name, start_date, end_date, status, address } = req.body;
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
 
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
         if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
@@ -90,6 +102,12 @@ exports.editProject = async (req, res) => {
 exports.deleteProject = async (req, res) => {
     try {
         const { project_id } = req.query;
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
 
         const project = await db.Project.findByPk(project_id);
         if (!project) return res.status(400).json({ status: 0, message: 'Project Not Found' });
@@ -113,7 +131,7 @@ exports.deleteProject = async (req, res) => {
 
 exports.getProjectList = async (req, res) => {
     try {
-        let { page, limit, search, status } = req.query;
+        let { page, limit, search, status, filter } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
@@ -133,6 +151,30 @@ exports.getProjectList = async (req, res) => {
             whereCondition.status = { [Op.like]: `%${status}%` }
         };
 
+        let order;
+        if (filter === 'id_ASC') {
+            order = [['id', 'ASC']];
+        } else if (filter === 'id_DESC') {
+            order = [['id', 'DESC']];
+        } else if (filter === 'project_name_DESC') {
+            order = [['project_name', 'DESC']];
+        } else if (filter === 'project_name_ASC') {
+            order = [['project_name', 'ASC']];
+        } else if (filter === 'client_name_ASC') {
+            order = [literal('`client`.`client_name` ASC')];
+        } else if (filter === 'client_name_DESC') {
+            order = [literal('`client`.`client_name` DESC')];
+        } else if (filter === 'start_date_ASC') {
+            order = [['start_date', 'ASC']];
+        } else if (filter === 'start_date_DESC') {
+            order = [['start_date', 'DESC']];
+        } else if (filter === 'end_date_ASC') {
+            order = [['end_date', 'ASC']];
+        } else if (filter === 'end_date_DESC') {
+            order = [['end_date', 'DESC']];
+        }
+
+
         const { count, rows: project } = await db.Project.findAndCountAll({
             where: { ...whereCondition },
             include: [
@@ -145,7 +187,7 @@ exports.getProjectList = async (req, res) => {
             distinct: true,
             limit,
             offset,
-            order: [['createdAt', 'DESC']]
+            order
         })
 
         return res.status(200).json({
@@ -197,6 +239,12 @@ exports.addProjectDocuments = async (req, res) => {
     try {
         const { project_id, title } = req.body;
         const { documents } = req.files;
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
 
         const project = await db.Project.findByPk(project_id);
         if (!project) return res.status(400).json({ status: 0, message: 'Project Not Found' });
