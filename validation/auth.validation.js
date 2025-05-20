@@ -70,8 +70,9 @@ exports.sendOtpToEmail = () => {
     return [
         [
             check("email").not().isEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
+            check("user_role").not().isEmpty().withMessage("User role is required").withMessage('Invalid value for user_role. Allowed values are: "company", "worker", "admin.'),
         ],
-        checkForUnexpectedFields(["email", "type"]),
+        checkForUnexpectedFields(["email", "type", "user_role"]),
         validation
     ];
 }
@@ -122,7 +123,7 @@ exports.login = () => {
             check("device_id").not().isEmpty().withMessage("Device ID is required").trim().escape(),
             check("device_type").not().isEmpty().withMessage("Device type is required").trim().escape(),
             check("device_token").not().isEmpty().withMessage("Device token is required").trim().escape(),
-            check("user_role").isIn(['company', 'worker', 'admin']).withMessage('Invalid value for user_role. Allowed values are: "company", "worker", "admin.'),
+            check("user_role").not().isEmpty().withMessage("User role is required").isIn(['company', 'worker', 'admin']).withMessage('Invalid value for user_role. Allowed values are: "company", "worker", "admin.'),
 
         ],
         checkForUnexpectedFields(["user_role", "device_token", "device_type", "device_id", "email", "password"]),

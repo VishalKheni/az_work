@@ -19,7 +19,7 @@ const formatSecondsToHHMMSS = (totalSeconds) => {
 // const updateBreakTime = cron.schedule('0 0 * * *', async () => {
 const updateBreakTime = cron.schedule('* * * * *', async () => {
     const yesterday = moment().subtract(1, 'day').format('YYYY-MM-DD');
-console.log('yesterday', yesterday)
+
     try {
         const entries = await db.Clock_entry.findAll({
             where: {

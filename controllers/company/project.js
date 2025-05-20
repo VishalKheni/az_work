@@ -143,7 +143,7 @@ exports.getProjectList = async (req, res) => {
         if (search) {
             whereCondition[Op.or] = [
                 { project_name: { [Op.like]: `%${search}%` } },
-                { '$client.client_name$': { [Op.like]: `%${search}%` } },
+                { '$client.client_name$': { [Op.like]: `%${search}%` } }, 
             ];
         }
 

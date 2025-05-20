@@ -16,7 +16,7 @@ const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
 
 
 exports.sendOtpEmail = async (req, res) => {
-  const { email, type } = req.body;
+  const { email, type, user_role } = req.body;
 
   try {
     if (parseInt(type) === 0) {
@@ -32,6 +32,9 @@ exports.sendOtpEmail = async (req, res) => {
     if (parseInt(type) === 1) {
       const finduser = await db.User.findOne({ where: { email: email } });
       if (!finduser) return res.status(404).json({ status: 0, message: "Email is not registered." });
+      if (user_role != finduser.user_role) {
+        return res.status(400).json({ status: 0, message: `Access denied. ${finduser.user_role} cannot use ${user_role} interface. Please use the ${finduser.user_role} interface.!` });
+      }
       const user = await validateAndSendOTPToMail(email);
       await sendOTPVerificationEmail(email, user.otp);
       return res.status(200).json({ status: 1, message: user.message, otp: user.otp });
@@ -174,7 +177,7 @@ exports.login = async (req, res) => {
     }
     if (user.user_role == "company" && user.is_company_blocked === "Block") {
       return res.status(400).json({ status: 0, message: "Your account is Blocked by admin." });
-    }  
+    }
 
     // Check if the password matches
     const isMatch = await bcrypt.compare(password, user.password);
