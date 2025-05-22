@@ -160,6 +160,7 @@ exports.login = async (req, res) => {
   try {
     const user = await db.User.findOne({
       where: { email: email },
+      attributes: { exclude: ['work_balance'] },
       include: [
         {
           model: db.Job_title,
@@ -217,7 +218,7 @@ exports.login = async (req, res) => {
 
   } catch (error) {
     console.error("Login error: ", error);
-    return res.status(500).json({ message: "Internal server error." });
+    return res.status(500).json({ status: 0, message: "Internal server error." });
   }
 };
 

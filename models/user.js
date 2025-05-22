@@ -70,13 +70,6 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
-        // otp: {
-        //     type: DataTypes.INTEGER,
-        // },
-        // otp_created_at: {
-        //     type: DataTypes.DATE,
-        //     allowNull: true,
-        // },
         is_email_verified: {
             type: DataTypes.BOOLEAN,
             defaultValue: false
@@ -103,7 +96,11 @@ module.exports = (sequelize, DataTypes, Model) => {
         },
         is_worker_active: {
             type: DataTypes.ENUM('Active', 'Deactive'),
-            defaultValue: null, 
+            defaultValue: null,
+        },
+        work_balance: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
         },
         is_company_active: {
             type: DataTypes.ENUM('Active', 'Deactive'),

@@ -347,8 +347,10 @@ exports.addProject = () => {
             check("start_date").notEmpty().withMessage('Start Date is required.').isISO8601().withMessage("Start Date must be a valid date (YYYY-MM-DD)."),
             check("end_date").notEmpty().withMessage('End Date is required.').isISO8601().withMessage("End Date must be a valid date (YYYY-MM-DD)."),
             check("address").notEmpty().withMessage("address is required.").isString().withMessage('Address must be sting').trim(),
+            check("latitude").notEmpty().withMessage("Latitude is required.").isFloat({ min: -90, max: 90 }).withMessage("Latitude must be a valid coordinate."),
+            check("longitude").notEmpty().withMessage("Longitude is required.").isFloat({ min: -180, max: 180 }).withMessage("Longitude must be a valid coordinate."),
         ],
-        checkForUnexpectedFields(["documents", "client_id", "project_name", "start_date", "end_date", "address"]),
+        checkForUnexpectedFields(["documents", "client_id", "project_name", "start_date", "end_date", "address", "latitude", "longitude"]),
         validation
     ];
 }
@@ -363,8 +365,10 @@ exports.editProject = () => {
             check("end_date").optional().isISO8601().withMessage("End Date must be a valid date (YYYY-MM-DD)."),
             check("address").optional().isString().withMessage('Address must be sting').trim(),
             check("status").optional().isIn(['active', 'deactive', 'completed', 'cancelled']).withMessage("Invalid value for status. Allowed values are 'active' or 'deactive' or 'completed' or 'cancelled' ").trim(),
+            check("latitude").optional().isFloat({ min: -90, max: 90 }).withMessage("Latitude must be a valid coordinate."),
+            check("longitude").optional().isFloat({ min: -180, max: 180 }).withMessage("Longitude must be a valid coordinate."),
         ],
-        checkForUnexpectedFields(["project_id", "client_id", "project_name", "start_date", "end_date", "address", "status"]),
+        checkForUnexpectedFields(["project_id", "client_id", "project_name", "start_date", "end_date", "address", "status", "latitude", "longitude"]),
         validation
     ];
 }

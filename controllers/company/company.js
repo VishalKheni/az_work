@@ -307,6 +307,12 @@ exports.dashboardCount = async (req, res) => {
         const company = await db.Company.findOne({
             where: { owner_id: req.user.id },
         });
+        const totalWorkers = await db.User.count({
+            where: {
+                company_id: company.id,
+                user_role: 'worker' 
+            }
+        });
 
         const activeWorkers = await db.User.count({
             where: {
@@ -343,6 +349,7 @@ exports.dashboardCount = async (req, res) => {
             status: 1,
             message: "Dashboard count fetched successfully",
             data: {
+                totalWorkers,
                 activeWorkers,
                 deactiveWorkers,
                 totalProject,
@@ -463,6 +470,13 @@ exports.upcomingHolidayList = async (req, res) => {
             order: [['id', 'DESC']],
         });
 
+        const holidaysWithImages = holidays.rows.map((holiday) => {
+            return {
+                ...holiday.toJSON(),
+                image_url: "https://app.arbeitszeit.swiss:8800/company_logo/fi_5793801.png"
+            };
+        });
+
         return res.status(200).json({
             status: 1,
             message: "Upcoming Holidays fetched successfully",
@@ -472,7 +486,7 @@ exports.upcomingHolidayList = async (req, res) => {
                 currentPage: parseInt(page),
                 limit: parseInt(limit),
             },
-            data: holidays.rows
+            data: holidaysWithImages
         });
     } catch (error) {
         console.error('Error while fetching holidays:', error);

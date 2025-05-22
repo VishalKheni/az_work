@@ -83,7 +83,6 @@ exports.getAbsencesList = async (req, res) => {
             order = [[db.sequelize.literal(`CASE WHEN status = 'unpaid' THEN 0 ELSE 1 END`), 'DESC'], ['createdAt', 'DESC']];
         }
 
-
         const { count, rows: absence } = await db.Absences.findAndCountAll({
             limit,
             offset,

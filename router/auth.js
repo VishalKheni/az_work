@@ -26,6 +26,6 @@ router.post('/verify_otp_email', authvalidation.verifyOtpForResetPassword(), aut
 router.post('/reset_password', authvalidation.resetPassword(), authController.resetPassword);
 
 router.put('/edit_profile', verifyToken, uploadFile, authvalidation.editProfile(), authController.editProfile);
-router.get('/get_profile', verifyToken,  authController.getAdminProfile);
+router.get('/get_profile', verifyToken, authController.getAdminProfile);
 
 module.exports = router;

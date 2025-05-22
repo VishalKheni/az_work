@@ -9,7 +9,7 @@ const path = require('path');
 
 exports.addProject = async (req, res) => {
     try {
-        const { client_id, project_name, start_date, end_date, address } = req.body;
+        const { client_id, project_name, start_date, end_date, address, latitude, longitude } = req.body;
         const { documents } = req.files;
         if (req.user?.is_company_active === "Deactive") {
             return res.status(400).json({
@@ -36,7 +36,9 @@ exports.addProject = async (req, res) => {
             start_date,
             end_date,
             status: "active",
-            address
+            address,
+            latitude,
+            longitude
         });
 
         let documentsData;
@@ -64,7 +66,7 @@ exports.addProject = async (req, res) => {
 
 exports.editProject = async (req, res) => {
     try {
-        const { project_id, client_id, project_name, start_date, end_date, status, address } = req.body;
+        const { project_id, client_id, project_name, start_date, end_date, status, address, latitude, longitude } = req.body;
         if (req.user?.is_company_active === "Deactive") {
             return res.status(400).json({
                 status: 0,
@@ -86,7 +88,7 @@ exports.editProject = async (req, res) => {
             await project.update({ client_id: client.id });
         }
 
-        await project.update({ project_name, start_date, end_date, status, address });
+        await project.update({ project_name, start_date, end_date, status, address, latitude, longitude });
 
         return res.status(200).json({
             status: 1,
@@ -143,7 +145,7 @@ exports.getProjectList = async (req, res) => {
         if (search) {
             whereCondition[Op.or] = [
                 { project_name: { [Op.like]: `%${search}%` } },
-                { '$client.client_name$': { [Op.like]: `%${search}%` } }, 
+                { '$client.client_name$': { [Op.like]: `%${search}%` } },
             ];
         }
 
