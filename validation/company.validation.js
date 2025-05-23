@@ -659,11 +659,10 @@ exports.approveRejectAbsenceRequest = () => {
 exports.upcomingHolidayList = () => {
     return [
         [
-            check('page').notEmpty().withMessage('Page must required.').isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
             check('year').notEmpty().withMessage('Year is required').isInt().withMessage('Year must be a positive integer'),
             check('month').notEmpty().withMessage('Month is required').isInt({ min: 1, max: 12 }).withMessage('Month must be a positive integer between 1 and 12'),
         ],
-        checkForUnexpectedFields(["page", "limit", "year", "month"]),
+        checkForUnexpectedFields(["year", "month"]),
         validation
     ];
 }

@@ -429,10 +429,7 @@ exports.dashboardRequestList = async (req, res) => {
 
 exports.upcomingHolidayList = async (req, res) => {
     try {
-        let { page, limit, month, year } = req.query;
-        page = parseInt(page) || 1;
-        limit = parseInt(limit) || 10;
-        const offset = (page - 1) * limit;
+        let { month, year } = req.query;
         const monthIndex = parseInt(month) - 1;
 
 
@@ -448,7 +445,7 @@ exports.upcomingHolidayList = async (req, res) => {
         const startOfMonth = moment.utc({ year: parseInt(year), month: monthIndex, day: 1 }).startOf('month').toDate();
         const endOfMonth = moment.utc({ year: parseInt(year), month: monthIndex, day: 1 }).endOf('month').toDate();
 
-        const holidays = await db.Holiday.findAndCountAll({
+        const holidays = await db.Holiday.findAll({
             where: {
                 is_holiday_checked: true,
                 [Op.and]: [
@@ -465,12 +462,10 @@ exports.upcomingHolidayList = async (req, res) => {
                 }
             },
             distinct: true,
-            limit,
-            offset,
             order: [['id', 'DESC']],
         });
 
-        const holidaysWithImages = holidays.rows.map((holiday) => {
+        const holidaysWithImages = holidays.map((holiday) => {
             return {
                 ...holiday.toJSON(),
                 image_url: "https://app.arbeitszeit.swiss:8800/company_logo/fi_5793801.png"
@@ -480,12 +475,6 @@ exports.upcomingHolidayList = async (req, res) => {
         return res.status(200).json({
             status: 1,
             message: "Upcoming Holidays fetched successfully",
-            pagination: {
-                totalItems: holidays.count,
-                totalPages: Math.ceil(holidays.count / limit),
-                currentPage: parseInt(page),
-                limit: parseInt(limit),
-            },
             data: holidaysWithImages
         });
     } catch (error) {

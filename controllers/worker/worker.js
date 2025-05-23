@@ -849,8 +849,13 @@ exports.homeScreenCount = async (req, res) => {
 
 exports.absencesScreenCount = async (req, res) => {
     try {
+        const { month, year } = req.query;
+        const currentDate = moment.utc();
+
+
         const startOfMonth = moment.utc().startOf('month').toDate();
         const endOfMonth = moment.utc().endOf('month').toDate();
+
         const user = await db.User.findOne({
             where: { id: req.user.id },
             attributes: ['id', 'company_id', 'vacation_days', 'employment_date'],
@@ -860,7 +865,6 @@ exports.absencesScreenCount = async (req, res) => {
             return res.status(404).json({ status: 0, message: 'User not found' });
         }
 
-        // 2. Get all clock entries with duration
         const entries = await db.Clock_entry.findAll({
             where: {
                 worker_id: req.user.id,
@@ -1089,7 +1093,7 @@ exports.AbsenceScrenCalendar = async (req, res) => {
 
         const user = await db.User.findOne({
             where: { id: req.user.id },
-            attributes: ['id'],
+            attributes: ['id', 'company_id', 'vacation_days', 'employment_date'],
             include: [
                 {
                     model: db.Clock_entry,
@@ -1148,11 +1152,228 @@ exports.AbsenceScrenCalendar = async (req, res) => {
         );
 
 
+
+
+        // const user = await db.User.findOne({
+        //     where: { id: req.user.id },
+        //     attributes: ['id', 'company_id', 'vacation_days', 'employment_date'],
+        // });
+
+        // if (!user) {
+        //     return res.status(404).json({ status: 0, message: 'User not found' });
+        // }
+
+        const entries = await db.Clock_entry.findAll({
+            where: {
+                worker_id: req.user.id,
+                status: "approved",
+                date: {
+                    [Op.between]: [startOfMonth, endOfMonth]
+                },
+                duration: { [Op.ne]: null }
+            },
+            attributes: ['duration']
+        });
+
+        let totalSeconds = 0;
+        entries.forEach(entry => {
+            const [hh, mm, ss] = entry.duration.split(':').map(Number);
+            totalSeconds += (hh * 3600) + (mm * 60) + ss;
+        });
+
+        const company = await db.Company.findOne({
+            where: { id: user.company_id },
+            include: [{
+                model: db.Branch,
+                as: 'industry',
+                attributes: ['monthly_hours', 'yearly_hours'],
+                required: false
+            }]
+        });
+
+        const totalMonthlyHours = company?.industry?.monthly_hours || 0;
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const totalRoundedHours = hours + (minutes >= 60 ? 1 : 0);  // avoid overcounting
+        const overTime = totalRoundedHours > totalMonthlyHours
+            ? totalMonthlyHours - totalRoundedHours
+            : 0;
+
+        const usedRequests = await db.absence_request.findAll({
+            where: {
+                worker_id: req.user.id,
+                request_status: 'accepted',
+                // createdAt: {
+                //     [Op.between]: [startOfMonth, endOfMonth]
+                // }
+                // end_date: { [Op.lte]: moment().format('YYYY-MM-DD') },
+            },
+            include: [
+                {
+                    model: db.Absences,
+                    as: 'absence',
+                    where: { absence_type: 'vacation' },
+                    // required: false
+                },
+            ]
+        });
+
+
+        // console.log('usedRequests', usedRequests)
+        let usedDays = 0;
+        usedRequests.forEach(request => {
+            const startDate = moment(request.start_date);
+            const endDate = request.type === 0 || !request.end_date
+                ? startDate
+                : moment(request.end_date);
+
+            const diffDays = endDate.diff(startDate, 'days') + 1;
+            usedDays += diffDays;
+        });
+
+        // Planned vacation days (future)
+        const plannedRequests = await db.absence_request.findAll({
+            where: {
+                worker_id: req.user.id,
+                request_status: 'pending',
+                // start_date: { [Op.gt]: moment().format('YYYY-MM-DD') },
+            },
+            include: [
+                {
+                    model: db.Absences,
+                    as: 'absence',
+                    where: { absence_type: 'vacation' },
+                    // required: false
+                },
+            ]
+        });
+        // console.log('plannedRequests', plannedRequests)
+        let plannedDays = 0;
+        plannedRequests.forEach(request => {
+            const startDate = moment(request.start_date);
+            const endDate = request.type === 0 || !request.end_date10
+                ? startDate
+                : moment(request.end_date);
+
+            const diffDays = endDate.diff(startDate, 'days') + 1;
+            plannedDays += diffDays;
+        });
+        const remainingDays = parseInt(user.vacation_days) - usedDays - plannedDays;
+
+        // const today = moment(); // Or use moment() in production
+        // const startMonth = moment(today).startOf('month');
+        // const endOfRange = moment(today); // Only up to current date
+
+        const today = moment();
+        const startMonth = moment({ year, month: month - 1 }).startOf('month');
+        const endMonth = moment(startOfMonth).endOf('month');
+        const isCurrentMonth = today.month() === startMonth.month() && today.year() === startMonth.year();
+        const endOfRange = isCurrentMonth ? today : endMonth;
+
+        // 1. Count working days (Mon–Fri) from start of month to today
+        let totalWorkingDays = 0;
+        let dayCursor = moment(startMonth);
+        while (dayCursor.isSameOrBefore(endOfRange, 'day')) {
+            const dayOfWeek = dayCursor.isoWeekday(); // 1 (Mon) - 7 (Sun)
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                totalWorkingDays++;
+            }
+            dayCursor.add(1, 'day');
+        }
+
+        // present day count
+        const clockentries = await db.Clock_entry.findAll({
+            where: {
+                worker_id: req.user.id,
+                status: "approved",
+                date: {
+                    [Op.between]: [startMonth.format('YYYY-MM-DD'), endOfRange.format('YYYY-MM-DD')]
+                },
+                duration: {
+                    [Op.ne]: null
+                }
+            },
+            attributes: ['date'] // Only need date to count unique days
+        });
+
+        const presentDates = new Set();
+        clockentries.forEach(entry => {
+            presentDates.add(moment(entry.date).format('YYYY-MM-DD'));
+        });
+        // -----------------------------------------
+
+        // 2. Fetch accepted absences in current month (only up to today)
+        const absences = await db.absence_request.findAll({
+            where: {
+                worker_id: req.user.id,
+                request_status: 'accepted',
+                updatedAt: {
+                    [Op.between]: [startOfMonth, endOfMonth]
+                }
+            }
+        });
+
+        // 3. Identify absent weekdays (Mon–Fri only)
+        const absentDates = new Set();
+        absences.forEach(abs => {
+            const startDate = moment(abs.start_date);
+            const endDate = abs.type === 0 || !abs.end_date
+                ? startDate
+                : moment(abs.end_date);
+
+            let current = moment(startDate);
+            while (current.isSameOrBefore(endDate, 'day') && current.isSameOrBefore(endOfRange, 'day')) {
+                const dayOfWeek = current.isoWeekday();
+                if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                    absentDates.add(current.format('YYYY-MM-DD'));
+                }
+                current.add(1, 'day');
+            }
+        });
+
+
+        let totalAbsenceDays = 0;
+        for (const absence of absences) {
+            if (absence.type === 0 && absence.start_date) {
+                const day = moment(absence.start_date).isoWeekday();
+                if (day >= 1 && day <= 5) {
+                    totalAbsenceDays += 1;
+                }
+            } else if (absence.type === 1 && absence.start_date && absence.end_date) {
+                const start = moment(absence.start_date).startOf('day');
+                const end = moment(absence.end_date).startOf('day');
+
+                let current = moment(start);
+                while (current.isSameOrBefore(end, 'day') && current.isSameOrBefore(endOfMonth, 'day')) {
+                    const dayOfWeek = current.isoWeekday();
+                    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                        totalAbsenceDays += 1;
+                    }
+                    current.add(1, 'day');
+                }
+            }
+        }
+
+
+        // const totalAbsentDays = absentDates.size; absences
+        const totalPresentDays = presentDates.size;
+        const attendancePercentage = totalWorkingDays === 0 ? '0.00' :
+            ((totalPresentDays / totalWorkingDays) * 100).toFixed(2);
+
+
+
         return res.status(200).json({
             status: 1,
             message: "Absence scrren calendar fetched successfully",
-            // data: user
             data: {
+                planed_hours: parseInt(totalMonthlyHours),
+                worked_hour: totalRoundedHours,
+                balance: overTime,
+                vacation_token: user.vacation_days,
+                vacation_remaining: remainingDays,
+                percentage: parseFloat(attendancePercentage),
+                total_present_days: totalPresentDays,
+                total_absent_days: totalAbsenceDays,
                 // id: user.id,
                 clock_entries: uniqueClockDates,
                 absence_requests: sortedAbsences

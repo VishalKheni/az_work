@@ -18,6 +18,7 @@ const formatSecondsToHHMMSS = (totalSeconds) => {
 
 // const updateBreakTime = cron.schedule('0 0 * * *', async () => {
 const updateBreakTime = cron.schedule('* * * * *', async () => {
+    console.log("update break time cron job running");
     const yesterday = moment().subtract(1, 'day').format('YYYY-MM-DD');
 
     try {
@@ -52,8 +53,9 @@ const updateBreakTime = cron.schedule('* * * * *', async () => {
     }
 });
 
-const addWorkbalance = cron.schedule('* * * * *', async () => {
-    // const addWorkbalance = cron.schedule('0 0 28-31 * *', async () => {
+// const addWorkbalance = cron.schedule('* * * * *', async () => {
+    const addWorkbalance = cron.schedule('0 0 28-31 * *', async () => {
+    console.log("Add work balance cron job running");
 
     try {
         // const today = moment();
