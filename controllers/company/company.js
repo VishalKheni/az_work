@@ -310,7 +310,7 @@ exports.dashboardCount = async (req, res) => {
         const totalWorkers = await db.User.count({
             where: {
                 company_id: company.id,
-                user_role: 'worker' 
+                user_role: 'worker'
             }
         });
 
@@ -341,7 +341,6 @@ exports.dashboardCount = async (req, res) => {
         });
         const runningProjectList = await db.Project.findAll({
             where: { company_id: company.id, status: "active" },
-            limit: 5,
             order: [['createdAt', 'DESC']],
         });
 
@@ -367,7 +366,7 @@ exports.dashboardCount = async (req, res) => {
 
 exports.dashboardRequestList = async (req, res) => {
     try {
-        let { page, limit } = req.query;
+        let { page, limit, filter } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
@@ -384,11 +383,39 @@ exports.dashboardRequestList = async (req, res) => {
         });
         const workerIds = workers.map(user => user.id); // extract all worker ids
 
+        let order;
+        if (filter === 'id_ASC') {
+            order = [['id', 'ASC']];
+        } else if (filter === 'id_DESC') {
+            order = [['id', 'DESC']];
+        } else if (filter === 'worker_name_ASC') {
+            order = [[Sequelize.literal("CONCAT(`workers`.`firstname`, ' ', `workers`.`lastname`)"), 'ASC']];
+        } else if (filter === 'worker_name_DESC') {
+            order = [[Sequelize.literal("CONCAT(`workers`.`firstname`, ' ', `workers`.`lastname`)"), 'DESC']];
+        } else if (filter === 'date_ASC') {
+            order = [['start_date', 'ASC']];
+        } else if (filter === 'date_DESC') {
+            order = [['start_date', 'DESC']];
+        } else if (filter === 'absence_type_ASC') {
+            order = [[Sequelize.literal('`absence`.`absence_type`'), 'ASC']];
+        } else if (filter === 'absence_type_DESC') {
+            order = [[Sequelize.literal('`absence`.`absence_type`'), 'DESC']];
+        } else if (filter === 'paid_ASC') {
+            order = [[Sequelize.literal("CASE WHEN `absence`.`status` = 'paid' THEN 0 ELSE 1 END"), 'ASC']];
+        } else if (filter === 'paid_DESC') {
+            order = [[Sequelize.literal("CASE WHEN `absence`.`status` = 'paid' THEN 0 ELSE 1 END"), 'DESC']];
+        } else if (filter === 'unpaid_ASC') {
+            order = [[Sequelize.literal("CASE WHEN `absence`.`status` = 'unpaid' THEN 1 ELSE 0 END"), 'ASC']];
+        } else if (filter === 'unpaid_DESC') {
+            order = [[Sequelize.literal("CASE WHEN `absence`.`status` = 'unpaid' THEN 1 ELSE 0 END"), 'DESC']];
+        }
+
         const { count, rows: requestList } = await db.absence_request.findAndCountAll({
             where: {
+                request_status: "pending",
                 worker_id: {
-                    [Op.in]: workerIds
-                }
+                    [Op.in]: workerIds,
+                },
             },
             include: [
                 {
@@ -405,7 +432,7 @@ exports.dashboardRequestList = async (req, res) => {
             distinct: true,
             limit,
             offset,
-            order: [['createdAt', 'DESC']]
+            order
         });
 
         return res.status(200).json({

@@ -611,8 +611,11 @@ exports.dashboardRequestList = () => {
                 .withMessage('Page must required.')
                 .isInt({ min: 1 })
                 .withMessage('Page must be a positive integer.'),
+            check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be string")
+                .isIn(['id_ASC', 'id_DESC', 'worker_name_ASC', 'worker_name_DESC', 'date_ASC', 'date_DESC', 'absence_type_ASC', 'absence_type_DESC', 'paid_ASC', 'paid_DESC', 'unpaid_ASC', 'unpaid_DESC'])
+                .withMessage("Invalid value for filter. Allowed values are id_ASC,id_DESC  worker_name_ASC, worker_name_DESC date_ASC, date_DESC, absence_type_ASC, absence_type_ASC, 'paid_ASC', 'paid_DESC', 'unpaid_ASC', 'unpaid_DESC'.").trim()
         ],
-        checkForUnexpectedFields(["page", "limit"]),
+        checkForUnexpectedFields(["page", "limit", "filter"]),
         validation
     ];
 }

@@ -16,8 +16,8 @@ const formatSecondsToHHMMSS = (totalSeconds) => {
     return `${hours}:${minutes}:${seconds}`;
 };
 
-// const updateBreakTime = cron.schedule('0 0 * * *', async () => {
-const updateBreakTime = cron.schedule('* * * * *', async () => {
+const updateBreakTime = cron.schedule('0 0 * * *', async () => {
+// const updateBreakTime = cron.schedule('* * * * *', async () => {
     console.log("update break time cron job running");
     const yesterday = moment().subtract(1, 'day').format('YYYY-MM-DD');
 
@@ -53,14 +53,15 @@ const updateBreakTime = cron.schedule('* * * * *', async () => {
     }
 });
 
-// const addWorkbalance = cron.schedule('* * * * *', async () => {
-    const addWorkbalance = cron.schedule('0 0 28-31 * *', async () => {
+const addWorkbalance = cron.schedule('2 * * * *', async () => {
+    // const addWorkbalance = cron.schedule('0 0 28-31 * *', async () => {
     console.log("Add work balance cron job running");
 
     try {
         // const today = moment();
-        const today = moment("31/05/2025", "DD/MM/YYYY");
-
+        const today = moment("30/06/2025", "DD/MM/YYYY");
+console.log('today', today)
+console.log('today.date() === today.clone().endOf("month").date()', today.date() === today.clone().endOf('month').date())
         // Only run if today is the last day of the month
         if (today.date() === today.clone().endOf('month').date()) {
             const workers = await db.User.findAll({ where: { user_role: "worker" } });
@@ -93,9 +94,19 @@ const updateBreakTime = cron.schedule('* * * * *', async () => {
                 const hours = Math.floor(totalSeconds / 3600);
                 const minutes = Math.floor((totalSeconds % 3600) / 60);
                 const totalRoundedHours = hours + (minutes >= 30 ? 1 : 0);
-                const balance = totalRoundedHours - totalMonthlyHours;
-                await db.User.update({ work_balance: balance }, { where: { id: worker.id } });
-                console.log(`Worker ID: ${worker.id}, Total Work Rounded Hours:${totalRoundedHours} hours balance:${balance} monthly hours:${totalMonthlyHours} `);
+                const monthBalance = totalRoundedHours - totalMonthlyHours;
+
+                // Get current balance from DB
+                const currentBalance = worker.work_balance || 0;
+                const newBalance = currentBalance + monthBalance;
+
+                // await db.User.update({ work_balance: newBalance }, { where: { id: worker.id } });
+
+                console.log(`Worker ID: ${worker.id}, Worked: ${totalRoundedHours}, Monthly Required: ${totalMonthlyHours}, Monthly Balance: ${monthBalance}, New Total Balance: ${newBalance}`);
+
+                // const balance = totalRoundedHours - totalMonthlyHours;
+                // await db.User.update({ work_balance: balance }, { where: { id: worker.id } });
+                // console.log(`Worker ID: ${worker.id}, Total Work Rounded Hours:${totalRoundedHours} hours balance:${balance} monthly hours:${totalMonthlyHours} `);
             }
         }
     } catch (error) {
