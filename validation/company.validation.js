@@ -90,8 +90,11 @@ exports.editCompany = () => {
             check('owner_lastname').optional().isString().withMessage('Last Name must be sting').trim().escape(),
             check('owner_iso_code').optional().isString().withMessage("ISO Code must be string").trim().escape(),
             check('owner_country_code').optional().isString().withMessage("Country Code must be string").trim().escape(),
+            check('weekly_hours').optional().isNumeric().withMessage('Weekly hours must be a number'),
+            check('monthly_hours').optional().isNumeric().withMessage('Monthly hours must be a number'),
+            check('yearly_hours').optional().isNumeric().withMessage('Yearly hours must be a number'),
         ],
-        checkForUnexpectedFields(["company_id", 'industry_id', "company_logo", "company_name", "email", "phone_number", "iso_code", "country_code", "address", "owner_firstname", "owner_lastname", "owner_phone_number", "owner_iso_code", "owner_country_code",]),
+        checkForUnexpectedFields(["company_id", 'industry_id', "company_logo", "company_name", "email", "phone_number", "iso_code", "country_code", "address", "owner_firstname", "owner_lastname", "owner_phone_number", "owner_iso_code", "owner_country_code", "weekly_hours", "monthly_hours", "yearly_hours"]),
         validation
     ];
 }

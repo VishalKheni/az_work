@@ -109,8 +109,11 @@ exports.verifyOtpAndRegister = () => {
             check("device_id").not().isEmpty().withMessage("Device ID is required").trim(),
             check("device_type").not().isEmpty().withMessage("Device type is required").trim(),
             check("device_token").not().isEmpty().withMessage("Device token is required").trim(),
+            check('weekly_hours').notEmpty().withMessage('Weekly hours is required').isNumeric().withMessage('Weekly hours must be a number'),
+            check('monthly_hours').notEmpty().withMessage('Monthly hours is required').isNumeric().withMessage('Monthly hours must be a number'),
+            check('yearly_hours').notEmpty().withMessage('Yearly hours is required').isNumeric().withMessage('Yearly hours must be a number'),
         ],
-        checkForUnexpectedFields(["company_logo", "firstname", "lastname", "phone_number", "iso_code", "country_code", "email", "password", "industry_id", "company_name", "company_phone_number", "company_iso_code", "company_country_code", "address", "otp", "device_id", "device_type", "device_token"]),
+        checkForUnexpectedFields(["company_logo", "firstname", "lastname", "phone_number", "iso_code", "country_code", "email", "password", "industry_id", "company_name", "company_phone_number", "company_iso_code", "company_country_code", "address", "otp", "device_id", "device_type", "device_token", "weekly_hours", "monthly_hours", "yearly_hours"]),
         validation
     ];
 }

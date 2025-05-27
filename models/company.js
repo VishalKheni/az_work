@@ -36,6 +36,21 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
+        weekly_hours: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0,
+            allowNull: true
+        },
+        monthly_hours: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0,
+            allowNull: true
+        },
+        yearly_hours: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0,
+            allowNull: true
+        },
     }, {
         tableName: "tbl_company",
         timestamps: true,

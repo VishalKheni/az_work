@@ -48,8 +48,8 @@ exports.sendOtpEmail = async (req, res) => {
 };
 
 exports.verifyOtpAndRegister = async (req, res) => {
-  const { firstname, lastname, country_code, iso_code, phone_number, company_country_code, company_iso_code, company_phone_number, email, password, otp, industry_id, company_name, address, device_id, device_token, device_type
-  } = req.body;
+  const { firstname, lastname, country_code, iso_code, phone_number, company_country_code, company_iso_code, company_phone_number, email, password, otp, industry_id, company_name, address, device_id, device_token, device_type,
+    weekly_hours, monthly_hours, yearly_hours } = req.body;
 
   const { company_logo } = req.files;
 
@@ -67,6 +67,12 @@ exports.verifyOtpAndRegister = async (req, res) => {
       return res.status(400).json({ status: 0, message: "OTP expired" });
     }
 
+    const branch = await db.Branch.findByPk(industry_id);
+    if (!branch) return res.status(400).json({ status: 0, message: 'Industry not found' });
+
+    const fileValidation = await validateFiles(company_logo, ["jpg", "jpeg", "png", "webp"], 15 * 1024 * 1024);
+    if (!fileValidation.valid) return res.status(400).json({ status: 0, message: fileValidation.message });
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await db.User.create({
       firstname,
@@ -80,16 +86,11 @@ exports.verifyOtpAndRegister = async (req, res) => {
       is_account_created: true,
       is_email_verified: true,
       is_password_add: true,
-      is_company_add: true
+      is_company_add: true,
+      is_company_active: "Active",
     });
 
     let company = null;
-    const branch = await db.Branch.findByPk(industry_id);
-    if (!branch) return res.status(400).json({ status: 0, message: 'Branch not found' });
-
-    const fileValidation = await validateFiles(company_logo, ["jpg", "jpeg", "png", "webp"], 15 * 1024 * 1024);
-    if (!fileValidation.valid) return res.status(400).json({ status: 0, message: fileValidation.message });
-
     company = await db.Company.create({
       owner_id: user.id,
       industry_id,
@@ -99,7 +100,7 @@ exports.verifyOtpAndRegister = async (req, res) => {
       iso_code: company_iso_code,
       phone_number: company_phone_number,
       address,
-      is_company_active: true
+      weekly_hours, monthly_hours, yearly_hours,
     });
 
     const tokenRecord = await db.Token.create({
@@ -113,7 +114,7 @@ exports.verifyOtpAndRegister = async (req, res) => {
 
     const accessToken = jwt.sign({ user_id: user.id, token_id: tokenRecord.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
 
-    await temp.destroy(); // clear OTP record
+    await temp.destroy(); 
 
     return res.status(200).json({
       status: 1,
@@ -279,27 +280,13 @@ exports.verifyOtpForResetPassword = async (req, res) => {
     }
 
     const otpAge = (new Date() - temp.updatedAt) / (1000 * 60);
-    if (otpAge > 1) {
+    if (otpAge > 5) {
       await temp.destroy();
       return res.status(400).json({ status: 0, message: "OTP expired" });
     }
 
     await temp.destroy();
 
-    // const user = await db.User.findOne({ where: { email: email } });
-
-    // if (!user) return res.status(404).json({ status: 0, message: "User not found" });
-
-    // if (user.otp !== parseInt(otp)) return res.status(400).json({ status: 0, message: "Invalid OTP" });
-
-    // const currentTime = new Date();
-    // const otpAgeInMinutes = (currentTime - user.otp_created_at) / (1000 * 60);
-
-    // if (otpAgeInMinutes > 1) {
-    //   await user.update({ otp: null, otp_created_at: null });
-    //   return res.status(400).json({ status: 0, message: "OTP has expired" });
-    // }
-    // await user.update({ otp: null, otp_created_at: null, is_email_verified: true });
     return res.status(200).json({
       status: 1,
       message: 'OTP verified successfully.',
@@ -316,7 +303,7 @@ exports.resetPassword = async (req, res) => {
     const { email, newpassword } = req.body;
 
     let user = await db.User.findOne({ where: { email: email } });
-    if (!user) return res.status(404).json({ status: 0, message: "No account associated with this email." });
+    if (!user) return res.status(404).json({ status: 0, message: "Email is not registered." });
 
     const newHashedPassword = await bcrypt.hash(newpassword, 10);
     await db.User.update({ password: newHashedPassword }, { where: { id: user.id } });

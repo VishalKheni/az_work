@@ -16,7 +16,7 @@ router.get('/branch_list', companyController.branchList);
 
 // Company
 router.get('/detail', verifyToken, checkUserRole(['company']), companyController.companyDetail);
-router.put('/edit_company', uploadFile, checkUserRole(['company']), companyvalidation.editCompany(), companyController.editCompany);
+router.put('/edit_company', uploadFile,verifyToken, checkUserRole(['company']), companyvalidation.editCompany(), companyController.editCompany);
 router.get('/get_working_hour', verifyToken, checkUserRole(['company']), companyvalidation.getCompanyMonthlyHours(), companyController.getCompanyMonthlyHours);
 router.get('/get_weakly_hour', verifyToken, checkUserRole(['company']), companyvalidation.getWeeklyHours(), companyController.getWeeklyHours);
 router.get('/dashboard_count', verifyToken, checkUserRole(['company']), companyController.dashboardCount);

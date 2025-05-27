@@ -34,14 +34,14 @@ exports.addclockEntrry = async (req, res) => {
         }
 
         if (type === 'clock_in') {
-            // const distance = getDistanceFromLatLonInKm(parseFloat(latitude), parseFloat(longitude), parseFloat(project.latitude), parseFloat(project.longitude));
+            const distance = getDistanceFromLatLonInKm(parseFloat(latitude), parseFloat(longitude), parseFloat(project.latitude), parseFloat(project.longitude));
 
-            // if (distance > 2) {
-            //     return res.status(400).json({
-            //         status: 0,
-            //         message: `You are too far from the project location (Distance: ${distance.toFixed(2)} km). Must be within 2 km to clock in.`,
-            //     });
-            // }
+            if (distance > 2) {
+                return res.status(400).json({
+                    status: 0,
+                    message: `You are too far from the project location (Distance: ${distance.toFixed(2)} km). Must be within 2 km to clock in.`,
+                });
+            }
 
             const lastClockIn = await db.Clock_entry.findOne({
                 where: {
@@ -626,7 +626,8 @@ exports.homeScreenCount = async (req, res) => {
             }]
         });
 
-        const totalMonthlyHours = company?.industry?.monthly_hours || 0;
+        // const totalMonthlyHours = company?.industry?.monthly_hours || 0;
+        const totalMonthlyHours = company?.monthly_hours || 0;
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const totalRoundedHours = hours + (minutes >= 60 ? 1 : 0);  // avoid overcounting
@@ -755,8 +756,8 @@ exports.homeScreenCount = async (req, res) => {
         }));
 
         const todayDate = moment.utc().format('YYYY-MM-DD');
-        const DAILY_FIXED_HOURS = company?.industry?.weekly_hours
-            ? company.industry.weekly_hours / 5
+        const DAILY_FIXED_HOURS = company?.weekly_hours
+            ? company?.weekly_hours / 5
             : 0;
 
         const overtimeEntries = await db.Clock_entry.findAll({
@@ -1191,19 +1192,20 @@ exports.AbsenceScrenCalendar = async (req, res) => {
             }]
         });
 
-        const totalMonthlyHours = company?.industry?.monthly_hours || 0;
+        // const totalMonthlyHours = company?.industry?.monthly_hours || 0;
+        const totalMonthlyHours = company?.monthly_hours || 0;
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const totalRoundedHours = hours + (minutes >= 60 ? 1 : 0);  // avoid overcounting
         const overTime = totalRoundedHours > totalMonthlyHours
-            ? totalMonthlyHours - totalRoundedHours
+            ? totalRoundedHours - totalMonthlyHours 
             : 0;
 
         const usedRequests = await db.absence_request.findAll({
             where: {
                 worker_id: req.user.id,
                 request_status: 'accepted',
-                // createdAt: {
+                // updatedAt: {
                 //     [Op.between]: [startOfMonth, endOfMonth]
                 // }
                 // end_date: { [Op.lte]: moment().format('YYYY-MM-DD') },
@@ -1223,10 +1225,7 @@ exports.AbsenceScrenCalendar = async (req, res) => {
         let usedDays = 0;
         usedRequests.forEach(request => {
             const startDate = moment(request.start_date);
-            const endDate = request.type === 0 || !request.end_date
-                ? startDate
-                : moment(request.end_date);
-
+            const endDate = request.type === 0 || !request.end_date ? startDate : moment(request.end_date);
             const diffDays = endDate.diff(startDate, 'days') + 1;
             usedDays += diffDays;
         });
@@ -1374,7 +1373,6 @@ exports.AbsenceScrenCalendar = async (req, res) => {
                 percentage: parseFloat(attendancePercentage),
                 total_present_days: totalPresentDays,
                 total_absent_days: totalAbsenceDays,
-                // id: user.id,
                 clock_entries: uniqueClockDates,
                 absence_requests: sortedAbsences
             }
@@ -1453,4 +1451,3 @@ exports.editClockEntry = async (req, res) => {
 };
 
 
-// const updatebreakTimec = cron.schedule('0 */6 * * *', async () => {});

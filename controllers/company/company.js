@@ -56,7 +56,7 @@ exports.companyDetail = async (req, res) => {
 
 exports.editCompany = async (req, res) => {
     try {
-        const { company_id, industry_id, company_name, email, country_code, iso_code, phone_number, address, owner_phone_number, owner_country_code, owner_iso_code, owner_firstname, owner_lastname } = req.body;
+        const { company_id, industry_id, company_name, email, country_code, iso_code, phone_number, address, owner_phone_number, owner_country_code, owner_iso_code, owner_firstname, owner_lastname, weekly_hours, monthly_hours, yearly_hours, } = req.body;
         const { company_logo } = req.files;
 
         if (iso_code && phone_number) {
@@ -91,7 +91,7 @@ exports.editCompany = async (req, res) => {
             await company.update({ company_logo: `company_logo/${company_logo[0].filename}` });
         }
 
-        await company.update({ company_name, country_code, iso_code, phone_number, address });
+        await company.update({ company_name, country_code, iso_code, phone_number, address, weekly_hours, monthly_hours, yearly_hours, });
         await owner.update({ firstname: owner_firstname, lastname: owner_lastname, email, country_code: owner_country_code, iso_code: owner_iso_code, phone_number: owner_phone_number });
 
         return res.status(200).json({
@@ -130,7 +130,8 @@ exports.getCompanyMonthlyHours = async (req, res) => {
             return res.status(404).json({ message: "Company not found." });
         }
 
-        const branchMonthlyHours = parseFloat(company?.industry?.monthly_hours || 0);
+        // const branchMonthlyHours = parseFloat(company?.industry?.monthly_hours || 0);
+        const branchMonthlyHours = parseFloat(company?.monthly_hours || 0);
         const workerIds = company.worker.map(user => user.id); // extract all worker ids
         const results = [];
 
@@ -147,7 +148,6 @@ exports.getCompanyMonthlyHours = async (req, res) => {
                 attributes: ['duration'],
                 raw: true,
             });
-
             // Manually parse and sum all durations
             let totalSeconds = 0;
             for (const entry of workedEntries) {
@@ -199,11 +199,10 @@ exports.getWeeklyHours = async (req, res) => {
             return res.status(404).json({ status: 0, message: "Company not found." });
         }
 
-        const weeklyLimit = parseFloat(company?.industry?.weekly_hours || 0);
+        const weeklyLimit = parseFloat(company?.weekly_hours || 0);
         const workerIds = company.worker.map(user => user.id);
 
         const results = [];
-
         const startOfMonth = moment.utc({ year: parseInt(year), month: adjustedMonth }).startOf('month');
         const endOfMonth = moment.utc({ year: parseInt(year), month: adjustedMonth }).endOf('month');
 
@@ -211,11 +210,9 @@ exports.getWeeklyHours = async (req, res) => {
         const allWorkedEntries = await db.Clock_entry.findAll({
             where: {
                 worker_id: { [Op.in]: workerIds },
+                status: "approved",
                 date: {
-                    [Op.between]: [
-                        startOfMonth.toDate(),
-                        endOfMonth.clone().endOf('day').toDate()
-                    ]
+                    [Op.between]: [startOfMonth.toDate(), endOfMonth.clone().endOf('day').toDate()],
                 },
             },
             attributes: ['duration', 'date'],
@@ -375,13 +372,8 @@ exports.dashboardRequestList = async (req, res) => {
             where: { owner_id: req.user.id },
         });
 
-        const workers = await db.User.findAll({
-            where: {
-                company_id: company.id,
-                user_role: 'worker'
-            }
-        });
-        const workerIds = workers.map(user => user.id); // extract all worker ids
+        const workers = await db.User.findAll({ where: { company_id: company.id, user_role: 'worker' } });
+        const workerIds = workers.map(user => user.id);
 
         let order;
         if (filter === 'id_ASC') {
@@ -413,9 +405,7 @@ exports.dashboardRequestList = async (req, res) => {
         const { count, rows: requestList } = await db.absence_request.findAndCountAll({
             where: {
                 request_status: "pending",
-                worker_id: {
-                    [Op.in]: workerIds,
-                },
+                worker_id: { [Op.in]: workerIds },
             },
             include: [
                 {

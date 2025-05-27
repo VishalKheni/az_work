@@ -465,7 +465,8 @@ exports.getWorkerMonthlyHours = async (req, res) => {
             return res.status(404).json({ message: "Worker not found." });
         }
 
-        const branchMonthlyHours = parseFloat(worker.company?.industry?.monthly_hours || 0);
+        // const branchMonthlyHours = parseFloat(worker.company?.industry?.monthly_hours || 0);
+        const branchMonthlyHours = parseFloat(worker.company?.monthly_hours || 0);
         const results = [];
 
         for (let month = 0; month < 12; month++) {
@@ -502,8 +503,8 @@ exports.getWorkerMonthlyHours = async (req, res) => {
                 month: moment().month(month).format("MMMM"),
                 monthly_hour: parseInt(branchMonthlyHours),
                 // work_hour: parseInt(totalWorkingHours),
+                total_hour: totalHour,
                 over_time: overtime,
-                total_hour: totalHour
             });
         }
 
