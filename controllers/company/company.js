@@ -91,8 +91,8 @@ exports.editCompany = async (req, res) => {
             await company.update({ company_logo: `company_logo/${company_logo[0].filename}` });
         }
 
-        await company.update({ company_name, country_code, iso_code, phone_number, address, weekly_hours, monthly_hours, yearly_hours, });
-        await owner.update({ firstname: owner_firstname, lastname: owner_lastname, email, country_code: owner_country_code, iso_code: owner_iso_code, phone_number: owner_phone_number });
+        await company.update({ company_name, country_code:`+${country_code}`, iso_code, phone_number, address, weekly_hours, monthly_hours, yearly_hours, });
+        await owner.update({ firstname: owner_firstname, lastname: owner_lastname, email,  country_code:`+${owner_country_code}`, iso_code: owner_iso_code, phone_number: owner_phone_number });
 
         return res.status(200).json({
             status: 1,

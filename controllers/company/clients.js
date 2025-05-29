@@ -7,7 +7,7 @@ const { Op, where, Sequelize, col } = require("sequelize");
 
 exports.addClient = async (req, res) => {
     try {
-        const { iso_code, phone_number } = req.body;
+        const { iso_code, phone_number, country_code } = req.body;
 
         if (req.user?.is_company_active === "Deactive") {
             return res.status(400).json({
@@ -24,7 +24,7 @@ exports.addClient = async (req, res) => {
             return res.status(400).json({ message: valid.message });
         }
 
-        const client = await db.Client.create({ company_id: company.id, ...req.body });
+        const client = await db.Client.create({ company_id: company.id, country_code: `+${country_code}`, ...req.body });
 
         return res.status(201).json({
             status: 1,
@@ -40,7 +40,7 @@ exports.addClient = async (req, res) => {
 
 exports.editClient = async (req, res) => {
     try {
-        const { client_id, iso_code, phone_number } = req.body;
+        const { client_id, iso_code, phone_number, country_code } = req.body;
 
         if (req.user?.is_company_active === "Deactive") {
             return res.status(400).json({
@@ -60,7 +60,7 @@ exports.editClient = async (req, res) => {
             }
         }
 
-        await client.update({ ...req.body });
+        await client.update({ ...req.body, country_code: `+${country_code}` || client.country_code, });
 
         return res.status(200).json({
             status: 1,
@@ -126,17 +126,17 @@ exports.clientList = async (req, res) => {
             order = [['company_name', 'ASC']];
         } else if (filter === 'company_name_DESC') {
             order = [['company_name', 'DESC']];
-        }else if (filter === 'client_name_ASC') {
+        } else if (filter === 'client_name_ASC') {
             order = [['client_name', 'ASC']];
         } else if (filter === 'client_name_DESC') {
             order = [['client_name', 'DESC']];
-        }else if (filter === 'email_ASC') {
+        } else if (filter === 'email_ASC') {
             order = [['email', 'ASC']];
         } else if (filter === 'email_DESC') {
             order = [['email', 'DESC']];
         }
 
-        
+
         const { count, rows: client } = await db.Client.findAndCountAll({
             where: { ...whereCondition },
             limit,

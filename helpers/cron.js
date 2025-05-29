@@ -59,7 +59,7 @@ const updateBreakTime = cron.schedule('0 0 * * *', async () => {
 
 // const addWorkbalance = cron.schedule('* * * * *', async () => {
     // const addWorkbalance = cron.schedule('0 0 28-31 * *', async () => {
-    const addWorkbalance = cron.schedule('0 0 * * *', async () => {
+const addWorkbalance = cron.schedule('0 0 * * *', async () => {
     console.log("Add work balance cron job running");
 
     try {

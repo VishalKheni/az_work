@@ -77,7 +77,7 @@ exports.verifyOtpAndRegister = async (req, res) => {
     const user = await db.User.create({
       firstname,
       lastname,
-      country_code,
+      country_code: `+${country_code}`,
       iso_code,
       phone_number,
       email,
@@ -96,7 +96,7 @@ exports.verifyOtpAndRegister = async (req, res) => {
       industry_id,
       company_name,
       company_logo: `company_logo/${company_logo[0].filename}`,
-      country_code: company_country_code,
+      country_code: `+${company_country_code}`,
       iso_code: company_iso_code,
       phone_number: company_phone_number,
       address,
@@ -307,7 +307,7 @@ exports.resetPassword = async (req, res) => {
 
     let user = await db.User.findOne({ where: { email: email } });
     if (!user) return res.status(404).json({ status: 0, message: "Email is not registered." });
-    
+
     const newHashedPassword = await bcrypt.hash(newpassword, 10);
     await db.User.update({ password: newHashedPassword }, { where: { id: user.id } });
     await db.Token.destroy({ where: { user_id: user.id } });
@@ -338,11 +338,11 @@ exports.editProfile = async (req, res) => {
     if (!user) return res.status(404).json({ status: 0, message: 'User Not Found' });
 
     if (req.files && profile_image) {
-      const validation = await validateFiles(profile_image, ["jpg", "jpeg", "png", "webp"], 15 * 1024 * 1024);
+      const validation = await validateFiles(profile_image, ["jpg", "jpeg", "png", "webp"], 5 * 1024 * 1024);
       if (!validation.valid) return res.status(400).json({ status: 0, message: validation.message });
       if (user.profile_image) {
         const oldImagePath = `public/${user.profile_image}`;
-        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+        if (fs.existsSync(oldImagePath)) { fs.unlinkSync(oldImagePath) };
       }
       // if (user.profile_image) { fs.unlinkSync(`public/${user.profile_image}`) }
       user.profile_image = `profile_images/${profile_image[0].filename}`;

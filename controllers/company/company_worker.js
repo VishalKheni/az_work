@@ -13,7 +13,7 @@ const fs = require('fs');
 
 exports.addWorker = async (req, res) => {
     try {
-        const { job_title_id, iso_code, phone_number, password, vacation_days, experience } = req.body;
+        const { job_title_id, iso_code, phone_number, country_code, password, vacation_days, experience } = req.body;
         const { profile_image, documents } = req.files;
 
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
@@ -51,6 +51,7 @@ exports.addWorker = async (req, res) => {
             password: hashedPassword,
             profile_image: `profile_images/${profile_image[0].filename}`,
             vacation_days: parseInt(vacation_days),
+            country_code:`+${country_code}`,
             is_email_verified: true,
             is_worker_active: "Active",
         })
@@ -469,7 +470,7 @@ exports.editWorkerProfile = async (req, res) => {
             lastname: lastname || worker.lastname,
             phone_number: phone_number || worker.phone_number,
             password: password ? hashedPassword : worker.password,
-            country_code: country_code || worker.country_code,
+            country_code:`+${country_code}` || worker.country_code,
             iso_code: iso_code || worker.iso_code,
             address: address || worker.address,
             job_category_id: parseInt(job_category_id) || worker.job_category_id,
