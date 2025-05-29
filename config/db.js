@@ -38,14 +38,14 @@ db.User.belongsTo(db.Company, {
     foreignKey: 'company_id',
     as: 'company'
 });
-db.Job_category.hasMany(db.User, {
-    foreignKey: 'job_category_id',
-    as: 'job_category_users'
-});
-db.User.belongsTo(db.Job_category, {
-    foreignKey: 'job_category_id',
-    as: 'job_category'
-});
+// db.Job_category.hasMany(db.User, {
+//     foreignKey: 'job_category_id',
+//     as: 'job_category_users'
+// });
+// db.User.belongsTo(db.Job_category, {
+//     foreignKey: 'job_category_id',
+//     as: 'job_category'
+// });
 db.Job_title.hasMany(db.User, {
     foreignKey: 'job_title_id',
     as: 'job_title_users'
@@ -136,14 +136,14 @@ db.Job_title.belongsTo(db.Company, {
     foreignKey: 'company_id',
     as: 'company'
 });
-db.Job_category.hasMany(db.Job_title, {
-    foreignKey: 'job_category_id',
-    as: 'job_titles'
-}); 
-db.Job_title.belongsTo(db.Job_category, {
-    foreignKey: 'job_category_id',
-    as: 'job_category'
-});
+// db.Job_category.hasMany(db.Job_title, {
+//     foreignKey: 'job_category_id',
+//     as: 'job_titles'
+// }); 
+// db.Job_title.belongsTo(db.Job_category, {
+//     foreignKey: 'job_category_id',
+//     as: 'job_category'
+// });
 
 db.Company.hasMany(db.Project, {
     foreignKey: 'company_id',

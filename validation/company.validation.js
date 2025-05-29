@@ -122,7 +122,6 @@ exports.addWorker = () => {
                 }
                 return true;
             }),
-            check("job_category_id").notEmpty().withMessage("Job Category ID is required."),
             check("job_title_id").notEmpty().withMessage("Job ttitle ID is required."),
             check('firstname').not().isEmpty().withMessage("First Name is required")
                 .isString().withMessage('First Name must be sting').trim().escape(),
@@ -137,9 +136,9 @@ exports.addWorker = () => {
             check("employment_date").notEmpty().withMessage('Employment Date is required.').isISO8601().withMessage("Employment Date must be a valid date (YYYY-MM-DD)."),
             check("password").not().isEmpty().withMessage("Password is required").trim().escape(),
             check("vacation_days").not().isEmpty().withMessage("Vacation day is required").isInt().withMessage('Vacation day must number').trim(),
-            check("experience").not().isEmpty().withMessage("Experience is required").isString().withMessage('Experience must be sting').trim(),
+            check("experience").not().isEmpty().withMessage("Experience is required").isFloat().withMessage('Experience must be number').trim(),
         ],
-        checkForUnexpectedFields(["profile_image", "documents", "job_category_id", "job_title_id", "firstname", "lastname", "phone_number", "iso_code", "country_code", "email", "address", "insurance_number", "employment_date", "password", "experience", "vacation_days"]),
+        checkForUnexpectedFields(["profile_image", "documents", "job_title_id", "firstname", "lastname", "phone_number", "iso_code", "country_code", "email", "address", "insurance_number", "employment_date", "password", "experience", "vacation_days"]),
         validation
     ];
 }
@@ -164,8 +163,9 @@ exports.getworkerList = () => {
                     'worker_name_ASC', 'worker_name_DESC',
                     'employment_date_ASC', 'employment_date_DESC',
                     'category_ASC', 'category_DESC',
-                    'title_ASC', 'title_DESC'
-                ]).withMessage("Invalid value for filter. Allowed values are: id_ASC, id_DESC, worker_name_ASC, worker_name_DESC, employment_date_ASC, employment_date_DESC, category_ASC, category_DESC, title_ASC, title_DESC").trim()
+                    'title_ASC', 'title_DESC',
+                    'experience_ASC', 'experience_DESC'
+                ]).withMessage("Invalid value for filter. Allowed values are: id_ASC, id_DESC, worker_name_ASC, worker_name_DESC, employment_date_ASC, employment_date_DESC, category_ASC, category_DESC, title_ASC, title_DESC, experience_ASC, experience_DESC").trim()
         ],
         checkForUnexpectedFields(["page", "limit", "search", "status", "filter"]),
         validation
@@ -181,6 +181,7 @@ exports.getWorkerDetail = () => {
         validation
     ];
 }
+
 
 exports.addWorkerDocuments = () => {
     return [
@@ -198,6 +199,21 @@ exports.addWorkerDocuments = () => {
         validation
     ];
 }
+exports.getWorkerDocumentList = () => {
+    return [
+        [
+            check("worker_id").notEmpty().withMessage("Worker ID is required."),
+            check('page').notEmpty().withMessage('Page must required.').isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
+            check("search").optional().isString().withMessage("search must be string").trim(),
+            check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be a string")
+                .isIn(['id_ASC', 'id_DESC', 'title_ASC', 'title_DESC', 'date_ASC', 'date_DESC']).withMessage("Invalid value for filter. Allowed values are: id_ASC, id_DESC, date_ASC, date_DESC,  title_ASC, title_DESC").trim()
+        ],
+        checkForUnexpectedFields(["worker_id", "page", "search", "filter"]),
+        validation
+    ];
+}
+
+
 exports.workerActiveDeactive = () => {
     return [
         [
@@ -213,12 +229,12 @@ exports.workerActiveDeactive = () => {
 exports.addJobCategory = () => {
     return [
         [
-            check('category_name').not().isEmpty().withMessage("Category Name is required")
-                .isString().withMessage('Category Name must be sting').trim(),
+            // check('category_name').not().isEmpty().withMessage("Category Name is required")
+            //     .isString().withMessage('Category Name must be sting').trim(),
             check('Job_title').not().isEmpty().withMessage("Job title is required")
                 .isString().withMessage('Job title must be sting').trim(),
         ],
-        checkForUnexpectedFields(["category_name", "Job_title"]),
+        checkForUnexpectedFields(["Job_title"]),
         validation
     ];
 }
@@ -248,9 +264,9 @@ exports.getJobCategoryList = () => {
 exports.editJobCategory = () => {
     return [
         [
-            check("category_id").notEmpty().withMessage("Category ID is required."),
+            // check("category_id").notEmpty().withMessage("Category ID is required."),
             check("job_title_id").notEmpty().withMessage("Job title ID is required."),
-            check('category_name').optional().isString().withMessage('Category Name must be sting').trim(),
+            // check('category_name').optional().isString().withMessage('Category Name must be sting').trim(),
             check('Job_title').optional().isString().withMessage('Job title must be sting').trim(),
         ],
         checkForUnexpectedFields(["category_id", "job_title_id", "category_name", "Job_title"]),
@@ -530,7 +546,7 @@ exports.editWorkerProfile = () => {
             check("insurance_number").optional().isString().withMessage('Insurance Number must be sting').trim(),
             check("employment_date").optional().isISO8601().withMessage("Employment Date must be a valid date (YYYY-MM-DD)."),
             check("vacation_days").optional().isInt().withMessage('Vacation day must number').trim(),
-            check("experience").optional().isString().withMessage('Experience must be sting').trim(),
+            check("experience").optional().isFloat().withMessage('Experience must be number').trim(),
         ],
         checkForUnexpectedFields(["worker_id", "profile_image", "job_category_id", "job_title_id", "firstname", "lastname", "password", "phone_number", "iso_code", "country_code", "email", "address", "insurance_number", "employment_date", "vacation_days", "experience"]),
         validation

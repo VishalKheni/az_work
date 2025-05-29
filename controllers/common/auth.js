@@ -3,7 +3,7 @@ const db = require("../../config/db");
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken');
 const moment = require('moment');
-const { sendOTPVerificationEmail, sendForgetPassOTPVerificationEmail } = require("../../helpers/email");
+const { sendOTPVerificationEmail } = require("../../helpers/email");
 const { validateMobile, } = require('../../helpers/twilio');
 const { validateFiles, } = require('../../helpers/fileValidation');
 const { Op, where, Sequelize, col } = require("sequelize");
@@ -114,7 +114,7 @@ exports.verifyOtpAndRegister = async (req, res) => {
 
     const accessToken = jwt.sign({ user_id: user.id, token_id: tokenRecord.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
 
-    await temp.destroy(); 
+    await temp.destroy();
 
     return res.status(200).json({
       status: 1,
@@ -272,8 +272,11 @@ exports.verifyOtpForResetPassword = async (req, res) => {
   const { email, otp } = req.body;
 
   try {
+    const user = await db.User.findOne({ where: { email: email } });
     const temp = await db.Otp.findOne({ where: { email } });
-    if (!temp) return res.status(404).json({ status: 0, message: "OTP not requested for this email" });
+    if (!user || !temp) return res.status(404).json({ status: 0, message: "Email is not registered." });
+
+    // if (!temp) return res.status(404).json({ status: 0, message: "OTP not requested for this email" });
 
     if (parseInt(otp) !== temp.otp) {
       return res.status(400).json({ status: 0, message: "Invalid OTP" });
@@ -304,7 +307,7 @@ exports.resetPassword = async (req, res) => {
 
     let user = await db.User.findOne({ where: { email: email } });
     if (!user) return res.status(404).json({ status: 0, message: "Email is not registered." });
-
+    
     const newHashedPassword = await bcrypt.hash(newpassword, 10);
     await db.User.update({ password: newHashedPassword }, { where: { id: user.id } });
     await db.Token.destroy({ where: { user_id: user.id } });

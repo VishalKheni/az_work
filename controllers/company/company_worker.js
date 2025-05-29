@@ -13,7 +13,7 @@ const fs = require('fs');
 
 exports.addWorker = async (req, res) => {
     try {
-        const { job_category_id, job_title_id, iso_code, phone_number, password, vacation_days } = req.body;
+        const { job_title_id, iso_code, phone_number, password, vacation_days, experience } = req.body;
         const { profile_image, documents } = req.files;
 
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
@@ -31,10 +31,6 @@ exports.addWorker = async (req, res) => {
             return res.status(400).json({ status: 0, message: 'Worker with this email already exists' });
         }
 
-        const job_category = await db.Job_category.findByPk(job_category_id)
-        if (!job_category) {
-            return res.status(400).json({ status: 0, message: 'Job Category Not Found' });
-        }
         const job_title = await db.Job_title.findByPk(job_title_id)
         if (!job_title) {
             return res.status(400).json({ status: 0, message: 'Job title Not Found' });
@@ -49,8 +45,8 @@ exports.addWorker = async (req, res) => {
         const worker = await db.User.create({
             ...req.body,
             user_role: "worker",
+            experience: parseFloat(experience),
             company_id: company.id,
-            job_category_id: job_category.id,
             job_title_id: job_title.id,
             password: hashedPassword,
             profile_image: `profile_images/${profile_image[0].filename}`,
@@ -108,12 +104,10 @@ exports.getWorkerList = async (req, res) => {
                 { firstname: { [Op.like]: `%${search}%` } },
                 { lastname: { [Op.like]: `%${search}%` } },
                 literal(`CONCAT(firstname, ' ', lastname) LIKE '%${search}%'`),
-                { '$job_category.category_name$': { [Op.like]: `%${search}%` } },
+                // { '$job_category.category_name$': { [Op.like]: `%${search}%` } },
                 { '$job_title.job_title$': { [Op.like]: `%${search}%` } }
             ];
         }
-
-
 
         if (status === 'active') {
             whereCondition.is_worker_active = 'Active';
@@ -127,32 +121,31 @@ exports.getWorkerList = async (req, res) => {
         } else if (filter === 'id_DESC') {
             order = [['id', 'DESC']];
         } else if (filter === 'worker_name_ASC') {
-            order = [[Sequelize.literal("CONCAT(firstname, ' ', lastname)"), 'ASC']];
+            order = [[literal("CONCAT(firstname, ' ', lastname)"), 'ASC']];
         } else if (filter === 'worker_name_DESC') {
-            order = [[Sequelize.literal("CONCAT(firstname, ' ', lastname)"), 'DESC']];
+            order = [[literal("CONCAT(firstname, ' ', lastname)"), 'DESC']];
         } else if (filter === 'employment_date_ASC') {
             order = [['employment_date', 'ASC']];
         } else if (filter === 'employment_date_DESC') {
             order = [['employment_date', 'DESC']];
         } else if (filter === 'category_DESC') {
-            order = [[Sequelize.literal('`job_category`.`category_name`'), 'DESC']];
+            order = [[literal('`job_category`.`category_name`'), 'DESC']];
         } else if (filter === 'category_ASC') {
-            order = [[Sequelize.literal('`job_category`.`category_name`'), 'ASC']];
+            order = [[literal('`job_category`.`category_name`'), 'ASC']];
         } else if (filter === 'title_DESC') {
-            order = [[Sequelize.literal('`job_title`.`job_title`'), 'DESC']];
+            order = [[literal('`job_title`.`job_title`'), 'DESC']];
         } else if (filter === 'title_ASC') {
-            order = [[Sequelize.literal('`job_title`.`job_title`'), 'ASC']];
+            order = [[literal('`job_title`.`job_title`'), 'ASC']];
+        } else if (filter === 'experience_ASC') {
+            order = [['experience', 'ASC']];
+        } else if (filter === 'experience_DESC') {
+            order = [['experience', 'DESC']];
         }
 
         const { count, rows: worker } = await db.User.findAndCountAll({
             where: { ...whereCondition, user_role: "worker", company_id: company.id },
             attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add', 'password', 'is_company_active', 'is_company_blocked'] },
             include: [
-                {
-                    model: db.Job_category,
-                    as: 'job_category',
-                    attributes: ['id', 'category_name'],
-                },
                 {
                     model: db.Job_title,
                     as: 'job_title',
@@ -193,18 +186,9 @@ exports.getWorkerDetail = async (req, res) => {
             attributes: { exclude: ['otp', 'otp_created_at', 'is_email_verified', 'login_type', 'is_company_add', 'is_account_created', 'is_password_add', 'is_company_active', 'is_company_blocked'] },
             include: [
                 {
-                    model: db.Job_category,
-                    as: 'job_category',
-                },
-                {
                     model: db.Job_title,
                     as: 'job_title'
                 },
-                {
-                    model: db.Document,
-                    as: 'documents',
-                    attributes: { exclude: ['project_id'] },
-                }
             ]
         })
 
@@ -220,7 +204,71 @@ exports.getWorkerDetail = async (req, res) => {
         console.error('Error while add worker detail:', error);
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
+};
+
+exports.getWorkerDocumentList = async (req, res) => {
+    try {
+        let { page, limit, search, filter, worker_id } = req.query;
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 10;
+        const offset = (page - 1) * limit;
+
+        const worker = await db.User.findOne({ where: { id: worker_id, user_role: "worker" } });
+        if (!worker) return res.status(404).json({ status: 0, message: "Worker not found" });
+
+        let whereCondition = {
+            worker_id: worker.id,
+            project_id: null,
+            clock_entry_id: null
+        };
+
+        if (search) {
+            whereCondition[Op.or] = [
+                { title: { [Op.like]: `%${search}%` } },
+            ];
+        }
+
+        let order;
+        if (filter === 'id_ASC') {
+            order = [['id', 'ASC']];
+        } else if (filter === 'id_DESC') {
+            order = [['id', 'DESC']];
+        } else if (filter === 'title_ASC') {
+            order = [['title', 'ASC']];
+        } else if (filter === 'title_DESC') {
+            order = [['title', 'DESC']];
+        } else if (filter === 'date_ASC') {
+            order = [['date', 'ASC']];
+        } else if (filter === 'date_DESC') {
+            order = [['date', 'DESC']];
+        }
+
+        const { count, rows: document } = await db.Document.findAndCountAll({
+            where: { ...whereCondition },
+            attributes: { exclude: ['type'] },
+            distinct: true,
+            limit,
+            offset,
+            order
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: "Worker document list fetched Successfully",
+            pagination: {
+                totalDocument: count,
+                totalPages: Math.ceil(count / limit),
+                currentPage: page,
+                limit: limit,
+            },
+            data: document
+        });
+    } catch (error) {
+        console.error('Error while add worker detail:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
 }
+
 
 exports.deleteWorker = async (req, res) => {
     try {
@@ -278,10 +326,11 @@ exports.workerJobCategoryList = async (req, res) => {
 
 exports.workerJobTitleList = async (req, res) => {
     try {
-        const { category_id } = req.body;
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+        if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
 
         const titles = await db.Job_title.findAll({
-            where: { job_category_id: category_id }
+            where: { company_id: company.id }
         });
 
         return res.status(200).json({
@@ -428,7 +477,7 @@ exports.editWorkerProfile = async (req, res) => {
             insurance_number: insurance_number || worker.insurance_number,
             employment_date: employment_date || worker.employment_date,
             vacation_days: parseInt(vacation_days) || worker.vacation_days,
-            experience: experience || worker.experience
+            experience: parseFloat(experience) || worker.experience
         }
 
         await worker.update(updatedData);
