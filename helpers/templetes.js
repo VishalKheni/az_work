@@ -93,7 +93,7 @@ const signupEmail = (otp) => `<!DOCTYPE html>
                         >
 
                         <p style="color: #ffffff; line-height: 1">
-                          This OTP will expire in 1 minutes
+                          This OTP will expire in 5 minutes
                         </p>
 
                         <div

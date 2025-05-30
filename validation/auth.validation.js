@@ -122,7 +122,7 @@ exports.login = () => {
     return [
         [
             check("email").not().isEmpty().withMessage("Email is required").trim().escape(),
-            check("password").not().isEmpty().withMessage("Password is required").trim().escape(),
+            check("password").not().isEmpty().withMessage("Password is required"),
             check("device_id").not().isEmpty().withMessage("Device ID is required").trim().escape(),
             check("device_type").not().isEmpty().withMessage("Device type is required").trim().escape(),
             check("device_token").not().isEmpty().withMessage("Device token is required").trim().escape(),

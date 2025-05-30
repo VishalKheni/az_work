@@ -62,7 +62,7 @@ exports.verifyOtpAndRegister = async (req, res) => {
     }
 
     const otpAge = (new Date() - temp.updatedAt) / (1000 * 60);
-    if (otpAge > 1) {
+    if (otpAge > 5) {
       await temp.destroy();
       return res.status(400).json({ status: 0, message: "OTP expired" });
     }

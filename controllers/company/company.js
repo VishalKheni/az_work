@@ -57,15 +57,15 @@ exports.companyDetail = async (req, res) => {
 exports.editCompany = async (req, res) => {
     try {
         const { company_id, industry_id, company_name, email, country_code, iso_code, phone_number, address, owner_phone_number, owner_country_code, owner_iso_code, owner_firstname, owner_lastname, weekly_hours, monthly_hours, yearly_hours, } = req.body;
-        const { company_logo } = req.files;
+        const company_logo = req.files?.company_logo;
 
         if (iso_code && phone_number) {
             let valid = await validateMobile(iso_code, phone_number)
-            if (valid.status == 0) return res.status(400).json({ message: valid.message });
+            if (valid.status == 0) return res.status(400).json({ status: 0, message: valid.message });
         }
         if (owner_iso_code && owner_phone_number) {
             let valid = await validateMobile(owner_iso_code, owner_phone_number)
-            if (valid.status == 0) return res.status(400).json({ message: valid.message });
+            if (valid.status == 0) return res.status(400).json({ status: 0, message: `Owner ${valid.message}` });
         }
 
         const company = await db.Company.findByPk(company_id);
@@ -91,8 +91,27 @@ exports.editCompany = async (req, res) => {
             await company.update({ company_logo: `company_logo/${company_logo[0].filename}` });
         }
 
-        await company.update({ company_name, country_code:`+${country_code}`, iso_code, phone_number, address, weekly_hours, monthly_hours, yearly_hours, });
-        await owner.update({ firstname: owner_firstname, lastname: owner_lastname, email,  country_code:`+${owner_country_code}`, iso_code: owner_iso_code, phone_number: owner_phone_number });
+        const companyUpdatedData = {
+            company_name: company_name ?? company.company_name,
+            country_code: country_code ? `+${country_code}` : company.country_code,
+            iso_code: iso_code ?? company.iso_code,
+            phone_number: phone_number ?? company.phone_number,
+            address: address ?? company.address,
+            weekly_hours: weekly_hours ?? company.weekly_hours,
+            monthly_hours: monthly_hours ?? company.monthly_hours,
+            yearly_hours: yearly_hours ?? company.yearly_hours,
+        };
+        await company.update(companyUpdatedData);
+
+        const ownerUpdatedData = {
+            firstname: owner_firstname ?? owner.firstname,
+            lastname: owner_lastname ?? owner.lastname,
+            email: email ?? owner.email,
+            country_code: owner_country_code ? `+${owner_country_code}` : owner.country_code,
+            iso_code: owner_iso_code ?? owner.iso_code,
+            phone_number: owner_phone_number ?? owner.phone_number,
+        };
+        await owner.update(ownerUpdatedData);
 
         return res.status(200).json({
             status: 1,
