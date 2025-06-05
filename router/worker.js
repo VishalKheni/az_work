@@ -31,7 +31,11 @@ router.get("/absences_screen_count", verifyToken, checkUserRole(['worker']), wor
 router.get("/absences_calendar", verifyToken, checkUserRole(['worker']), workervalidation.AbsenceScrenCalendar(), workerController.AbsenceScrenCalendar)
 
 router.delete("/delete_image", verifyToken, checkUserRole(['worker']), workervalidation.deleteimage(), workerController.deleteimage)
+router.get("/company_detail", verifyToken, checkUserRole(['worker']),  workerController.companyDetail)
 
 router.put("/edit_clock", verifyToken, checkUserRole(['worker']), workervalidation.editClockEntry(), workerController.editClockEntry)
+
+
+router.post("/add_clock_entry_v1",  workerController.addclockEntrryV1);
 
 module.exports = router;

@@ -40,6 +40,7 @@ router.get('/working_hour', verifyToken, checkUserRole(['company']), companyvali
 router.get('/clock_entry_list', verifyToken, checkUserRole(['company']), companyvalidation.getWorkerTimeTable(), companyController.getWorkerTimeTable);
 router.get('/clock_entry_detail', verifyToken, checkUserRole(['company']), companyvalidation.getTimetableDetail(), companyController.getTimetableDetail);
 router.patch('/edit_clock_status', verifyToken, checkUserRole(['company']), companyvalidation.editTimetableStatus(), companyController.editTimetableStatus);
+router.put("/edit_clock_time", verifyToken, checkUserRole(['company']), companyvalidation.editClockTime(), companyController.editClockTime)
 
 
 // Job category

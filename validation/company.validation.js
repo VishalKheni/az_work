@@ -204,11 +204,12 @@ exports.getWorkerDocumentList = () => {
         [
             check("worker_id").notEmpty().withMessage("Worker ID is required."),
             check('page').notEmpty().withMessage('Page must required.').isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
+            check('limit').optional().isInt().withMessage('limit must be a positive integer.'),
             check("search").optional().isString().withMessage("search must be string").trim(),
             check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be a string")
                 .isIn(['id_ASC', 'id_DESC', 'title_ASC', 'title_DESC', 'date_ASC', 'date_DESC']).withMessage("Invalid value for filter. Allowed values are: id_ASC, id_DESC, date_ASC, date_DESC,  title_ASC, title_DESC").trim()
         ],
-        checkForUnexpectedFields(["worker_id", "page", "search", "filter"]),
+        checkForUnexpectedFields(["worker_id", "page", "search", "limit", "filter"]),
         validation
     ];
 }
@@ -533,7 +534,6 @@ exports.editWorkerProfile = () => {
                 }
                 return true;
             }).optional(),
-            check("job_category_id").optional().isInt().withMessage("Job Category ID must be integer."),
             check("job_title_id").optional().isInt().withMessage("Job ttitle ID must be integer."),
             check('firstname').optional().isString().withMessage('First Name must be sting').trim(),
             check('lastname').optional().isString().withMessage('Last Name must be sting').trim(),
@@ -548,7 +548,7 @@ exports.editWorkerProfile = () => {
             check("vacation_days").optional().isInt().withMessage('Vacation day must number').trim(),
             check("experience").optional().isFloat().withMessage('Experience must be number').trim(),
         ],
-        checkForUnexpectedFields(["worker_id", "profile_image", "job_category_id", "job_title_id", "firstname", "lastname", "password", "phone_number", "iso_code", "country_code", "email", "address", "insurance_number", "employment_date", "vacation_days", "experience"]),
+        checkForUnexpectedFields(["worker_id", "profile_image", "job_title_id", "firstname", "lastname", "password", "phone_number", "iso_code", "country_code", "email", "address", "insurance_number", "employment_date", "vacation_days", "experience"]),
         validation
     ];
 }
@@ -571,8 +571,9 @@ exports.getWorkerTimeTable = () => {
             check('page').notEmpty().withMessage('Page must required.').isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
             check('year').notEmpty().withMessage('Year is required').isInt().withMessage('Year must be a positive integer'),
             check('month').optional().isInt({ min: 1, max: 12 }).withMessage('Month must be a positive integer between 1 and 12'),
+            check("search").optional().isString().withMessage("search must be string").trim(),
         ],
-        checkForUnexpectedFields(["worker_id", "year", "month", "page", "limit"]),
+        checkForUnexpectedFields(["worker_id", "year", "month", "page", "limit", "search"]),
         validation
     ];
 }
@@ -703,6 +704,19 @@ exports.getTimeTableList = () => {
 
         ],
         checkForUnexpectedFields(["page", "limit", "search", "year", "month"]),
+        validation
+    ];
+}
+
+exports.editClockTime = () => {
+    return [
+        [
+            check("worker_id").notEmpty().withMessage("Worker ID is required."),
+            check('clock_entry_id').notEmpty().withMessage('clock_entry_id is required').isInt().withMessage('clock_entry_id must be an integer'),
+            check('clock_in_time').optional().isISO8601().withMessage('clock_in_time must be a valid ISO 8601 date'),
+            check('clock_out_time').optional().isISO8601().withMessage('clock_out_time must be a valid ISO 8601 date'),
+        ],
+        checkForUnexpectedFields(['clock_entry_id', 'worker_id', 'clock_in_time', 'clock_out_time']),
         validation
     ];
 }

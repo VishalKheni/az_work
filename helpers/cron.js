@@ -57,8 +57,9 @@ const updateBreakTime = cron.schedule('0 0 * * *', async () => {
     }
 });
 
+
 // const addWorkbalance = cron.schedule('* * * * *', async () => {
-    // const addWorkbalance = cron.schedule('0 0 28-31 * *', async () => {
+// const addWorkbalance = cron.schedule('0 0 28-31 * *', async () => {
 const addWorkbalance = cron.schedule('0 0 * * *', async () => {
     console.log("Add work balance cron job running");
 
@@ -77,7 +78,6 @@ const addWorkbalance = cron.schedule('0 0 * * *', async () => {
                 const entries = await db.Clock_entry.findAll({
                     where: {
                         worker_id: worker.id,
-                        status: "approved",
                         date: {
                             [Op.between]: [
                                 today.clone().startOf('month').format('YYYY-MM-DD'),

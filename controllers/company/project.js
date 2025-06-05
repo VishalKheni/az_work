@@ -6,6 +6,20 @@ const { Op, where, Sequelize, col, fn, literal } = require("sequelize");
 const fs = require('fs');
 const path = require('path');
 
+const parseBreakTimeToSeconds = (timeStr) => {
+    if (!timeStr) return 0;
+    const [hours = 0, minutes = 0, seconds = 0] = timeStr.split(':').map(Number);
+    return (hours * 3600) + (minutes * 60) + seconds;
+};
+
+// Helper to format seconds to HH:mm:ss
+const formatSecondsToHHMMSS = (totalSeconds) => {
+    const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+    const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+    const seconds = String(totalSeconds % 60).padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+};
+
 
 exports.addProject = async (req, res) => {
     try {
@@ -225,10 +239,50 @@ exports.getProjectDetail = async (req, res) => {
         });
         if (!projectDetail) return res.status(400).json({ status: 0, message: 'Project Not Found' });
 
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+        const branchMonthlyHours = parseFloat(company?.monthly_hours || 0);
+        const workers = await db.User.findAll({ where: { company_id: company.id, user_role: 'worker' }, attributes: ['id'] });
+        const workerIds = workers.map(worker => worker.id);
+        const today = moment();
+
+        const clockEntries = await db.Clock_entry.findAll({
+            where: {
+                project_id,
+                worker_id: { [Op.in]: workerIds },
+                status: "approved",
+                date: {
+                    [Op.between]: [
+                        today.clone().startOf('month').format('YYYY-MM-DD'),
+                        today.clone().endOf('month').format('YYYY-MM-DD')
+                    ]
+                }
+            },
+            order: [['date', 'DESC']],
+        });
+        // console.log('clockEntries', clockEntries)
+
+
+        let totalSeconds = 0;
+        clockEntries.forEach(entry => {
+            if (entry.duration) {
+                totalSeconds += parseBreakTimeToSeconds(entry.duration);
+            }
+        });
+        const totalWorkingHours = (totalSeconds / 3600).toFixed(2);
+        const overtime = totalWorkingHours > branchMonthlyHours
+            ? Math.round(totalWorkingHours - branchMonthlyHours)
+            : 0;
+
+        const totalHour = parseInt(branchMonthlyHours) 
+        const monthlyHour = parseInt(branchMonthlyHours) + overtime
+
+        // const formattedDuration = formatSecondsToHHMMSS(totalSeconds);
+        // console.log('formattedDuration', formattedDuration)
         return res.status(200).json({
             status: 1,
             message: "Project detail fetched Successfully",
-            data: projectDetail,
+            data:  projectDetail, totalHour,monthlyHour, overtime ,
+
         });
 
     } catch (error) {

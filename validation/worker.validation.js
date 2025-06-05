@@ -92,12 +92,14 @@ exports.addclockEntrry = () => {
 exports.getHistrory = () => {
     return [
         [
-            check("project_id")
-                .notEmpty().withMessage("Project ID is required.")
-                .isInt().withMessage("Project ID must be an integer."),
+            // check("project_id")
+            //     .notEmpty().withMessage("Project ID is required.")
+            //     .isInt().withMessage("Project ID must be an integer."),
+            check("start_date").optional().isISO8601().withMessage("Start Date must be a valid date (YYYY-MM-DD)."),
+            check("end_date").optional().isISO8601().withMessage("End Date must be a valid date (YYYY-MM-DD)."),
             check('page').notEmpty().withMessage('Page must required.').isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
         ],
-        checkForUnexpectedFields(["page", "limit", "project_id"]),
+        checkForUnexpectedFields(["page", "limit", "start_date", "end_date", "project_id"]),
         validation
     ];
 }

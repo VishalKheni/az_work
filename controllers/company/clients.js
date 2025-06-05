@@ -50,7 +50,7 @@ exports.editClient = async (req, res) => {
         }
 
         const client = await db.Client.findByPk(client_id)
-        if (!client) return res.status(400).json({ status: 0, message: 'Client Not Found' });
+        if (!client) return res.status(404).json({ status: 0, message: 'Client Not Found' });
 
 
         if (phone_number) {
@@ -86,7 +86,7 @@ exports.deleteClient = async (req, res) => {
         }
 
         const client = await db.Client.findByPk(client_id)
-        if (!client) return res.status(400).json({ status: 0, message: 'Client Not Found' });
+        if (!client) return res.status(404).json({ status: 0, message: 'Client Not Found' });
 
         await client.destroy();
 
@@ -108,7 +108,12 @@ exports.clientList = async (req, res) => {
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
 
-        let whereCondition = {};
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+        if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
+
+        let whereCondition = {
+            company_id: company.id,
+        };
 
         if (search) {
             whereCondition[Op.or] = [
@@ -166,7 +171,7 @@ exports.clientDetail = async (req, res) => {
         const { client_id } = req.query;
 
         const client = await db.Client.findByPk(client_id)
-        if (!client) return res.status(400).json({ status: 0, message: 'Client Not Found' });
+        if (!client) return res.status(404).json({ status: 0, message: 'Client Not Found' });
 
         return res.status(200).json({
             status: 1,

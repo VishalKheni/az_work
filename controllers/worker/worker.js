@@ -4,6 +4,7 @@ const moment = require('moment');
 const { Op, where, Sequelize, col } = require("sequelize");
 const { validateFiles, } = require('../../helpers/fileValidation');
 const fs = require('fs');
+const user = require('../../models/user');
 
 
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
@@ -33,16 +34,16 @@ exports.addclockEntrry = async (req, res) => {
             return res.status(404).json({ status: 0, message: "Project Not found" })
         }
 
+        const distance = getDistanceFromLatLonInKm(parseFloat(latitude), parseFloat(longitude), parseFloat(project.latitude), parseFloat(project.longitude));
+        const messasgeType = type === 'clock_in' ? 'in' : 'out';
+        if (distance > 0.5) { // 500 meters = 0.5 kilometers
+            return res.status(400).json({
+                status: 0,
+                message: `You are too far from the project location. Must be within 500 meters to clock ${messasgeType}.`,
+            });
+        }
+
         if (type === 'clock_in') {
-            const distance = getDistanceFromLatLonInKm(parseFloat(latitude), parseFloat(longitude), parseFloat(project.latitude), parseFloat(project.longitude));
-
-            if (distance > 2) {
-                return res.status(400).json({
-                    status: 0,
-                    message: `You are too far from the project location (Distance: ${distance.toFixed(2)} km). Must be within 2 km to clock in.`,
-                });
-            }
-
             const lastClockIn = await db.Clock_entry.findOne({
                 where: {
                     worker_id,
@@ -212,18 +213,23 @@ exports.getProjectList = async (req, res) => {
     }
 }
 
-exports.getHistrory = async (req, res) => {
+exports.getHistroryv1 = async (req, res) => {
     try {
         const { id: worker_id } = req.user;
-        let { page, limit, project_id } = req.query;
+        let { page, limit, project_id, date } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
 
+        const startOfDay = moment(date).startOf('day').toDate();
+        const endOfDay = moment(date).endOf('day').toDate();
+
         const { count, rows: histrory } = await db.Clock_entry.findAndCountAll({
             where: {
                 worker_id,
-                project_id,
+                date: {
+                    [Op.between]: [startOfDay, endOfDay]
+                },
                 clock_in_time: { [Op.ne]: null },
                 clock_out_time: { [Op.ne]: null }
             },
@@ -257,6 +263,174 @@ exports.getHistrory = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 }
+
+
+exports.getHistroryv2 = async (req, res) => {
+    try {
+        const { id: worker_id } = req.user;
+        let { page, limit, project_id, date } = req.query;
+
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 10;
+        const offset = (page - 1) * limit;
+
+        const wherecondition = {
+            worker_id,
+            clock_in_time: { [Op.ne]: null },
+            clock_out_time: { [Op.ne]: null }
+        };
+
+        if (date) {
+            const startOfDay = moment(date).startOf('day').toDate();
+            const endOfDay = moment(date).endOf('day').toDate();
+            wherecondition.date = {
+                [Op.between]: [startOfDay, endOfDay]
+            };
+        }
+
+        const records = await db.Clock_entry.findAll({
+            where: { ...wherecondition },
+            attributes: { exclude: ['type'] },
+            include: [
+                {
+                    model: db.Document,
+                    as: 'clock_images',
+                    where: { type: 'image' },
+                    required: false
+                }
+            ],
+            order: [['date', 'DESC'], ['createdAt', 'DESC']]
+        });
+
+        // Group by date
+        const grouped = {};
+        for (const record of records) {
+            const day = moment(record.date).format('YYYY-MM-DD');
+            if (!grouped[day]) grouped[day] = [];
+            grouped[day].push(record);
+        }
+
+        // Convert to array format
+        const groupedArray = Object.keys(grouped).map(date => ({
+            date,
+            break_time: grouped[date][0].break_time, // Assuming break_time is the same for all entries of the day
+            clock_entry: grouped[date]
+        }));
+
+        // Pagination on grouped days
+        const totalData = groupedArray.length;
+        const paginatedData = groupedArray.slice(offset, offset + limit);
+
+        return res.status(200).json({
+            status: 1,
+            message: "Work history fetched successfully",
+            pagination: {
+                totalData,
+                totalPages: Math.ceil(totalData / limit),
+                currentPage: page,
+                limit
+            },
+            data: paginatedData
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+
+
+exports.getHistrory = async (req, res) => {
+    try {
+        const { id: worker_id } = req.user;
+        let { page, limit, start_date, end_date } = req.query;
+
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 10;
+        const offset = (page - 1) * limit;
+
+        const where = {
+            worker_id,
+            clock_in_time: { [Op.ne]: null },
+            clock_out_time: { [Op.ne]: null }
+        };
+
+        if (start_date) {
+            const startOfDay = moment(start_date).startOf('day').toDate();
+            const endOfDay = moment(start_date).endOf('day').toDate();
+            where.date = {
+                [Op.between]: [startOfDay, endOfDay]
+            };
+        } if (start_date && end_date) {
+            const start = moment(start_date).startOf('day').toDate();
+            console.log('start', start)
+            const end = moment(end_date).endOf('day').toDate();
+            console.log('end', end)
+            where.date = {
+                [Op.between]: [start, end]
+            };
+        }
+
+        const records = await db.Clock_entry.findAll({
+            where,
+            attributes: { exclude: ['type'] },
+            include: [
+                {
+                    model: db.Project,
+                    as: 'project',
+                    attributes: ['id', 'project_name'],
+                    required: false
+                },
+                {
+                    model: db.Document,
+                    as: 'clock_images',
+                    where: { type: 'image' },
+                    required: false
+                }
+            ],
+            order: [['date', 'DESC'], ['createdAt', 'DESC']]
+        });
+
+        // Group entries by date
+        const groupedMap = new Map();
+
+        for (const entry of records) {
+            const dateStr = moment(entry.date).format('YYYY-MM-DD');
+            if (!groupedMap.has(dateStr)) {
+                groupedMap.set(dateStr, []);
+            }
+            groupedMap.get(dateStr).push(entry);
+        }
+
+        // Convert to array (no break_time sum)
+        const groupedArray = Array.from(groupedMap.entries()).map(([date, entries]) => ({
+            date,
+            break_time: entries[0].break_time,
+            clock_entry: entries
+        }));
+
+        // Sort and paginate
+        groupedArray.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const totalData = groupedArray.length;
+        const paginatedData = groupedArray.slice(offset, offset + limit);
+
+        return res.status(200).json({
+            status: 1,
+            message: "Work history fetched successfully",
+            pagination: {
+                totalData,
+                totalPages: Math.ceil(totalData / limit),
+                currentPage: page,
+                limit
+            },
+            data: paginatedData
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
 
 exports.AllProjectList = async (req, res) => {
     try {
@@ -1094,7 +1268,7 @@ exports.AbsenceScrenCalendar = async (req, res) => {
 
         const user = await db.User.findOne({
             where: { id: req.user.id },
-            attributes: ['id', 'company_id', 'vacation_days', 'employment_date'],
+            attributes: ['id', 'company_id', 'vacation_days', 'employment_date', 'work_balance'],
             include: [
                 {
                     model: db.Clock_entry,
@@ -1198,7 +1372,7 @@ exports.AbsenceScrenCalendar = async (req, res) => {
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const totalRoundedHours = hours + (minutes >= 60 ? 1 : 0);  // avoid overcounting
         const overTime = totalRoundedHours > totalMonthlyHours
-            ? totalRoundedHours - totalMonthlyHours 
+            ? totalRoundedHours - totalMonthlyHours
             : 0;
 
         const usedRequests = await db.absence_request.findAll({
@@ -1208,7 +1382,6 @@ exports.AbsenceScrenCalendar = async (req, res) => {
                 // updatedAt: {
                 //     [Op.between]: [startOfMonth, endOfMonth]
                 // }
-                // end_date: { [Op.lte]: moment().format('YYYY-MM-DD') },
             },
             include: [
                 {
@@ -1367,7 +1540,8 @@ exports.AbsenceScrenCalendar = async (req, res) => {
             data: {
                 planed_hours: parseInt(totalMonthlyHours),
                 worked_hour: totalRoundedHours,
-                balance: overTime,
+                // balance: overTime,
+                balance: user.work_balance == null ? 0 : user.work_balance,
                 vacation_token: user.vacation_days,
                 vacation_remaining: remainingDays,
                 percentage: parseFloat(attendancePercentage),
@@ -1450,4 +1624,167 @@ exports.editClockEntry = async (req, res) => {
     }
 };
 
+exports.companyDetail = async (req, res) => {
+    try {
+        const company = await db.Company.findOne({
+            where: { id: req.user.company_id },
+            attributes: ['id', 'company_name', 'company_logo', 'country_code', 'iso_code', 'phone_number', 'address'],
+            include: [
+                {
+                    model: db.Branch,
+                    as: 'industry',
+                    attributes: ['id', 'branch_name']
+                }
+            ]
+        });
+        if (!company) return res.status(404).json({ status: 0, message: 'Company Not Found' });
 
+
+        return res.status(200).json({
+            status: 1,
+            message: "Company detail fetched successfully",
+            data: company
+        });
+    } catch (error) {
+        console.error('Error while delete project:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+
+exports.addclockEntrryV1 = async (req, res) => {
+    try {
+        const { project_id, type, address, latitude, longitude, worker_id, date, clock_in_time, clock_out_time } = req.body;
+
+        const worker = await db.User.findOne({
+            where: { id: worker_id, user_role: 'worker' },
+            attributes: ['id', 'company_id']
+        });
+        if (!worker) {
+            return res.status(404).json({ status: 0, message: "Worker not found" });
+        }
+
+        let project = await db.Project.findByPk(project_id, {
+            attributes: ['id', 'project_name', 'latitude', 'longitude']
+        });
+        if (!project) {
+            return res.status(404).json({ status: 0, message: "Project not found" });
+        }
+
+        if (type === 'clock_in') {
+            const distance = getDistanceFromLatLonInKm(parseFloat(latitude), parseFloat(longitude), parseFloat(project.latitude), parseFloat(project.longitude));
+            console.log('distance', distance)
+            if (distance > 0.5) {
+                return res.status(400).json({
+                    status: 0,
+                    message: `You are too far from the project location. Must be within 500 meters to clock in.`,
+                });
+            }
+
+            const existingClockIn = await db.Clock_entry.findOne({
+                where: {
+                    worker_id: worker.id,
+                    date,
+                    type: 'clock_in',
+                    clock_out_time: null,
+                },
+                order: [['clock_in_time', 'DESC']],
+            });
+            if (existingClockIn) {
+                return res.status(400).json({ status: 0, message: "Already clocked in for this day" });
+            }
+
+            const clockin = await db.Clock_entry.create({
+                worker_id,
+                project_id: project.id,
+                date,
+                company_id: worker.company_id,
+                clock_in_time: moment.utc(clock_in_time).toDate(),
+                clock_in_address: address,
+                latitude,
+                longitude,
+                type,
+            });
+
+            return res.status(201).json({
+                status: 1,
+                message: 'Clock-in successful',
+                data: clockin,
+                project: {
+                    id: project.id,
+                    project_name: project.project_name,
+                }
+            });
+        }
+
+        if (type === 'clock_out') {
+            const lastClockIn = await db.Clock_entry.findOne({
+                where: {
+                    worker_id: worker.id,
+                    date,
+                    type: 'clock_in',
+                    clock_out_time: null,
+                },
+                order: [['clock_in_time', 'DESC']],
+            });
+
+            if (!lastClockIn) {
+                return res.status(400).json({ status: 0, message: 'No active clock-in found' });
+            }
+
+            const clockInTime = moment.utc(lastClockIn.clock_in_time);
+            const clockOutMoment = moment.utc(clock_out_time);
+            const sessionDurationMs = clockOutMoment.diff(clockInTime);
+
+            // Calculate break time
+            const previousEntry = await db.Clock_entry.findOne({
+                where: {
+                    worker_id,
+                    date,
+                    clock_out_time: { [Op.not]: null },
+                },
+                order: [['clock_out_time', 'DESC']],
+            });
+
+            let breakMs = 0;
+            if (previousEntry) {
+                const prevClockOut = moment.utc(previousEntry.clock_out_time);
+                breakMs = clockInTime.diff(prevClockOut);
+                if (breakMs < 0) breakMs = 0;
+            }
+
+            function msToHHMMSS(ms) {
+                const totalSeconds = Math.floor(ms / 1000);
+                const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+                const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+                const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+                return `${hours}:${minutes}:${seconds}`;
+            }
+
+            lastClockIn.clock_out_time = clockOutMoment.toDate();
+            lastClockIn.clock_out_address = address;
+            lastClockIn.latitude = latitude;
+            lastClockIn.longitude = longitude;
+            lastClockIn.type = 'clock_out';
+            lastClockIn.duration = msToHHMMSS(sessionDurationMs);
+            lastClockIn.break_time = msToHHMMSS(breakMs);
+            await lastClockIn.save();
+
+            return res.status(200).json({
+                status: 1,
+                message: 'Clock out successful',
+                workDuration: msToHHMMSS(sessionDurationMs),
+                breakDuration: msToHHMMSS(breakMs),
+                data: lastClockIn,
+                project: {
+                    id: project.id,
+                    project_name: project.project_name,
+                }
+            });
+        }
+
+        return res.status(400).json({ status: 0, message: 'Invalid clock type' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};

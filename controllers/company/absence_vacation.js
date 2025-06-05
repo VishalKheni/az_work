@@ -1,7 +1,7 @@
 require('dotenv').config()
 const db = require("../../config/db");
 const { validateMobile, } = require('../../helpers/twilio');
-const { Op, where, Sequelize, col } = require("sequelize");
+const { Op, where, Sequelize, col, literal } = require("sequelize");
 let fs = require('fs');
 const moment = require('moment');
 
@@ -9,6 +9,9 @@ const moment = require('moment');
 exports.allAbsenceRequestList = async (req, res) => {
     try {
         let { page, limit, status, search, month, year, filter } = req.query;
+        const startDate = moment.utc(`${year}-${month}`, 'YYYY-M').startOf('month').toDate();
+        const endDate = moment.utc(`${year}-${month}`, 'YYYY-M').endOf('month').toDate();
+
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
@@ -27,24 +30,19 @@ exports.allAbsenceRequestList = async (req, res) => {
 
         // Build dynamic where condition
         const whereCondition = {
-            worker_id: { [Op.in]: workerIds }
+            worker_id: { [Op.in]: workerIds },
+            createdAt: {
+                [Op.between]: [startDate, endDate]
+            }
         };
 
-        // Apply month/year filter using moment
-        if (month && year) {
-            const startDate = moment(`${year}-${month}`, 'YYYY-M').startOf('month').toDate();
-            const endDate = moment(`${year}-${month}`, 'YYYY-M').endOf('month').toDate();
-
-            whereCondition.createdAt = {
-                [Op.between]: [startDate, endDate]
-            };
-        }
 
         if (search) {
             whereCondition[Op.or] = [
                 { '$absence.absence_type$': { [Op.like]: `%${search}%` } },
                 { '$workers.firstname$': { [Op.like]: `%${search}%` } },
-                { '$workers.lastname$': { [Op.like]: `%${search}%` } }
+                { '$workers.lastname$': { [Op.like]: `%${search}%` } },
+                literal(`CONCAT(workers.firstname, ' ', workers.lastname) LIKE '%${search}%'`)
             ];
         }
 

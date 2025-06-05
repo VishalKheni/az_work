@@ -91,10 +91,8 @@ exports.verifyOtpAndRegister = () => {
                 }
                 return true;
             }),
-            check('firstname').not().isEmpty().withMessage("First Name is required")
-                .isString().withMessage('First Name must be sting').trim().escape(),
-            check('lastname').not().isEmpty().withMessage("Last Name is required")
-                .isString().withMessage('Last Name must be sting').trim().escape(),
+            check('firstname').not().isEmpty().withMessage("First Name is required").isString().withMessage('First Name must be sting').trim().escape(),
+            check('lastname').not().isEmpty().withMessage("Last Name is required").isString().withMessage('Last Name must be sting').trim().escape(),
             check('phone_number').not().isEmpty().withMessage("phone_number is required"),
             check('iso_code').not().isEmpty().withMessage("ISO Code is required").trim().escape(),
             check('country_code').not().isEmpty().withMessage("Country Code is required").trim().escape(),
@@ -107,7 +105,7 @@ exports.verifyOtpAndRegister = () => {
             check('company_country_code').not().isEmpty().withMessage("Company Country Code is required").trim().escape(),
             check("address").notEmpty().withMessage("address is required."),
             check("device_id").not().isEmpty().withMessage("Device ID is required").trim(),
-            check("device_type").not().isEmpty().withMessage("Device type is required").trim(),
+            check("device_type").not().isEmpty().withMessage("Device type is required").isIn(['Android', 'iOS', 'Web']).withMessage('Invalid value for device_type. Allowed values are: Android, iOS, Web.').trim(),
             check("device_token").not().isEmpty().withMessage("Device token is required").trim(),
             check('weekly_hours').notEmpty().withMessage('Weekly hours is required').isNumeric().withMessage('Weekly hours must be a number'),
             check('monthly_hours').notEmpty().withMessage('Monthly hours is required').isNumeric().withMessage('Monthly hours must be a number'),
@@ -124,7 +122,7 @@ exports.login = () => {
             check("email").not().isEmpty().withMessage("Email is required").trim().escape(),
             check("password").not().isEmpty().withMessage("Password is required"),
             check("device_id").not().isEmpty().withMessage("Device ID is required").trim().escape(),
-            check("device_type").not().isEmpty().withMessage("Device type is required").trim().escape(),
+            check("device_type").not().isEmpty().withMessage("Device type is required").isIn(['Android', 'iOS', 'Web']).withMessage('Invalid value for device_type. Allowed values are: Android, iOS, Web.').trim(),
             check("device_token").not().isEmpty().withMessage("Device token is required").trim().escape(),
             check("user_role").not().isEmpty().withMessage("User role is required").isIn(['company', 'worker', 'admin']).withMessage('Invalid value for user_role. Allowed values are: "company", "worker", "admin.'),
         ],

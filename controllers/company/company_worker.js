@@ -10,6 +10,19 @@ const path = require('path');
 const fs = require('fs');
 
 
+function parseTimeToSeconds(timeStr) {
+    const [hours, minutes, seconds] = timeStr.split(':').map(Number);
+    return hours * 3600 + minutes * 60 + seconds;
+}
+
+function formatSecondsToHHMMSS(totalSeconds) {
+    const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+    const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+    const seconds = String(totalSeconds % 60).padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+}
+
+
 
 exports.addWorker = async (req, res) => {
     try {
@@ -45,13 +58,14 @@ exports.addWorker = async (req, res) => {
         const worker = await db.User.create({
             ...req.body,
             user_role: "worker",
+            country_code: `+$${country_code}`,
             experience: parseFloat(experience),
             company_id: company.id,
             job_title_id: job_title.id,
             password: hashedPassword,
             profile_image: `profile_images/${profile_image[0].filename}`,
             vacation_days: parseInt(vacation_days),
-            country_code:`+${country_code}`,
+            country_code: `+${country_code}`,
             is_email_verified: true,
             is_worker_active: "Active",
         })
@@ -77,6 +91,78 @@ exports.addWorker = async (req, res) => {
             message: "Worker detail add Successfully",
             worker,
             documentsData
+        });
+
+    } catch (error) {
+        console.error('Error while add worker detail:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+}
+
+exports.editWorkerProfile = async (req, res) => {
+    try {
+        const { worker_id, job_title_id, firstname, lastname, phone_number, country_code, iso_code, address, insurance_number, employment_date, password, vacation_days, experience } = req.body;
+
+        if (req.user?.is_company_active === "Deactive") {
+            return res.status(400).json({
+                status: 0,
+                message: "Your account has been Deactive by the admin.",
+            });
+        }
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+        if (!company) {
+            return res.status(400).json({ status: 0, message: 'Company Not Found' });
+        }
+
+        const worker = await db.User.findByPk(worker_id, {
+            attributes: ['id', 'firstname', 'lastname', 'profile_image', 'phone_number', 'country_code', 'iso_code', 'address', 'job_title_id', 'insurance_number', 'employment_date', 'password'],
+        });
+
+        if (!worker) return res.status(404).json({ status: 0, message: "Worker not found" });
+
+        if (req.files && req.files.profile_image) {
+            const { profile_image } = req.files;
+            if (worker.profile_image) {
+                fs.unlinkSync(`public/${worker.profile_image}`);
+            }
+            await worker.update({ profile_image: `profile_images/${profile_image[0].filename}` });
+        }
+        if (password) {
+            const isSamePassword = await bcrypt.compare(password, worker.password);
+            if (isSamePassword) {
+                return res.status(400).json({
+                    status: 0,
+                    message: "New password cannot be the same as the current password"
+                });
+            }
+            var hashedPassword = await bcrypt.hash(password, 10);
+            await worker.update({ password: hashedPassword });
+            const emailData = {
+                email: worker.email,
+                password: password,
+                company_name: company.company_name,
+            }
+            await sendEmailToWorker(emailData);
+        }
+        const updatedData = {
+            firstname: firstname || worker.firstname,
+            lastname: lastname || worker.lastname,
+            phone_number: phone_number || worker.phone_number,
+            country_code: `+${country_code}` || worker.country_code,
+            iso_code: iso_code || worker.iso_code,
+            address: address || worker.address,
+            job_title_id: parseInt(job_title_id) || worker.job_title_id,
+            insurance_number: insurance_number || worker.insurance_number,
+            employment_date: employment_date || worker.employment_date,
+            vacation_days: parseInt(vacation_days) || worker.vacation_days,
+            experience: parseFloat(experience) || worker.experience
+        }
+
+        await worker.update(updatedData);
+        return res.status(200).json({
+            status: 1,
+            message: "worker profile update Successfully",
+            data: worker
         });
 
     } catch (error) {
@@ -177,7 +263,6 @@ exports.getWorkerList = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 }
-
 
 exports.getWorkerDetail = async (req, res) => {
     try {
@@ -438,61 +523,6 @@ exports.workerActiveDeactive = async (req, res) => {
     }
 }
 
-exports.editWorkerProfile = async (req, res) => {
-    try {
-        const { worker_id, job_category_id, job_title_id, firstname, lastname, phone_number, country_code, iso_code, address, insurance_number, employment_date, password, vacation_days, experience } = req.body;
-
-        if (req.user?.is_company_active === "Deactive") {
-            return res.status(400).json({
-                status: 0,
-                message: "Your account has been Deactive by the admin.",
-            });
-        }
-
-        const worker = await db.User.findByPk(worker_id, {
-            attributes: ['id', 'firstname', 'lastname', 'profile_image', 'phone_number', 'country_code', 'iso_code', 'address', 'job_category_id', 'job_title_id', 'insurance_number', 'employment_date', 'password'],
-        });
-
-        if (!worker) return res.status(404).json({ status: 0, message: "Worker not found" });
-
-        if (req.files && req.files.profile_image) {
-            const { profile_image } = req.files;
-            if (worker.profile_image) {
-                fs.unlinkSync(`public/${worker.profile_image}`);
-            }
-            await worker.update({ profile_image: `profile_images/${profile_image[0].filename}` });
-        }
-        if (password) {
-            var hashedPassword = await bcrypt.hash(password, 10);
-        }
-        const updatedData = {
-            firstname: firstname || worker.firstname,
-            lastname: lastname || worker.lastname,
-            phone_number: phone_number || worker.phone_number,
-            password: password ? hashedPassword : worker.password,
-            country_code:`+${country_code}` || worker.country_code,
-            iso_code: iso_code || worker.iso_code,
-            address: address || worker.address,
-            job_category_id: parseInt(job_category_id) || worker.job_category_id,
-            job_title_id: parseInt(job_title_id) || worker.job_title_id,
-            insurance_number: insurance_number || worker.insurance_number,
-            employment_date: employment_date || worker.employment_date,
-            vacation_days: parseInt(vacation_days) || worker.vacation_days,
-            experience: parseFloat(experience) || worker.experience
-        }
-
-        await worker.update(updatedData);
-        return res.status(200).json({
-            status: 1,
-            message: "worker profile update Successfully",
-            data: worker
-        });
-
-    } catch (error) {
-        console.error('Error while add worker detail:', error);
-        return res.status(500).json({ status: 0, message: 'Internal server error' });
-    }
-}
 
 exports.getWorkerMonthlyHours = async (req, res) => {
     try {
@@ -522,6 +552,8 @@ exports.getWorkerMonthlyHours = async (req, res) => {
         for (let month = 0; month < 12; month++) {
             const startOfMonth = moment.utc({ year, month, day: 1 }).startOf('month').toDate();
             const endOfMonth = moment.utc({ year, month, day: 1 }).endOf('month').toDate();
+            // console.log('startOfMonth', startOfMonth)
+            // console.log('endOfMonth', endOfMonth)
 
             // Fetch all duration entries for the month
             const workedEntries = await db.Clock_entry.findAll({
@@ -572,7 +604,7 @@ exports.getWorkerMonthlyHours = async (req, res) => {
 
 exports.getWorkerTimeTable = async (req, res) => {
     try {
-        let { worker_id, page, limit, month, year } = req.query;
+        let { worker_id, page, limit, month, year, search } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
@@ -592,6 +624,17 @@ exports.getWorkerTimeTable = async (req, res) => {
             ]
         };
 
+        //     if (search) {
+        //         whereCondition[Op.or] = [
+        //             {
+        //                 '$project.project_name$': {
+        //                     [Op.like]: `%${search}%`
+        //                 }
+        //             }
+        //         ];
+        //     }
+        // console.log('whereCondition', whereCondition)
+
         // Step 2: Get clock entries from ClockEntry directly
         const { count, rows: clockEntries } = await db.Clock_entry.findAndCountAll({
             where: { ...whereCondition },
@@ -600,13 +643,39 @@ exports.getWorkerTimeTable = async (req, res) => {
                     model: db.Project,
                     as: 'project',
                     attributes: ['id', 'project_name'],
+                    where: search ? {
+                        project_name: {
+                            [Op.like]: `%${search}%`
+                        }
+                    } : undefined,
                     required: false
                 }
             ],
+            subQuery: false,
             limit,
             offset,
             order: [['id', 'DESC']]
         });
+
+        const allClockEntries = await db.Clock_entry.findAll({
+            where: { ...whereCondition },
+            attributes: ['duration'],
+        });
+
+        let allSeconds = 0;
+        for (const entry of allClockEntries) {
+            if (entry.duration) {
+                allSeconds += parseTimeToSeconds(entry.duration);
+            }
+        }
+
+        // Duration for current page only
+        let currentPageSeconds = 0;
+        for (const entry of clockEntries) {
+            if (entry.duration) {
+                currentPageSeconds += parseTimeToSeconds(entry.duration);
+            }
+        }
 
         return res.status(200).json({
             status: 1,
@@ -617,7 +686,8 @@ exports.getWorkerTimeTable = async (req, res) => {
                 currentPage: page,
                 limit: limit,
             },
-            // all_pages_total: totalDurationResult.total_duration,
+            all_pages_total: formatSecondsToHHMMSS(allSeconds),
+            current_page_total: formatSecondsToHHMMSS(currentPageSeconds),
             data: clockEntries
         });
 
@@ -637,6 +707,20 @@ exports.getTimetableDetail = async (req, res) => {
                     model: db.User,
                     as: 'worker',
                     attributes: ['id', 'firstname', 'lastname', 'profile_image'],
+                    include: [
+                        {
+                            model: db.Job_title,
+                            as: 'job_title',
+                            attributes: ['id', 'job_title'],
+                            required: false
+                        }
+                    ]
+                },
+                {
+                    model: db.Project,
+                    as: 'project',
+                    attributes: ['id', 'project_name'],
+                    required: false
                 },
             ]
         })
@@ -757,3 +841,38 @@ exports.getTimeTableList = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 }
+
+exports.editClockTime = async (req, res) => {
+    const { worker_id, clock_entry_id, clock_in_time, clock_out_time } = req.body;
+
+    try {
+        const entry = await db.Clock_entry.findOne({ where: { id: clock_entry_id, worker_id: worker_id } });
+        if (!entry) {
+            return res.status(404).json({ status: 0, message: 'Clock entry not found' });
+        }
+
+        // Update times
+        if (clock_in_time) {
+            entry.clock_in_time = clock_in_time;
+            await entry.save()
+        }
+        if (clock_out_time) {
+            entry.clock_out_time = clock_out_time;
+            await entry.save()
+        }
+
+        // Calculate duration if both times are present
+        if (entry.clock_in_time && entry.clock_out_time) {
+            const start = moment(entry.clock_in_time);
+            const end = moment(entry.clock_out_time);
+            const duration = moment.utc(end.diff(start)).format('HH:mm:ss');
+            entry.duration = duration;
+            await entry.save()
+        }
+
+        return res.json({ status: 1, message: 'Clock entry updated successfully', data: entry });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
