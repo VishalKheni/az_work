@@ -37,5 +37,6 @@ router.put("/edit_clock", verifyToken, checkUserRole(['worker']), workervalidati
 
 
 router.post("/add_clock_entry_v1",  workerController.addclockEntrryV1);
+router.put("/edit_break_time",  workerController.updatebreakTime);
 
 module.exports = router;

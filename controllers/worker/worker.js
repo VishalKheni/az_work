@@ -1326,18 +1326,6 @@ exports.AbsenceScrenCalendar = async (req, res) => {
             new Date(a.start_date) - new Date(b.start_date)
         );
 
-
-
-
-        // const user = await db.User.findOne({
-        //     where: { id: req.user.id },
-        //     attributes: ['id', 'company_id', 'vacation_days', 'employment_date'],
-        // });
-
-        // if (!user) {
-        //     return res.status(404).json({ status: 0, message: 'User not found' });
-        // }
-
         const entries = await db.Clock_entry.findAll({
             where: {
                 worker_id: req.user.id,
@@ -1541,7 +1529,7 @@ exports.AbsenceScrenCalendar = async (req, res) => {
                 planed_hours: parseInt(totalMonthlyHours),
                 worked_hour: totalRoundedHours,
                 // balance: overTime,
-                balance: user.work_balance == null ? 0 : user.work_balance,
+                balance: user.work_balance,
                 vacation_token: user.vacation_days,
                 vacation_remaining: remainingDays,
                 percentage: parseFloat(attendancePercentage),
@@ -1788,3 +1776,82 @@ exports.addclockEntrryV1 = async (req, res) => {
         res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 };
+
+
+const parseBreakTimeToSeconds = (breakTimeStr) => {
+    const [hours, minutes, seconds] = breakTimeStr.split(':').map(Number);
+    return (hours * 3600) + (minutes * 60) + seconds;
+};
+
+const formatSecondsToHHMMSS = (totalSeconds) => {
+    const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+    const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+    const seconds = String(totalSeconds % 60).padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+};
+
+
+exports.updatebreakTime = async (req, res) => {
+    try {
+        const { worker_id, date } = req.body;
+
+        // Validate worker
+        const worker = await db.User.findOne({
+            where: { id: worker_id, user_role: 'worker' },
+            attributes: ['id']
+        });
+
+        if (!worker) {
+            return res.status(404).json({ status: 0, message: "Worker not found" });
+        }
+
+        const startOfDay = moment(date).startOf('day').toDate();
+        const endOfDay = moment(date).endOf('day').toDate();
+
+        // Get all entries for given worker and date
+        const entries = await db.Clock_entry.findAll({
+            where: {
+                worker_id: worker.id,
+                date: {
+                    [Op.between]: [startOfDay, endOfDay]
+                },
+                clock_out_time: { [Op.not]: null },
+                break_time: { [Op.not]: null }
+            }
+        });
+
+        let totalBreakSeconds = 0;
+
+        for (const entry of entries) {
+            const breakSeconds = parseBreakTimeToSeconds(entry.break_time);
+            if (breakSeconds > 300) {
+                totalBreakSeconds += breakSeconds;
+            }
+        }
+
+        if (totalBreakSeconds > 0) {
+            const formattedBreakTime = formatSecondsToHHMMSS(totalBreakSeconds);
+
+            await db.Clock_entry.update(
+                { break_time: formattedBreakTime },
+                { where: { worker_id: worker.id, date } }
+            );
+
+            return res.status(200).json({
+                status: 1,
+                message: `break time updated successfully`,
+                break_time: formattedBreakTime
+            });
+        } else {
+            return res.status(200).json({
+                status: 1,
+                message: "No break time over 5 minutes found"
+            });
+        }
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
+    }
+};
+

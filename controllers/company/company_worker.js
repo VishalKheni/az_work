@@ -624,18 +624,17 @@ exports.getWorkerTimeTable = async (req, res) => {
             ]
         };
 
-        //     if (search) {
-        //         whereCondition[Op.or] = [
-        //             {
-        //                 '$project.project_name$': {
-        //                     [Op.like]: `%${search}%`
-        //                 }
-        //             }
-        //         ];
-        //     }
+        if (search) {
+            whereCondition[Op.or] = [
+                {
+                    '$project.project_name$': {
+                        [Op.like]: `%${search}%`
+                    }
+                }
+            ];
+        }
         // console.log('whereCondition', whereCondition)
 
-        // Step 2: Get clock entries from ClockEntry directly
         const { count, rows: clockEntries } = await db.Clock_entry.findAndCountAll({
             where: { ...whereCondition },
             include: [
@@ -643,11 +642,6 @@ exports.getWorkerTimeTable = async (req, res) => {
                     model: db.Project,
                     as: 'project',
                     attributes: ['id', 'project_name'],
-                    where: search ? {
-                        project_name: {
-                            [Op.like]: `%${search}%`
-                        }
-                    } : undefined,
                     required: false
                 }
             ],
@@ -660,6 +654,14 @@ exports.getWorkerTimeTable = async (req, res) => {
         const allClockEntries = await db.Clock_entry.findAll({
             where: { ...whereCondition },
             attributes: ['duration'],
+            include: [
+                {
+                    model: db.Project,
+                    as: 'project',
+                    attributes: ['id', 'project_name'],
+                    required: false
+                }
+            ],
         });
 
         let allSeconds = 0;

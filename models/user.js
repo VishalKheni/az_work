@@ -101,6 +101,7 @@ module.exports = (sequelize, DataTypes, Model) => {
         work_balance: {
             type: DataTypes.INTEGER,
             allowNull: true,
+            defaultValue: 0,
         },
         is_company_active: {
             type: DataTypes.ENUM('Active', 'Deactive'),

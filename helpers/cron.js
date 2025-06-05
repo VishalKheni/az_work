@@ -25,7 +25,6 @@ const updateBreakTime = cron.schedule('0 0 * * *', async () => {
         const entries = await db.Clock_entry.findAll({
             where: {
                 date: yesterday,
-                status: "approved",
                 clock_out_time: { [Op.not]: null },
                 break_time: { [Op.not]: null }
             }
