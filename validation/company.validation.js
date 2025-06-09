@@ -472,17 +472,52 @@ exports.deleteDocument = () => {
 
 
 // Company Holiday Validation
+// exports.addCompanyHoliday = () => {
+//     return [
+//         [
+//             check('holiday_name').notEmpty().withMessage('Holiday name is required').isString().withMessage('Holiday name must be a string'),
+//             check("date").notEmpty().withMessage('Date is required.').isISO8601().withMessage("Date must be a valid date (YYYY-MM-DD)."),
+//             check('day').notEmpty().withMessage('Day is required').isString().withMessage('Day must be a string'),
+//             check("type").notEmpty().withMessage('Type is required.').isInt().withMessage("Type must be number").isIn([0, 1]).withMessage("Invalid value for Type. Allowed values are 0, 1.").trim()
+
+//         ],
+//         checkForUnexpectedFields(["holiday_name", "date", "day"]),
+//         validation
+//     ];
+// }
 exports.addCompanyHoliday = () => {
     return [
-        [
-            check('holiday_name').notEmpty().withMessage('Holiday name is required').isString().withMessage('Holiday name must be a string'),
-            check("date").notEmpty().withMessage('Date is required.').isISO8601().withMessage("Date must be a valid date (YYYY-MM-DD)."),
-            check('day').notEmpty().withMessage('Day is required').isString().withMessage('Day must be a string'),
-        ],
-        checkForUnexpectedFields(["holiday_name", "date", "day"]),
+        // First validate `type` since other fields depend on it
+        check("type")
+            .notEmpty().withMessage('Type is required.')
+            .isInt().withMessage("Type must be a number.")
+            .isIn([0, 1]).withMessage("Invalid value for Type. Allowed values are 0 or 1.")
+            .toInt(),
+
+        // Custom conditional validation logic
+        check().custom((value, { req }) => {
+            const type = parseInt(req.body.type);
+            if (type === 0) {
+                if (!req.body.holiday_name) throw new Error("Holiday name is required.");
+                if (typeof req.body.holiday_name !== "string") throw new Error("Holiday name must be a string.");
+                if (!req.body.date) throw new Error("Date is required.");
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(req.body.date)) throw new Error("Date must be in format YYYY-MM-DD.");
+                if (!req.body.day) throw new Error("Day is required.");
+                if (typeof req.body.day !== "string") throw new Error("Day must be a string.");
+            } else if (type === 1) {
+                if (!Array.isArray(req.body.holiday_ids) || req.body.holiday_ids.length === 0) {
+                    throw new Error("holiday_ids (array of IDs) is required for type 1.");
+                }
+            }
+            return true;
+        }),
+
+        // Accept only expected fields
+        checkForUnexpectedFields(["holiday_name", "date", "day", "type", "holiday_ids"]),
         validation
     ];
-}
+};
+
 exports.getCompanyHolidaysList = () => {
     return [
         [
@@ -493,9 +528,10 @@ exports.getCompanyHolidaysList = () => {
                 .withMessage('Page must be a positive integer.'),
             check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be string")
                 .isIn(['id_ASC', 'id_DESC', 'holiday_name_ASC', 'date_ASC', 'day_ASC', 'holiday_name_DESC', 'date_DESC', 'day_DESC'])
-                .withMessage("Invalid value for filter. Allowed values are id_ASC, id_DESC,   holiday_name_ASC, date_ASC, day_ASC, holiday_name_DESC, date_DESC, day_DESC.").trim()
+                .withMessage("Invalid value for filter. Allowed values are id_ASC, id_DESC,   holiday_name_ASC, date_ASC, day_ASC, holiday_name_DESC, date_DESC, day_DESC.").trim(),
+            check("type").notEmpty().withMessage('Type is required.').isInt().withMessage("Type must be number").isIn([0, 1]).withMessage("Invalid value for Type. Allowed values are 0, 1.").trim()
         ],
-        checkForUnexpectedFields(["page", "limit", "filter"]),
+        checkForUnexpectedFields(["page", "limit", "filter", "type"]),
         validation
     ];
 }

@@ -22,7 +22,63 @@ function formatSecondsToHHMMSS(totalSeconds) {
     return `${hours}:${minutes}:${seconds}`;
 }
 
+async function calculateBreakTimeForWorker(date, worker_id) {
+    console.log("calculateBreakTimeForWorker");
+    
+    const targetDate = date;
+    try {
+        const entries = await db.Clock_entry.findAll({
+            where: {
+                date: targetDate,
+                worker_id,
+                clock_in_time: { [Op.not]: null },
+                clock_out_time: { [Op.not]: null },
+            },
+            order: [['worker_id', 'ASC'], ['clock_in_time', 'ASC']],
+        });
 
+        const groupedEntries = {};
+
+        // Group entries by worker_id
+        for (const entry of entries) {
+            const wid = entry.worker_id;
+            if (!groupedEntries[wid]) groupedEntries[wid] = [];
+            groupedEntries[wid].push(entry);
+        }
+
+        // For each worker group calculate break time and update entries
+        for (const wid in groupedEntries) {
+            const logs = groupedEntries[wid];
+            let totalBreakSeconds = 0;
+
+            for (let i = 0; i < logs.length - 1; i++) {
+                const currentOut = moment(logs[i].clock_out_time);
+                const nextIn = moment(logs[i + 1].clock_in_time);
+
+                const breakSeconds = nextIn.diff(currentOut, 'seconds');
+                if (breakSeconds >= 300) { // Only count breaks longer or equal to 5 minutes
+                    totalBreakSeconds += breakSeconds;
+                }
+            }
+
+            const formattedTotalBreak = formatSecondsToHHMMSS(totalBreakSeconds);
+
+            // Update all entries of this worker on the target date with total break time
+            await db.Clock_entry.update(
+                { break_time: formattedTotalBreak },
+                {
+                    where: {
+                        worker_id: wid,
+                        date: targetDate,
+                    }
+                }
+            );
+        }
+
+    } catch (error) {
+        console.error('Cron job error:', error);
+    }
+}
 
 exports.addWorker = async (req, res) => {
     try {
@@ -781,11 +837,12 @@ exports.getTimeTableList = async (req, res) => {
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
+        month = parseInt(month) - 1; 
+        year = parseInt(year);
         const startOfMonth = moment.utc({ year, month, day: 1 }).startOf('month').toDate();
         const endOfMonth = moment.utc({ year, month, day: 1 }).endOf('month').toDate();
 
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
-
         if (!company) {
             return res.status(400).json({ status: 0, message: 'Company Not Found' });
         }
@@ -802,14 +859,38 @@ exports.getTimeTableList = async (req, res) => {
 
         const { count, rows: worker } = await db.User.findAndCountAll({
             where: { ...whereCondition, user_role: "worker", company_id: company.id },
-            attributes: ['id', 'firstname', 'lastname',],
+            attributes: ['id', 'firstname', 'lastname', 'profile_image'],
             include: [
                 {
                     model: db.absence_request,
                     as: 'absence_requests',
+                    // where: {
+                    //     request_status: "accepted",
+                    //     start_date: { [Op.between]: [startOfMonth, endOfMonth] },
+                    // },
                     where: {
                         request_status: "accepted",
-                        createdAt: { [Op.between]: [startOfMonth, endOfMonth] },
+                        [Op.or]: [
+                            {
+                                type: 0,
+                                start_date: { [Op.between]: [startOfMonth, endOfMonth] }
+                            },
+                            {
+                                type: 1,
+                                [Op.or]: [
+                                    {
+                                        start_date: { [Op.between]: [startOfMonth, endOfMonth] }
+                                    },
+                                    {
+                                        end_date: { [Op.between]: [startOfMonth, endOfMonth] }
+                                    },
+                                    {
+                                        start_date: { [Op.lte]: startOfMonth },
+                                        end_date: { [Op.gte]: endOfMonth }
+                                    }
+                                ]
+                            }
+                        ]
                     },
                     include: [
                         {
@@ -871,10 +952,58 @@ exports.editClockTime = async (req, res) => {
             entry.duration = duration;
             await entry.save()
         }
-
-        return res.json({ status: 1, message: 'Clock entry updated successfully', data: entry });
+        const dateOnly = moment(entry.date).format('YYYY-MM-DD');
+        await calculateBreakTimeForWorker(dateOnly, worker_id);
+        const updatedentry = await db.Clock_entry.findOne({ where: { id: clock_entry_id, worker_id: worker_id } });
+        return res.json({ status: 1, message: 'Clock entry updated successfully', data: updatedentry });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+
+// exports.editClockTime = async (req, res) => {
+//     const { worker_id, clock_entry_id, clock_in_time, clock_out_time } = req.body;
+
+//     try {
+//         const entry = await db.Clock_entry.findOne({ where: { id: clock_entry_id, worker_id } });
+//         if (!entry) {
+//             return res.status(404).json({ status: 0, message: 'Clock entry not found' });
+//         }
+
+//         let isUpdated = false;
+
+//         // Update clock in time if provided
+//         if (clock_in_time && clock_in_time !== entry.clock_in_time) {
+//             entry.clock_in_time = clock_in_time;
+//             isUpdated = true;
+//         }
+
+//         // Update clock out time if provided
+//         if (clock_out_time && clock_out_time !== entry.clock_out_time) {
+//             entry.clock_out_time = clock_out_time;
+//             isUpdated = true;
+//         }
+
+//         // If times changed, update duration
+//         if (isUpdated && entry.clock_in_time && entry.clock_out_time) {
+//             const start = moment(entry.clock_in_time);
+//             const end = moment(entry.clock_out_time);
+//             const duration = moment.utc(end.diff(start)).format('HH:mm:ss');
+//             entry.duration = duration;
+//         }
+// console.log('isUpdated', isUpdated)
+//         // Save only if any update happened
+//         if (isUpdated) {
+//             await entry.save();
+//             const dateOnly = moment(entry.date).format('YYYY-MM-DD');
+//             await calculateBreakTimeForWorker(dateOnly, worker_id);
+//         }
+
+//         return res.json({ status: 1, message: 'Clock entry updated successfully', data: entry });
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({ message: 'Internal server error' });
+//     }
+// };

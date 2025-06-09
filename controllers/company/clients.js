@@ -146,7 +146,7 @@ exports.clientList = async (req, res) => {
             where: { ...whereCondition },
             limit,
             offset,
-            order
+            order   
         });
 
         return res.status(200).json({

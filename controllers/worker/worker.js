@@ -65,6 +65,7 @@ exports.addclockEntrry = async (req, res) => {
                 clock_in_address: address,
                 latitude,
                 longitude,
+                break_time: "00:00:00",
                 type,
             });
             return res.status(201).json({
@@ -127,14 +128,14 @@ exports.addclockEntrry = async (req, res) => {
             }
 
             lastClockIn.duration = msToHHMMSS(sessionDurationMs);
-            lastClockIn.break_time = msToHHMMSS(breakMs);
+            // lastClockIn.break_time = msToHHMMSS(breakMs);
             await lastClockIn.save();
 
             return res.status(200).json({
                 status: 1,
                 message: 'Clock out successful',
                 workDuration: msToHHMMSS(sessionDurationMs),
-                breakDuration: msToHHMMSS(breakMs),
+                // breakDuration: msToHHMMSS(breakMs),
                 data: lastClockIn,
                 project: {
                     id: project.id,
@@ -1291,9 +1292,40 @@ exports.AbsenceScrenCalendar = async (req, res) => {
                     where: {
                         worker_id: req.user.id,
                         request_status: "accepted",
-                        createdAt: {
-                            [Op.between]: [startOfMonth, endOfMonth]
-                        },
+                        [Op.or]: [
+                            {
+                                type: 0,
+                                start_date: {
+                                    [Op.between]: [startOfMonth, endOfMonth]
+                                }
+                            },
+                            {
+                                type: 1,
+                                [Op.or]: [
+                                    {
+                                        start_date: {
+                                            [Op.between]: [startOfMonth, endOfMonth]
+                                        }
+                                    },
+                                    {
+                                        end_date: {
+                                            [Op.between]: [startOfMonth, endOfMonth]
+                                        }
+                                    },
+                                    {
+                                        start_date: {
+                                            [Op.lte]: startOfMonth
+                                        },
+                                        end_date: {
+                                            [Op.gte]: endOfMonth
+                                        }
+                                    }
+                                ]
+                            }
+                        ]        
+                        // createdAt: {
+                        //     [Op.between]: [startOfMonth, endOfMonth]
+                        // },
                     },
                     attributes: ['id', 'worker_id', 'absence_id', 'start_date', 'end_date'],
                     order: [['id', 'ASC']],
@@ -1461,18 +1493,47 @@ exports.AbsenceScrenCalendar = async (req, res) => {
             presentDates.add(moment(entry.date).format('YYYY-MM-DD'));
         });
         // -----------------------------------------
-
+console.log('startOfMonth', startOfMonth)
+console.log('endOfMonth', endOfMonth)
         // 2. Fetch accepted absences in current month (only up to today)
         const absences = await db.absence_request.findAll({
             where: {
                 worker_id: req.user.id,
                 request_status: 'accepted',
-                updatedAt: {
-                    [Op.between]: [startOfMonth, endOfMonth]
-                }
+                [Op.or]: [
+                    {
+                        type: 0,
+                        start_date: {
+                            [Op.between]: [startOfMonth, endOfMonth]
+                        }
+                    },
+                    {
+                        type: 1,
+                        [Op.or]: [
+                            {
+                                start_date: {
+                                    [Op.between]: [startOfMonth, endOfMonth]
+                                }
+                            },
+                            {
+                                end_date: {
+                                    [Op.between]: [startOfMonth, endOfMonth]
+                                }
+                            },
+                            {
+                                start_date: {
+                                    [Op.lte]: startOfMonth
+                                },
+                                end_date: {
+                                    [Op.gte]: endOfMonth
+                                }
+                            }
+                        ]
+                    }
+                ]
             }
         });
-
+        console.log('absences', absences)
         // 3. Identify absent weekdays (Mon–Fri only)
         const absentDates = new Set();
         absences.forEach(abs => {
@@ -1690,6 +1751,7 @@ exports.addclockEntrryV1 = async (req, res) => {
                 clock_in_address: address,
                 latitude,
                 longitude,
+                break_time: "00:00:00",
                 type,
             });
 
@@ -1754,14 +1816,14 @@ exports.addclockEntrryV1 = async (req, res) => {
             lastClockIn.longitude = longitude;
             lastClockIn.type = 'clock_out';
             lastClockIn.duration = msToHHMMSS(sessionDurationMs);
-            lastClockIn.break_time = msToHHMMSS(breakMs);
+            // lastClockIn.break_time = msToHHMMSS(breakMs);
             await lastClockIn.save();
 
             return res.status(200).json({
                 status: 1,
                 message: 'Clock out successful',
                 workDuration: msToHHMMSS(sessionDurationMs),
-                breakDuration: msToHHMMSS(breakMs),
+                // breakDuration: msToHHMMSS(breakMs),
                 data: lastClockIn,
                 project: {
                     id: project.id,

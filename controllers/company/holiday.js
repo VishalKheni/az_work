@@ -1,11 +1,64 @@
 require('dotenv').config()
 const db = require("../../config/db");
+const { Op, where, Sequelize, col } = require("sequelize");
 
+
+// exports.addCompanyHoliday = async (req, res) => {
+//     try {
+//         let { holiday_name, date, day, type, holiday_ids } = req.body;
+//         const user_id = req.user.id;
+//         type = parseInt(type)
+//         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+//         if (!company) {
+//             return res.status(400).json({ status: 0, message: 'Company Not Found' });
+//         }
+
+//         if (req.user?.is_company_active === "Deactive") {
+//             return res.status(400).json({
+//                 status: 0,
+//                 message: "Your account has been Deactive by the admin.",
+//             });
+//         }
+
+//         const existingHoliday = await db.Holiday.findOne({
+//             where: {
+//                 user_id,
+//                 company_id: company.id,
+//                 holiday_name,
+//                 date,
+//             },
+//         });
+
+//         if (existingHoliday) {
+//             return res.status(400).json({ status: 0, message: 'Holiday with the same name and date already exists' });
+//         }
+
+//         const holiday = await db.Holiday.create({
+//             user_id,
+//             holiday_name,
+//             company_id: company.id,
+//             date,
+//             day,
+//         });
+
+//         return res.status(201).json({ status: 1, message: 'Company Holiday added successfully', data: holiday });
+
+//     } catch (error) {
+//         console.error('Error while adding holiday:', error);
+//         return res.status(500).json({ status: 0, message: 'Internal server error' });
+//     }
+// };
 
 exports.addCompanyHoliday = async (req, res) => {
     try {
-        const { holiday_name, date, day } = req.body;
+        let { holiday_name, date, day, type, holiday_ids } = req.body;
         const user_id = req.user.id;
+        type = parseInt(type);
+
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+        if (!company) {
+            return res.status(400).json({ status: 0, message: 'Company Not Found' });
+        }
 
         if (req.user?.is_company_active === "Deactive") {
             return res.status(400).json({
@@ -14,26 +67,97 @@ exports.addCompanyHoliday = async (req, res) => {
             });
         }
 
-        const existingHoliday = await db.Holiday.findOne({
-            where: {
+        if (type === 0) {
+            // Custom holiday
+            const existingHoliday = await db.Holiday.findOne({
+                where: {
+                    user_id,
+                    company_id: company.id,
+                    holiday_name,
+                    date,
+                },
+            });
+
+            if (existingHoliday) {
+                return res.status(400).json({ status: 0, message: 'Holiday with the same name and date already exists' });
+            }
+
+            const holiday = await db.Holiday.create({
                 user_id,
                 holiday_name,
+                company_id: company.id,
                 date,
-            },
-        });
+                day,
+                is_holiday_checked: true
+            });
 
-        if (existingHoliday) {
-            return res.status(400).json({ status: 0, message: 'Holiday with the same name and date already exists' });
+            return res.status(201).json({ status: 1, message: 'Company Holiday added successfully', data: holiday });
+
+        } else if (type === 1) {
+            const holidaysToClone = await db.Holiday.findAll({
+                where: {
+                    id: holiday_ids,
+                    created_by_admin: true
+                },
+            });
+
+            if (holidaysToClone.length === 0) {
+                return res.status(404).json({ status: 0, message: 'No holidays found with given IDs' });
+            }
+
+            const createdHolidays = [];
+            const duplicateHolidays = [];
+
+            for (const h of holidaysToClone) {
+                // Check for duplicate
+                const exists = await db.Holiday.findOne({
+                    where: {
+                        user_id,
+                        company_id: company.id,
+                        holiday_name: h.holiday_name,
+                        date: h.date,
+                    }
+                });
+
+                if (!exists) {
+                    var newHoliday = await db.Holiday.create({
+                        user_id,
+                        holiday_name: h.holiday_name,
+                        company_id: company.id,
+                        date: h.date,
+                        day: h.day,
+                        is_holiday_checked: true
+                    });
+                    createdHolidays.push(newHoliday);
+                }else {
+                    duplicateHolidays.push(exists);
+                }
+            }
+            const createdHolidayIds = createdHolidays.map(h => h.id);
+
+            const resHoliday = await db.Holiday.findAll({
+                where: {
+                    id: createdHolidayIds,
+                },
+            });
+            let message;
+            if (createdHolidays.length === 0) {
+                message = 'All selected holidays already exist.';
+            } else if (duplicateHolidays.length === 0) {
+                message = 'Admin holidays added successfully.';
+            } else {
+                message = `Admin holiday added successfully`;
+            }
+            
+                        
+            return res.status(201).json({
+                status: 1,
+                message: message,
+                data: resHoliday,
+            });
+        } else {
+            return res.status(400).json({ status: 0, message: 'Invalid holiday type' });
         }
-
-        const holiday = await db.Holiday.create({
-            user_id,
-            holiday_name,
-            date,
-            day,
-        });
-
-        return res.status(201).json({ status: 1, message: 'Company Holiday added successfully', data: holiday });
 
     } catch (error) {
         console.error('Error while adding holiday:', error);
@@ -43,10 +167,29 @@ exports.addCompanyHoliday = async (req, res) => {
 
 exports.getCompanyHolidaysList = async (req, res) => {
     try {
-        let { page, limit, filter } = req.query;
+        let { page, limit, filter, type } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
+        type = parseInt(type)
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+        if (!company) {
+            return res.status(400).json({ status: 0, message: 'Company Not Found' });
+        }
+
+        let whereCondition = {};
+
+        if (type === 0) {
+            whereCondition[Op.or] = [
+                { created_by_admin: true },
+                { created_by_admin: false }
+            ];
+            whereCondition.company_id = company.id;
+        } else if (type === 1) {
+            whereCondition.created_by_admin = true;
+        }
+
+        // console.log('whereCondition', whereCondition)
 
         let order;
         if (filter === 'id_ASC') {
@@ -69,6 +212,7 @@ exports.getCompanyHolidaysList = async (req, res) => {
 
 
         const { count, rows: holidays } = await db.Holiday.findAndCountAll({
+            where: whereCondition,
             limit,
             offset,
             order,

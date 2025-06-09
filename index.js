@@ -48,15 +48,15 @@ const start = async () => {
         });
         // updateBreakTime.start();
         // console.log("update Break Time cron job started...");
-        // addWorkbalance.start()
-        // console.log("add Work balance cron job started...");
+        addWorkbalance.start()
+        console.log("add Work balance cron job started...");
     } catch (error) {
         console.error('Unable to connect to the database:', error);
     }
 };
 start();
 
-app.use(routes);
+app.use(routes);    
 
 app.use((err, req, res, next) => { res.status(400).json({ status: 0, message: err.message }) });
 
