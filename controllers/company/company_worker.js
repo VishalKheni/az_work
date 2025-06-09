@@ -24,7 +24,7 @@ function formatSecondsToHHMMSS(totalSeconds) {
 
 async function calculateBreakTimeForWorker(date, worker_id) {
     console.log("calculateBreakTimeForWorker");
-    
+
     const targetDate = date;
     try {
         const entries = await db.Clock_entry.findAll({
@@ -837,7 +837,7 @@ exports.getTimeTableList = async (req, res) => {
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
-        month = parseInt(month) - 1; 
+        month = parseInt(month) - 1;
         year = parseInt(year);
         const startOfMonth = moment.utc({ year, month, day: 1 }).startOf('month').toDate();
         const endOfMonth = moment.utc({ year, month, day: 1 }).endOf('month').toDate();
@@ -864,10 +864,6 @@ exports.getTimeTableList = async (req, res) => {
                 {
                     model: db.absence_request,
                     as: 'absence_requests',
-                    // where: {
-                    //     request_status: "accepted",
-                    //     start_date: { [Op.between]: [startOfMonth, endOfMonth] },
-                    // },
                     where: {
                         request_status: "accepted",
                         [Op.or]: [

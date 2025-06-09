@@ -3,51 +3,6 @@ const db = require("../../config/db");
 const { Op, where, Sequelize, col } = require("sequelize");
 
 
-// exports.addCompanyHoliday = async (req, res) => {
-//     try {
-//         let { holiday_name, date, day, type, holiday_ids } = req.body;
-//         const user_id = req.user.id;
-//         type = parseInt(type)
-//         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
-//         if (!company) {
-//             return res.status(400).json({ status: 0, message: 'Company Not Found' });
-//         }
-
-//         if (req.user?.is_company_active === "Deactive") {
-//             return res.status(400).json({
-//                 status: 0,
-//                 message: "Your account has been Deactive by the admin.",
-//             });
-//         }
-
-//         const existingHoliday = await db.Holiday.findOne({
-//             where: {
-//                 user_id,
-//                 company_id: company.id,
-//                 holiday_name,
-//                 date,
-//             },
-//         });
-
-//         if (existingHoliday) {
-//             return res.status(400).json({ status: 0, message: 'Holiday with the same name and date already exists' });
-//         }
-
-//         const holiday = await db.Holiday.create({
-//             user_id,
-//             holiday_name,
-//             company_id: company.id,
-//             date,
-//             day,
-//         });
-
-//         return res.status(201).json({ status: 1, message: 'Company Holiday added successfully', data: holiday });
-
-//     } catch (error) {
-//         console.error('Error while adding holiday:', error);
-//         return res.status(500).json({ status: 0, message: 'Internal server error' });
-//     }
-// };
 
 exports.addCompanyHoliday = async (req, res) => {
     try {
@@ -55,17 +10,18 @@ exports.addCompanyHoliday = async (req, res) => {
         const user_id = req.user.id;
         type = parseInt(type);
 
-        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
-        if (!company) {
-            return res.status(400).json({ status: 0, message: 'Company Not Found' });
-        }
-
         if (req.user?.is_company_active === "Deactive") {
             return res.status(400).json({
                 status: 0,
                 message: "Your account has been Deactive by the admin.",
             });
         }
+
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+        if (!company) {
+            return res.status(400).json({ status: 0, message: 'Company Not Found' });
+        }
+
 
         if (type === 0) {
             // Custom holiday
@@ -126,10 +82,11 @@ exports.addCompanyHoliday = async (req, res) => {
                         company_id: company.id,
                         date: h.date,
                         day: h.day,
-                        is_holiday_checked: true
+                        is_holiday_checked: true,
+                        admin_holiday_id: h.id
                     });
                     createdHolidays.push(newHoliday);
-                }else {
+                } else {
                     duplicateHolidays.push(exists);
                 }
             }
@@ -148,8 +105,8 @@ exports.addCompanyHoliday = async (req, res) => {
             } else {
                 message = `Admin holiday added successfully`;
             }
-            
-                        
+
+
             return res.status(201).json({
                 status: 1,
                 message: message,
@@ -172,6 +129,8 @@ exports.getCompanyHolidaysList = async (req, res) => {
         limit = parseInt(limit) || 10;
         const offset = (page - 1) * limit;
         type = parseInt(type)
+
+        
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
         if (!company) {
             return res.status(400).json({ status: 0, message: 'Company Not Found' });
@@ -189,9 +148,8 @@ exports.getCompanyHolidaysList = async (req, res) => {
             whereCondition.created_by_admin = true;
         }
 
-        // console.log('whereCondition', whereCondition)
 
-        let order;
+        var order;
         if (filter === 'id_ASC') {
             order = [['id', 'ASC']];
         } else if (filter === 'id_DESC') {
@@ -210,25 +168,58 @@ exports.getCompanyHolidaysList = async (req, res) => {
             order = [['day', 'DESC']];
         }
 
-
-        const { count, rows: holidays } = await db.Holiday.findAndCountAll({
-            where: whereCondition,
-            limit,
-            offset,
-            order,
-        });
-
-        return res.status(200).json({
-            status: 1,
-            message: "Company Holiday List fetched successfully",
-            pagination: {
-                totalHoliday: count,
-                totalPages: Math.ceil(count / limit),
-                currentPage: page,
-                limit: limit,
-            },
-            data: holidays,
-        });
+        if (type === 0) {
+            var { count: holidaycount, rows: holidays } = await db.Holiday.findAndCountAll({
+                where: { user_id: req.user.id },
+                limit,
+                offset,
+                order,
+            });
+            return res.status(200).json({
+                status: 1,
+                message: "Company Holiday List fetched successfully",
+                pagination: {
+                    totalHoliday: holidaycount,
+                    totalPages: Math.ceil(holidaycount / limit),
+                    currentPage: page,
+                    limit: limit,
+                },
+                data: holidays,
+            });
+        } else if (type === 1) {
+            var { count: admincount, rows: adminholidays } = await db.Holiday.findAndCountAll({
+                where: { created_by_admin: true },
+                attributes: {
+                    exclude: ['is_holiday_checked', 'user_id'],
+                    include: [
+                        [
+                            db.sequelize.literal(`(
+                              CASE WHEN EXISTS (
+                                SELECT * FROM \`tbl_holidays\` AS \`user_holidays\`
+                                WHERE \`user_holidays\`.\`admin_holiday_id\` = \`holiday_model\`.\`id\`
+                                AND \`user_holidays\`.\`user_id\` = ${req.user.id}
+                              ) THEN 1 ELSE 0 END
+                            )`),
+                            'is_holiday_checked'
+                        ]
+                    ]
+                },
+                limit,
+                offset,
+                order,
+            });
+            return res.status(200).json({
+                status: 1,
+                message: "Admin Holiday List fetched successfully",
+                pagination: {
+                    totalHoliday: admincount,
+                    totalPages: Math.ceil(admincount / limit),
+                    currentPage: page,
+                    limit: limit,
+                },
+                data: adminholidays,
+            });
+        }
 
     } catch (error) {
         console.error('Error while fetching holidays:', error);

@@ -6,7 +6,13 @@ module.exports = (sequelize, DataTypes, Model) => {
             references: { model: 'tbl_users', key: 'id' },
             onDelete: 'CASCADE'
         },
-         company_id: {
+        admin_holiday_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: { model: 'tbl_holidays', key: 'id' },
+            onDelete: 'CASCADE'
+        },
+        company_id: {
             type: DataTypes.INTEGER,
             allowNull: true,
             references: { model: 'tbl_company', key: 'id' },

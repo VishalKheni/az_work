@@ -1,6 +1,7 @@
 require('dotenv').config()
 const db = require("../../config/db");
 let fs = require('fs');
+const path = require('path');
 
 
 exports.addAbsences = async (req, res) => {
@@ -8,6 +9,20 @@ exports.addAbsences = async (req, res) => {
         const { absence_type, status } = req.body;
         const { absence_logo } = req.files;
         const user_id = req.user.id;
+
+        const existingAbsence = await db.Absences.findOne({
+            where: {
+                user_id,
+                absence_type,
+            },
+        });
+
+        if (existingAbsence) {
+            return res.status(400).json({
+                status: 0,
+                message: 'Absence with the same type already exists.',
+            });
+        }
 
         const absence = await db.Absences.create({
             user_id,
@@ -50,7 +65,11 @@ exports.deleteAbsences = async (req, res) => {
         const { absence_id } = req.query;
         const absence = await db.Absences.findByPk(absence_id);
         if (!absence) return res.status(404).json({ status: 0, message: 'Absence Not Found' });
-        fs.unlinkSync(`public/${absence.absence_logo}`)
+        // fs.unlinkSync(`public/${absence.absence_logo}`)
+        const logoPath = path.join('public', absence.absence_logo);
+        if (fs.existsSync(logoPath)) {
+            fs.unlinkSync(logoPath);
+        }
         await absence.destroy();
         return res.status(201).json({ status: 1, message: 'Absence deleted successfully' });
     } catch (error) {
@@ -69,7 +88,7 @@ exports.getAbsencesList = async (req, res) => {
         let order;
         if (filter === 'id_DESC') {
             order = [['id', 'DESC']];
-        }else if (filter === 'absence_type_ASC') {
+        } else if (filter === 'absence_type_ASC') {
             order = [['absence_type', 'ASC']];
         } else if (filter === 'paid_ASC') {
             order = [[db.sequelize.literal(`CASE WHEN status = 'paid' THEN 0 ELSE 1 END`), 'ASC'], ['createdAt', 'ASC']];

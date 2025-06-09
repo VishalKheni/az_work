@@ -1,4 +1,4 @@
-const { check, validationResult } = require("express-validator");
+const { check, validationResult, body } = require("express-validator");
 const { verifyToken } = require('../middleware/verifyToken');
 const fs = require("fs");
 
@@ -683,7 +683,7 @@ exports.allAbsenceRequestList = () => {
             check('page').notEmpty().withMessage('Page must required.').isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
             check('year').notEmpty().withMessage('Year is required').isInt().withMessage('Year must be a positive integer'),
             check('month').notEmpty().withMessage('Month is required').isInt({ min: 1, max: 12 }).withMessage('Month must be a positive integer between 1 and 12'),
-            check("status").optional().isIn(['accepted', 'rejected']).withMessage('Invalid value for status. Allowed values are: pending, accepted, rejected.'),
+            check("status").optional().isIn(['pending', 'accepted', 'rejected']).withMessage('Invalid value for status. Allowed values are: pending, accepted, rejected.'),
             check("search").optional().isString().withMessage("search must be string").trim(),
             check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be string")
                 .isIn(['id_ASC', 'id_DESC', 'worker_name_ASC', 'worker_name_DESC', 'absence_type_ASC', 'absence_type_DESC', 'date_ASC', 'date_DESC',])
@@ -753,6 +753,96 @@ exports.editClockTime = () => {
             check('clock_out_time').optional().isISO8601().withMessage('clock_out_time must be a valid ISO 8601 date'),
         ],
         checkForUnexpectedFields(['clock_entry_id', 'worker_id', 'clock_in_time', 'clock_out_time']),
+        validation
+    ];
+}
+
+
+
+exports.addCompanyAbsence = () => {
+    return [
+        // Validate `type` first
+        check("type")
+            .notEmpty().withMessage("Type is required.")
+            .isInt().withMessage("Type must be a number.")
+            .isIn([0, 1]).withMessage("Invalid value for Type. Allowed values are 0 or 1.")
+            .toInt(),
+
+        // Conditional validations
+        check().custom((value, { req }) => {
+            const { type, absence_type, status, absence_ids } = req.body;
+            const absence_logo = req.files?.absence_logo;
+            if (parseInt(type) === 0) {
+                if (!absence_type) {
+                    throw new Error("Absence type is required.");
+                }
+                if (!status || !["paid", "unpaid"].includes(status)) {
+                    throw new Error("Status must be either 'paid' or 'unpaid'.");
+                }
+                if (!absence_logo || absence_logo.length === 0) {
+                    throw new Error("Absence logo is required.");
+                }
+            }
+            if (parseInt(type) === 1) {
+                let parsedAbsenceIds;
+                try {
+                    parsedAbsenceIds = JSON.parse(absence_ids);
+                    if (!Array.isArray(parsedAbsenceIds) || parsedAbsenceIds.length === 0) {
+                        throw new Error();
+                    }
+                } catch (e) {
+                    throw new Error("absence_ids is required and must be a non-empty array for admin absences.");
+                }
+            }
+            return true;
+        }),
+        checkForUnexpectedFields(["type", "absence_type", "status", "absence_ids", "absence_logo"]),
+        validation
+    ];
+};
+exports.getCompanyAbsencesList = () => {
+    return [
+        [
+            check('page')
+                .notEmpty()
+                .withMessage('Page must required.')
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer.'),
+            check("type").notEmpty().withMessage('Type is required.').isInt().withMessage("Type must be number").isIn([0, 1]).withMessage("Invalid value for Type. Allowed values are 0, 1.").trim(),
+            check("filter").notEmpty().withMessage('filter is required.').isString().withMessage("filter must be string")
+                .isIn(['id_DESC', 'absence_type_ASC', 'paid_ASC', 'unpaid_ASC', 'absence_type_DESC', 'paid_DESC', 'unpaid_DESC'])
+                .withMessage("Invalid value for filter. Allowed values are id_DESC,  absence_type_ASC, paid_ASC, unpaid_ASC, absence_type_DESC, paid_DESC, unpaid_DESC.").trim()
+        ],
+        checkForUnexpectedFields(["page", "limit", "filter", "type"]),
+        validation
+    ];
+}
+exports.editCompanyAbsences = () => {
+    return [
+        [
+            check("absence_logo").custom((value, { req }) => {
+                if (req.files && req.files.absence_logo && req.files.absence_logo.length > 1) {
+                    req.files.absence_logo.forEach(element => {
+                        fs.unlinkSync(element.path);
+                    });
+                    throw new Error('Maximum 1 image allowed');
+                }
+                return true;
+            }).optional(),
+            check("absence_id").notEmpty().withMessage("Absence ID is required."),
+            check('absence_type').optional().isString().withMessage('Absences type must be a string'),
+            check("status").optional().isIn(["paid", "unpaid"]).withMessage("Invalid value for user_role. Allowed values are 'paid' or 'unpaid' "),
+        ],
+        checkForUnexpectedFields(["absence_id", "absence_type", "status", "absence_logo"]),
+        validation
+    ];
+}
+exports.deleteCompanyAbsences = () => {
+    return [
+        [
+            check("absence_id").notEmpty().withMessage("Absence ID is required."),
+        ],
+        checkForUnexpectedFields(["absence_id"]),
         validation
     ];
 }

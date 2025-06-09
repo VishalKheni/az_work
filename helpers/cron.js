@@ -16,51 +16,8 @@ const formatSecondsToHHMMSS = (totalSeconds) => {
     return `${hours}:${minutes}:${seconds}`;
 };
 
-// const updateBreakTime = cron.schedule('0 0 * * *', async () => {
-//     // const updateBreakTime = cron.schedule('* * * * *', async () => {
-//     console.log("update break time cron job running");
-//     const yesterday = moment().subtract(1, 'day').format('YYYY-MM-DD');
-
-//     try {
-//         const entries = await db.Clock_entry.findAll({
-//             where: {
-//                 date: yesterday,
-//                 clock_out_time: { [Op.not]: null },
-//                 break_time: { [Op.not]: null }
-//             }
-//         });
-
-//         const workerBreaks = {};
-
-//         for (const entry of entries) {
-//             const breakSeconds = parseBreakTimeToSeconds(entry.break_time);
-//             if (breakSeconds > 300) { // more than 5 minutes
-//                 const workerId = entry.worker_id;
-//                 if (!workerBreaks[workerId]) workerBreaks[workerId] = 0;
-//                 workerBreaks[workerId] += breakSeconds;
-//             }
-//         }
-
-//         // Log total break time per worker
-//         for (const workerId in workerBreaks) {
-//             const totalBreak = formatSecondsToHHMMSS(workerBreaks[workerId]);
-//             await db.Clock_entry.update(
-//                 { break_time: totalBreak },
-//                 { where: { worker_id: workerId, date: yesterday } }
-//             );
-//             console.log(`Worker ${workerId} - Total break time > 5 mins: ${totalBreak}`);
-//         }
-
-//     } catch (error) {
-//         console.error('Cron job error:', error);
-//     }
-// });
-
-
 // const addWorkbalance = cron.schedule('* * * * *', async () => {
 // const addWorkbalance = cron.schedule('0 0 28-31 * *', async () => {
-
-
 const addWorkbalance = cron.schedule('0 0 * * *', async () => {
     console.log("Add work balance cron job running");
 
@@ -97,7 +54,7 @@ const addWorkbalance = cron.schedule('0 0 * * *', async () => {
                 // Convert to total rounded hours
                 const hours = Math.floor(totalSeconds / 3600);
                 const minutes = Math.floor((totalSeconds % 3600) / 60);
-                const totalRoundedHours = hours + (minutes >= 30 ? 1 : 0);
+                const totalRoundedHours = hours + (minutes >= 60 ? 1 : 0);
                 const monthBalance = totalRoundedHours - totalMonthlyHours;
 
                 // Get current balance from DB
@@ -106,16 +63,88 @@ const addWorkbalance = cron.schedule('0 0 * * *', async () => {
                 await db.User.update({ work_balance: newBalance }, { where: { id: worker.id } });
 
                 console.log(`Worker ID: ${worker.id}, Worked: ${totalRoundedHours}, Monthly Required: ${totalMonthlyHours}, Monthly Balance: ${monthBalance}, New Total Balance: ${newBalance}`);
-
-                // const balance = totalRoundedHours - totalMonthlyHours;
-                // await db.User.update({ work_balance: balance }, { where: { id: worker.id } });
-                // console.log(`Worker ID: ${worker.id}, Total Work Rounded Hours:${totalRoundedHours} hours balance:${balance} monthly hours:${totalMonthlyHours} `);
             }
         }
     } catch (error) {
         console.error('Cron job error:', error);
     }
 });
+
+
+const updateBreakTime = cron.schedule('55 23 * * *', async () => {
+    // const updateBreakTime = cron.schedule('* * * * *', async () => {
+    console.log("update break time cron job running");
+
+    const today = moment().format('YYYY-MM-DD');
+
+    try {
+        const entries = await db.Clock_entry.findAll({
+            where: {
+                date: today,
+                clock_in_time: { [Op.not]: null },
+                clock_out_time: { [Op.not]: null },
+            },
+            order: [['worker_id', 'ASC'], ['clock_in_time', 'ASC']],
+        });
+
+        const groupedEntries = {};
+
+        // Group by worker_id
+        for (const entry of entries) {
+            const workerId = entry.worker_id;
+            if (!groupedEntries[workerId]) groupedEntries[workerId] = [];
+            groupedEntries[workerId].push(entry);
+        }
+
+        for (var workerId in groupedEntries) {
+            const logs = groupedEntries[workerId];
+            var totalBreakSeconds = 0;
+
+            for (let i = 0; i < logs.length - 1; i++) {
+                const current = logs[i];
+                const next = logs[i + 1];
+
+                const currentOut = moment(current.clock_out_time);
+                const nextIn = moment(next.clock_in_time);
+
+                console.log(`Entry ${current.id} out: ${currentOut.format()}, Entry ${next.id} in: ${nextIn.format()}`);
+
+                const breakSeconds = nextIn.diff(currentOut, 'seconds');
+                console.log(`Break seconds: ${breakSeconds}`);
+
+                if (breakSeconds >= 300) {
+                    totalBreakSeconds += breakSeconds;
+                    console.log(`Adding break for Worker ${workerId}: ${breakSeconds} seconds`);
+                }
+            }
+
+
+            // Removed your original second break check since it's redundant or incorrect
+        }
+
+        const formattedTotalBreak = formatSecondsToHHMMSS(totalBreakSeconds);
+        await db.Clock_entry.update(
+            { break_time: formattedTotalBreak },
+            {
+                where: {
+                    worker_id: workerId,
+                    date: today
+                }
+            }
+        );
+
+        console.log(`Worker ${workerId} - Total break time for the day: ${formattedTotalBreak}`);
+
+    } catch (error) {
+        console.error('Cron job error:', error);
+    }
+});
+
+
+
+
+
+
 
 // const updateBreakTime = cron.schedule('55 23 * * *', async () => {
 // const updateBreakTime = cron.schedule('* * * * *', async () => {
@@ -326,75 +355,48 @@ const addWorkbalance = cron.schedule('0 0 * * *', async () => {
 // });
 
 
+// const updateBreakTime = cron.schedule('0 0 * * *', async () => {
+//     // const updateBreakTime = cron.schedule('* * * * *', async () => {
+//     console.log("update break time cron job running");
+//     const yesterday = moment().subtract(1, 'day').format('YYYY-MM-DD');
 
-const updateBreakTime = cron.schedule('55 23 * * *', async () => {
-    // const updateBreakTime = cron.schedule('* * * * *', async () => {
-    console.log("update break time cron job running");
+//     try {
+//         const entries = await db.Clock_entry.findAll({
+//             where: {
+//                 date: yesterday,
+//                 clock_out_time: { [Op.not]: null },
+//                 break_time: { [Op.not]: null }
+//             }
+//         });
 
-    const today = moment().format('YYYY-MM-DD');
+//         const workerBreaks = {};
 
-    try {
-        const entries = await db.Clock_entry.findAll({
-            where: {
-                date: today,
-                clock_in_time: { [Op.not]: null },
-                clock_out_time: { [Op.not]: null },
-            },
-            order: [['worker_id', 'ASC'], ['clock_in_time', 'ASC']],
-        });
+//         for (const entry of entries) {
+//             const breakSeconds = parseBreakTimeToSeconds(entry.break_time);
+//             if (breakSeconds > 300) { // more than 5 minutes
+//                 const workerId = entry.worker_id;
+//                 if (!workerBreaks[workerId]) workerBreaks[workerId] = 0;
+//                 workerBreaks[workerId] += breakSeconds;
+//             }
+//         }
 
-        const groupedEntries = {};
+//         // Log total break time per worker
+//         for (const workerId in workerBreaks) {
+//             const totalBreak = formatSecondsToHHMMSS(workerBreaks[workerId]);
+//             await db.Clock_entry.update(
+//                 { break_time: totalBreak },
+//                 { where: { worker_id: workerId, date: yesterday } }
+//             );
+//             console.log(`Worker ${workerId} - Total break time > 5 mins: ${totalBreak}`);
+//         }
 
-        // Group by worker_id
-        for (const entry of entries) {
-            const workerId = entry.worker_id;
-            if (!groupedEntries[workerId]) groupedEntries[workerId] = [];
-            groupedEntries[workerId].push(entry);
-        }
-
-        for (var workerId in groupedEntries) {
-            const logs = groupedEntries[workerId];
-            var totalBreakSeconds = 0;
-
-            for (let i = 0; i < logs.length - 1; i++) {
-                const current = logs[i];
-                const next = logs[i + 1];
-
-                const currentOut = moment(current.clock_out_time);
-                const nextIn = moment(next.clock_in_time);
-
-                console.log(`Entry ${current.id} out: ${currentOut.format()}, Entry ${next.id} in: ${nextIn.format()}`);
-
-                const breakSeconds = nextIn.diff(currentOut, 'seconds');
-                console.log(`Break seconds: ${breakSeconds}`);
-
-                if (breakSeconds >= 300) {
-                    totalBreakSeconds += breakSeconds;
-                    console.log(`Adding break for Worker ${workerId}: ${breakSeconds} seconds`);
-                }
-            }
+//     } catch (error) {
+//         console.error('Cron job error:', error);
+//     }
+// });
 
 
-            // Removed your original second break check since it's redundant or incorrect
-        }
 
-        const formattedTotalBreak = formatSecondsToHHMMSS(totalBreakSeconds);
-        await db.Clock_entry.update(
-            { break_time: formattedTotalBreak },
-            {
-                where: {
-                    worker_id: workerId,
-                    date: today
-                }
-            }
-        );
-
-        console.log(`Worker ${workerId} - Total break time for the day: ${formattedTotalBreak}`);
-
-    } catch (error) {
-        console.error('Cron job error:', error);
-    }
-});
 
 
 

@@ -9,6 +9,7 @@ const uploadFile = upload.fields([
     { name: 'profile_image' },
     { name: 'documents' },
     { name: 'company_logo' },
+    { name: 'absence_logo' },
 ]);
 
 
@@ -87,5 +88,10 @@ router.patch('/absence_approve_reject', verifyToken, checkUserRole(['company']),
 // Time table list
 router.get('/get_time_table_list', verifyToken, checkUserRole(['company']), companyvalidation.getTimeTableList(), companyController.getTimeTableList);
 
+// Absences
+router.post('/add_company_absences', verifyToken, uploadFile, checkUserRole(['company']),companyvalidation.addCompanyAbsence(), companyController.addCompanyAbsence);
+router.get('/absences_list', verifyToken, checkUserRole(['company']), companyvalidation.getCompanyAbsencesList(), companyController.getCompanyAbsencesList);
+router.put('/edit_company_absence', verifyToken, uploadFile, checkUserRole(['company']), companyvalidation.editCompanyAbsences(), companyController.editCompanyAbsences);
+router.delete('/delete_company_absence', verifyToken, checkUserRole(['company']), companyvalidation.deleteCompanyAbsences(), companyController.deleteCompanyAbsences);
 
 module.exports = router;
