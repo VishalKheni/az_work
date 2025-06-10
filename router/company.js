@@ -25,7 +25,7 @@ router.get('/dashboard_request_list', verifyToken, checkUserRole(['company']), c
 router.get('/upcoming_holiday_list', verifyToken, checkUserRole(['company']), companyvalidation.upcomingHolidayList(), companyController.upcomingHolidayList);
 
 
-// worker
+// worker   
 router.get('/worker_job_category_list', verifyToken, checkUserRole(['company']), companyController.workerJobCategoryList);
 router.get('/worker_job__title_list', verifyToken, checkUserRole(['company']), companyController.workerJobTitleList);
 router.post('/add_worker', verifyToken, uploadFile, checkUserRole(['company']), companyvalidation.addWorker(), companyController.addWorker);

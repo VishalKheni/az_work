@@ -127,6 +127,95 @@ exports.editCompany = async (req, res) => {
     }
 }
 
+
+exports.getCompanyMonthlyHoursv1 = async (req, res) => {
+    try {
+        const { year } = req.query;
+
+        const company = await db.Company.findOne({
+            where: { owner_id: req.user.id },
+            include: [
+                {
+                    model: db.Branch,
+                    as: 'industry'
+                },
+                {
+                    model: db.User,
+                    as: 'worker',
+                    attributes: ['id', 'company_id']
+                }
+            ]
+        });
+        if (!company) {
+            return res.status(404).json({ message: "Company not found." });
+        }
+
+        const branchMonthlyHours = parseFloat(company?.monthly_hours || 0);
+        const workerIds = company.worker.map(user => user.id); // extract all worker ids
+        const results = [];
+        const now = moment.utc();
+        const currentYear = now.year();
+        const currentMonth = now.month(); // 0-based (0 = January, 11 = December)
+        const requestedYear = parseInt(year);
+
+        for (let month = 0; month < 12; month++) {
+            const startOfMonth = moment.utc({ year, month, day: 1 }).startOf('month').toDate();
+            const endOfMonth = moment.utc({ year, month, day: 1 }).endOf('month').toDate();
+
+            let totalWorkingHours = 0;
+            let overtime = 0;
+            let totalHour = parseInt(branchMonthlyHours);
+
+            // Only calculate hours for months up to the previous month if the year is the current year
+            if (requestedYear < currentYear || (requestedYear === currentYear && month <= currentMonth - 1)) {
+                const workedEntries = await db.Clock_entry.findAll({
+                    where: {
+                        worker_id: { [Op.in]: workerIds },
+                        date: { [Op.between]: [startOfMonth, endOfMonth] },
+                        status: "approved"
+                    },
+                    attributes: ['duration'],
+                    raw: true,
+                });
+
+                // Manually parse and sum all durations
+                let totalSeconds = 0;
+                for (const entry of workedEntries) {
+                    if (entry.duration) {
+                        const [h = 0, m = 0, s = 0] = entry.duration.split(':').map(Number);
+                        totalSeconds += (h * 3600) + (m * 60) + s;
+                    }
+                }
+
+                totalWorkingHours = (totalSeconds / 3600).toFixed(2);
+                overtime = totalWorkingHours > branchMonthlyHours ? Math.round(totalWorkingHours - branchMonthlyHours) : 0;
+                totalHour = parseInt(branchMonthlyHours) + overtime;
+            } else {
+                // For current and future months, set total_hour and over_time to 0
+                totalHour = 0;
+                overtime = 0;
+            }
+
+            results.push({
+                month: moment().month(month).format("MMMM"),
+                monthly_hour: parseInt(branchMonthlyHours),
+                over_time: overtime,
+                total_hour: totalHour
+            });
+        }
+
+        return res.status(200).json({
+            status: 1,
+            message: "Company Working Hours fetched successfully",
+            working_hours: results
+        });
+
+    } catch (error) {
+        console.error("error Company Working Hours", error);
+        return res.status(500).json({ status: 0, message: "Internal server error" });
+    }
+};
+
 exports.getCompanyMonthlyHours = async (req, res) => {
     try {
         const { year } = req.query;
@@ -149,41 +238,54 @@ exports.getCompanyMonthlyHours = async (req, res) => {
             return res.status(404).json({ message: "Company not found." });
         }
 
-        // const branchMonthlyHours = parseFloat(company?.industry?.monthly_hours || 0);
         const branchMonthlyHours = parseFloat(company?.monthly_hours || 0);
         const workerIds = company.worker.map(user => user.id); // extract all worker ids
         const results = [];
+        const now = moment.utc();
+        const currentYear = now.year();
+        const currentMonth = now.month(); 
+        const requestedYear = parseInt(year);
 
         for (let month = 0; month < 12; month++) {
             const startOfMonth = moment.utc({ year, month, day: 1 }).startOf('month').toDate();
             const endOfMonth = moment.utc({ year, month, day: 1 }).endOf('month').toDate();
 
-            const workedEntries = await db.Clock_entry.findAll({
-                where: {
-                    worker_id: { [Op.in]: workerIds },
-                    date: { [Op.between]: [startOfMonth, endOfMonth] },
-                    status: "approved"
-                },
-                attributes: ['duration'],
-                raw: true,
-            });
-            // Manually parse and sum all durations
-            let totalSeconds = 0;
-            for (const entry of workedEntries) {
-                if (entry.duration) {
-                    const [h = 0, m = 0, s = 0] = entry.duration.split(':').map(Number);
-                    totalSeconds += (h * 3600) + (m * 60) + s;
-                }
-            }
+            let totalWorkingHours = 0;
+            let overtime = 0;
+            let totalHour = 0; // Default to 0
 
-            const totalWorkingHours = (totalSeconds / 3600).toFixed(2);
-            const overtime = totalWorkingHours > branchMonthlyHours ? Math.round(totalWorkingHours - branchMonthlyHours) : 0;
-            const totalHour = parseInt(branchMonthlyHours) + overtime
+            // Process all months for past years, and for the current year, process only up to the previous month
+            if (requestedYear < currentYear || (requestedYear === currentYear && month <= currentMonth - 1)) {
+                const workedEntries = await db.Clock_entry.findAll({
+                    where: {
+                        worker_id: { [Op.in]: workerIds },
+                        date: { [Op.between]: [startOfMonth, endOfMonth] },
+                        status: "approved"
+                    },
+                    attributes: ['duration'],
+                    raw: true,
+                });
+
+                // Manually parse and sum all durations
+                let totalSeconds = 0;
+                for (const entry of workedEntries) {
+                    if (entry.duration) {
+                        const [h = 0, m = 0, s = 0] = entry.duration.split(':').map(Number);
+                        totalSeconds += (h * 3600) + (m * 60) + s;
+                    }
+                }
+
+                totalWorkingHours = (totalSeconds / 3600).toFixed(2);
+                overtime = totalWorkingHours > branchMonthlyHours ? Math.floor(totalWorkingHours - branchMonthlyHours) : 0;
+                totalHour = parseInt(totalWorkingHours); // Use actual worked hours
+            } else {
+                totalHour = 0;
+                overtime = 0;
+            }
 
             results.push({
                 month: moment().month(month).format("MMMM"),
                 monthly_hour: parseInt(branchMonthlyHours),
-                // total_working_hours: parseInt(totalWorkingHours),
                 over_time: overtime,
                 total_hour: totalHour
             });

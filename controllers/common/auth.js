@@ -29,7 +29,7 @@ exports.sendOtpEmail = async (req, res) => {
         otp: user.otp
       });
     }
-    if (parseInt(type) === 1) {
+    else if (parseInt(type) === 1) {
       const finduser = await db.User.findOne({ where: { email: email } });
       if (!finduser) return res.status(404).json({ status: 0, message: "Email is not registered." });
       if (user_role != finduser.user_role) {
@@ -38,6 +38,28 @@ exports.sendOtpEmail = async (req, res) => {
       const user = await validateAndSendOTPToMail(email);
       await sendOTPVerificationEmail(email, user.otp);
       return res.status(200).json({ status: 1, message: user.message, otp: user.otp });
+    }
+    else if (parseInt(type) === 2) {
+      const existingUser = await db.User.findOne({
+        where: {
+          email: email,
+          user_role: {
+            [Op.or]: ["company", "admin", "worker"]
+          }
+        }
+      });
+      if (existingUser) {
+        return res.status(400).json({ status: 0, message: 'Email already exists' });
+      }
+
+      const user = await validateAndSendOTPToMail(email);
+      await sendOTPVerificationEmail(email, user.otp);
+
+      return res.status(200).json({
+        status: 1,
+        message: user.message,
+        otp: user.otp
+      });
     }
     res.status(200).json({ status: 0, message: "type is not valid" });
 
@@ -180,6 +202,9 @@ exports.login = async (req, res) => {
     if (user.user_role == "company" && user.is_company_blocked === "Block") {
       return res.status(400).json({ status: 0, message: "Your account is Blocked by admin." });
     }
+    if (user.user_role == "worker" && user.is_worker_active === "Deactive") {
+      return res.status(400).json({ status: 0, message: "Your account is Deactive by company." });
+    }
 
     // Check if the password matches
     const isMatch = await bcrypt.compare(password, user.password);
@@ -190,24 +215,6 @@ exports.login = async (req, res) => {
     let tokenRecord = await db.Token.findOne({ where: { device_id, device_type, device_token, user_id: user.id } });
     if (!tokenRecord) tokenRecord = await db.Token.create({ device_id, device_type, device_token, user_id: user.id, refresh_token: uuidv4(), token_expire_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
     const token = jwt.sign({ user_id: user.id, token_id: tokenRecord.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
-
-    if (user.user_role == "company") {
-      // Check if email is verified
-      if (!user.is_email_verified) {
-        const user = await validateAndSendOTPToMail(email);
-        await sendOTPVerificationEmail(email, user.otp);
-
-        return res.status(200).json({
-          status: 2,
-          message: user.message,
-          otp: user.otp
-        });
-      }
-
-      if (!user.is_account_created) return res.status(400).json({ status: 3, message: "Please add account detail first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
-      else if (!user.is_company_add) return res.status(400).json({ status: 4, message: "Please add company detail first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
-      else if (!user.is_password_add || user.password == null) return res.status(400).json({ status: 5, message: "Please create a password first.", access_token: token, refresh_token: tokenRecord.refresh_token, data: user });
-    }
 
     return res.status(200).json({
       status: 1,

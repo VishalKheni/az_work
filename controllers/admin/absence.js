@@ -103,6 +103,7 @@ exports.getAbsencesList = async (req, res) => {
         }
 
         const { count, rows: absence } = await db.Absences.findAndCountAll({
+            where: { user_id: req.user.id },
             limit,
             offset,
             order

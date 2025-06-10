@@ -228,9 +228,7 @@ exports.getJobCategoryList = async (req, res) => {
 
         if (search) {
             whereCondition[Op.or] = [
-                { category_name: { [Op.like]: `%${search}%` } },
-                { job_titles : { [Op.like]: `%${search}%` } }
-                // { '$job_titles.Job_title$': { [Op.like]: `%${search}%` } }
+                { Job_title : { [Op.like]: `%${search}%` } }
             ];
         }
 
@@ -240,20 +238,10 @@ exports.getJobCategoryList = async (req, res) => {
         } else if (filter === 'id_DESC') {
             order = [['id', 'DESC']];
         } else if (filter === 'Job_title_ASC') {
-            order = [['job_titles', 'ASC']];
+            order = [['Job_title', 'ASC']];
         } else if (filter === 'Job_title_DESC') {
-            order = [['job_titles', 'DESC']];
+            order = [['Job_title', 'DESC']];
         }
-        // else if (filter === 'category_name_ASC') {
-        //     order = [['category_name', 'ASC']];
-        // } else if (filter === 'category_name_DESC') {
-        //     order = [['category_name', 'DESC']];
-        // } 
-        // else if (filter === 'Job_title_ASC') {
-        //     order = [[Sequelize.literal("`job_titles`.`Job_title`"), 'ASC']];
-        // } else if (filter === 'Job_title_DESC') {
-        //     order = [[Sequelize.literal("`job_titles`.`Job_title`"), 'DESC']];
-        // }
 
         const { count, rows: categories } = await db.Job_title.findAndCountAll({
             where: { ...whereCondition },

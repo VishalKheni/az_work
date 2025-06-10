@@ -118,10 +118,11 @@ exports.clientList = async (req, res) => {
         if (search) {
             whereCondition[Op.or] = [
                 { client_name: { [Op.like]: `%${search}%` } },
-                { company_name: { [Op.like]: `%${search}%` } }
+                { company_name: { [Op.like]: `%${search}%` } },
+                { email: { [Op.like]: `%${search}%` } }
             ];
         }
-
+        
         let order;
         if (filter === 'id_ASC') {
             order = [['id', 'ASC']];
