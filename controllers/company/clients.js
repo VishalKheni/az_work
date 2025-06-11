@@ -15,14 +15,23 @@ exports.addClient = async (req, res) => {
                 message: "Your account has been Deactive by the admin.",
             });
         }
-
-        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
-        if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
-
         let valid = await validateMobile(iso_code, phone_number);
         if (valid.status == 0) {
             return res.status(400).json({ message: valid.message });
         }
+
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+        if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
+
+        const existingClient = await db.Client.findOne({ where: { company_id: company.id, ...req.body } });
+
+        if (existingClient) {
+            return res.status(400).json({
+                status: 0,
+                message: "Client already exists."
+            });
+        }
+
 
         const client = await db.Client.create({ company_id: company.id, country_code: `+${country_code}`, ...req.body });
 
@@ -122,7 +131,7 @@ exports.clientList = async (req, res) => {
                 { email: { [Op.like]: `%${search}%` } }
             ];
         }
-        
+
         let order;
         if (filter === 'id_ASC') {
             order = [['id', 'ASC']];
@@ -147,7 +156,7 @@ exports.clientList = async (req, res) => {
             where: { ...whereCondition },
             limit,
             offset,
-            order   
+            order
         });
 
         return res.status(200).json({

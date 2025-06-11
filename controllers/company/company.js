@@ -243,7 +243,7 @@ exports.getCompanyMonthlyHours = async (req, res) => {
         const results = [];
         const now = moment.utc();
         const currentYear = now.year();
-        const currentMonth = now.month(); 
+        const currentMonth = now.month();
         const requestedYear = parseInt(year);
 
         for (let month = 0; month < 12; month++) {
@@ -267,17 +267,19 @@ exports.getCompanyMonthlyHours = async (req, res) => {
                 });
 
                 // Manually parse and sum all durations
-                let totalSeconds = 0;
-                for (const entry of workedEntries) {
-                    if (entry.duration) {
-                        const [h = 0, m = 0, s = 0] = entry.duration.split(':').map(Number);
-                        totalSeconds += (h * 3600) + (m * 60) + s;
+                if (workedEntries.length > 0) {
+                    let totalSeconds = 0;
+                    for (const entry of workedEntries) {
+                        if (entry.duration) {
+                            const [h = 0, m = 0, s = 0] = entry.duration.split(':').map(Number);
+                            totalSeconds += (h * 3600) + (m * 60) + s;
+                        }
                     }
-                }
 
-                totalWorkingHours = (totalSeconds / 3600).toFixed(2);
-                overtime = totalWorkingHours > branchMonthlyHours ? Math.floor(totalWorkingHours - branchMonthlyHours) : 0;
-                totalHour = parseInt(totalWorkingHours); // Use actual worked hours
+                    totalWorkingHours = (totalSeconds / 3600).toFixed(2);
+                    overtime = totalWorkingHours > branchMonthlyHours ? Math.floor(totalWorkingHours - branchMonthlyHours) : 0;
+                    totalHour = parseInt(totalWorkingHours); // Use actual worked hours
+                }
             } else {
                 totalHour = 0;
                 overtime = 0;

@@ -193,7 +193,7 @@ exports.login = async (req, res) => {
         }
       ]
     });
-    if (!user) return res.status(404).json({ status: 0, message: "This email is not registerd!please registerd first.." });
+    if (!user) return res.status(404).json({ status: 0, message: "This email is not registerd! please registerd first.." });
 
 
     if (user_role != user.user_role) {

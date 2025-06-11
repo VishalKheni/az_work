@@ -283,9 +283,9 @@ exports.addCompanyAbsence = async (req, res) => {
             if (createdAbsences.length === 0) {
                 message = 'All selected admin absences already exist.';
             } else if (duplicateAbsences.length === 0) {
-                message = 'Admin absences cloned successfully.';
+                message = 'Admin absences added successfully.';
             } else {
-                message = 'Admin absences cloned successfully.';
+                message = 'Admin absences added successfully.';
             }
 
             return res.status(201).json({
