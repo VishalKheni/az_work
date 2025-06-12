@@ -61,7 +61,6 @@ const addWorkbalance = cron.schedule('0 0 * * *', async () => {
                 const currentBalance = worker.work_balance || 0;
                 const newBalance = currentBalance + monthBalance;
                 await db.User.update({ work_balance: newBalance }, { where: { id: worker.id } });
-
                 console.log(`Worker ID: ${worker.id}, Worked: ${totalRoundedHours}, Monthly Required: ${totalMonthlyHours}, Monthly Balance: ${monthBalance}, New Total Balance: ${newBalance}`);
             }
         }
@@ -91,12 +90,12 @@ const updateBreakTime = cron.schedule('55 23 * * *', async () => {
 
         // Group by worker_id
         for (const entry of entries) {
-            const workerId = entry.worker_id;
+            var workerId = entry.worker_id;
             if (!groupedEntries[workerId]) groupedEntries[workerId] = [];
             groupedEntries[workerId].push(entry);
         }
 
-        for (var workerId in groupedEntries) {
+        for (const workerId in groupedEntries) {
             const logs = groupedEntries[workerId];
             var totalBreakSeconds = 0;
 
@@ -117,21 +116,19 @@ const updateBreakTime = cron.schedule('55 23 * * *', async () => {
                     console.log(`Adding break for Worker ${workerId}: ${breakSeconds} seconds`);
                 }
             }
-
-
-            // Removed your original second break check since it's redundant or incorrect
+            
+            const formattedTotalBreak = formatSecondsToHHMMSS(totalBreakSeconds);
+            await db.Clock_entry.update(
+                { break_time: formattedTotalBreak },
+                {
+                    where: {
+                        worker_id: workerId,
+                        date: today
+                    }
+                }
+            );
         }
 
-        const formattedTotalBreak = formatSecondsToHHMMSS(totalBreakSeconds);
-        await db.Clock_entry.update(
-            { break_time: formattedTotalBreak },
-            {
-                where: {
-                    worker_id: workerId,
-                    date: today
-                }
-            }
-        );
 
         console.log(`Worker ${workerId} - Total break time for the day: ${formattedTotalBreak}`);
 

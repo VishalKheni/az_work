@@ -199,17 +199,18 @@ exports.login = async (req, res) => {
     if (user_role != user.user_role) {
       return res.status(400).json({ status: 0, message: `Access denied. ${user.user_role} cannot log in to the ${user_role} interface. Please use the ${user.user_role} login page.!` });
     }
-    if (user.user_role == "company" && user.is_company_blocked === "Block") {
-      return res.status(400).json({ status: 0, message: "Your account is Blocked by admin." });
-    }
-    if (user.user_role == "worker" && user.is_worker_active === "Deactive") {
-      return res.status(400).json({ status: 0, message: "Your account is Deactive by company." });
-    }
 
     // Check if the password matches
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ status: 0, message: "Incorrect password." });
+    }
+    
+    if (user.user_role == "company" && user.is_company_blocked === "Block") {
+      return res.status(400).json({ status: 0, message: "Your account is Blocked by admin." });
+    }
+    if (user.user_role == "worker" && user.is_worker_active === "Deactive") {
+      return res.status(400).json({ status: 0, message: "Your account is Deactive by company." });
     }
 
     let tokenRecord = await db.Token.findOne({ where: { device_id, device_type, device_token, user_id: user.id } });

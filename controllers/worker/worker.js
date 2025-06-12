@@ -765,8 +765,8 @@ exports.homeScreenCount = async (req, res) => {
 
         const startOfMonth = moment.utc({ year: selectedYear, month: adjustedMonth }).startOf('month').toDate();
         const endOfMonth = moment.utc({ year: selectedYear, month: adjustedMonth }).endOf('month').toDate();
-        console.log('startOfMonth', startOfMonth)
-        console.log('endOfMonth', endOfMonth)
+        // console.log('startOfMonth', startOfMonth)
+        // console.log('endOfMonth', endOfMonth)
         // 1. Get user
         const user = await db.User.findOne({
             where: { id: req.user.id },
@@ -789,7 +789,7 @@ exports.homeScreenCount = async (req, res) => {
             },
             attributes: ['duration']
         });
-        console.log('entries', entries)
+        // console.log('entries', entries)
         let totalSeconds = 0;
         entries.forEach(entry => {
             const [hh, mm, ss] = entry.duration.split(':').map(Number);
@@ -815,12 +815,12 @@ exports.homeScreenCount = async (req, res) => {
             ? totalRoundedHours - totalMonthlyHours
             : 0;
 
-        const YearlyHours = company?.industry?.yearly_hours || 0;
+        const YearlyHours = company?.yearly_hours || 0;
         const yearlySessions = await db.Clock_entry.findAll({
             where: {
                 worker_id: req.user.id,
                 status: "approved",
-                date: {
+                clock_in_time: {
                     [Op.between]: [
                         moment.utc().year(selectedYear).startOf('year').format('YYYY-MM-DD'),
                         moment.utc().year(selectedYear).endOf('year').format('YYYY-MM-DD')
@@ -893,18 +893,16 @@ exports.homeScreenCount = async (req, res) => {
                         moment.utc().year(selectedYear).endOf('year').format('YYYY-MM-DD')
                     ]
                 },
-                // start_date: { [Op.gt]: moment().format('YYYY-MM-DD') },
             },
             include: [
                 {
                     model: db.Absences,
                     as: 'absence',
                     where: { absence_type: 'Vacation' },
-                    // required: false
                 },
             ]
         });
-        // console.log('plannedRequests', plannedRequests)
+
         let plannedDays = 0;
         plannedRequests.forEach(request => {
             const startDate = moment(request.start_date);
@@ -924,10 +922,6 @@ exports.homeScreenCount = async (req, res) => {
         });
         const remainingDays = parseInt(user.vacation_days) - usedDays - plannedDays;
 
-
-        // console.log("Used Days: ", usedDays);
-        // console.log("Planned Days: ", plannedDays);
-        // console.log("Remaining Days: ", remainingDays);
 
         const Date = moment.utc().format('YYYY-MM-DD');
         const todaySessions = await db.Clock_entry.findAll({
@@ -1103,9 +1097,6 @@ exports.AbsenceScrenCalendar = async (req, res) => {
                                 ]
                             }
                         ]
-                        // createdAt: {
-                        //     [Op.between]: [startOfMonth, endOfMonth]
-                        // },
                     },
                     attributes: ['id', 'worker_id', 'absence_id', 'start_date', 'end_date'],
                     order: [['id', 'ASC']],

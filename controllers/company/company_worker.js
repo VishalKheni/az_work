@@ -113,9 +113,11 @@ exports.addWorker = async (req, res) => {
             return res.status(400).json({ status: 0, message: 'Job title Not Found' });
         }
 
-        let valid = await validateMobile(iso_code, phone_number)
-        if (valid.status == 0) {
-            return res.status(400).json({ message: valid.message });
+        if (iso_code !== undefined && phone_number) {
+            let valid = await validateMobile(iso_code, phone_number)
+            if (valid.status == 0) {
+                return res.status(400).json({ message: valid.message });
+            }
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -203,7 +205,7 @@ exports.editWorkerProfile = async (req, res) => {
             var hashedPassword = await bcrypt.hash(password, 10);
             await db.User.update(
                 { password: hashedPassword },
-                { where: { id: worker.id } } 
+                { where: { id: worker.id } }
             );
             await db.Token.destroy({ where: { user_id: worker.id } })
             const emailData = {
@@ -575,13 +577,30 @@ exports.workerActiveDeactive = async (req, res) => {
             });
         }
 
-        const worker = await db.User.findByPk(worker_id);
+        const worker = await db.User.findOne({ where: { id: worker_id, user_role: "worker" } });
         if (!worker) return res.status(404).json({ status: 0, message: 'Worker not found' });
 
         const active = worker.is_worker_active === 'Active' ? 'Deactive' : 'Active';
         await worker.update({ is_worker_active: active });
         if (active === "Deactive") {
             await db.Token.destroy({ where: { user_id: worker.id } });
+            const entriesToDelete = await db.Clock_entry.findAll({
+                where: {
+                    worker_id: worker_id,
+                    clock_out_time: null,
+                    duration: null
+                }
+            });
+            if (entriesToDelete.length > 0) {
+                await db.Clock_entry.destroy({
+                    where: {
+                        worker_id: worker_id,
+                        clock_out_time: null,
+                        duration: null
+                    },
+                });
+            }
+
         }
         return res.status(200).json({
             status: 1,
@@ -602,7 +621,7 @@ exports.getWorkerMonthlyHours = async (req, res) => {
 
         // Get worker details with company and branch info
         const worker = await db.User.findOne({
-            where: { id: worker_id },
+            where: { id: worker_id, user_role: "worker" },
             include: [{
                 model: db.Company,
                 as: 'company',
@@ -697,7 +716,6 @@ exports.getWorkerTimeTable = async (req, res) => {
         const offset = (page - 1) * limit;
 
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
-
         if (!company) {
             return res.status(400).json({ status: 0, message: 'Company Not Found' });
         }

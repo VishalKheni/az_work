@@ -58,7 +58,7 @@ exports.companyDetail = async (req, res) => {
 
 exports.editCompany = async (req, res) => {
     try {
-        const { company_id, industry_id, company_name, email, country_code, iso_code, phone_number, address, owner_phone_number, owner_country_code, owner_iso_code, owner_firstname, owner_lastname, weekly_hours, monthly_hours, yearly_hours,password } = req.body;
+        const { company_id, industry_id, company_name, email, country_code, iso_code, phone_number, address, owner_phone_number, owner_country_code, owner_iso_code, owner_firstname, owner_lastname, weekly_hours, monthly_hours, yearly_hours, password } = req.body;
         const company_logo = req.files?.company_logo;
 
         if (iso_code && phone_number) {
@@ -103,7 +103,7 @@ exports.editCompany = async (req, res) => {
             var hashedPassword = await bcrypt.hash(password, 10);
             await db.User.update(
                 { password: hashedPassword },
-                { where: { id: owner.id } } 
+                { where: { id: owner.id } }
             );
         }
 
@@ -490,12 +490,13 @@ exports.dashboardCount = async (req, res) => {
                 totalProject,
                 runningProject,
                 completedProject,
-                runningProjectList
+                company_name: company.company_name,
+                runningProjectList,
             }
         });
 
     } catch (error) {
-        console.error("error Company Weekly Working Hours", error);
+        console.error("error dashboard count", error);
         return res.status(500).json({ status: 0, message: "Internal server error" });
     }
 };
@@ -598,8 +599,10 @@ exports.upcomingHolidayList = async (req, res) => {
         }
 
 
-        const startOfMonth = moment.utc({ year: parseInt(year), month: monthIndex, day: 1 }).startOf('month').toDate();
-        const endOfMonth = moment.utc({ year: parseInt(year), month: monthIndex, day: 1 }).endOf('month').toDate();
+        // const startOfMonth = moment.utc({ year: parseInt(year), month: monthIndex, day: 1 }).startOf('month').toDate();
+        // const endOfMonth = moment.utc({ year: parseInt(year), month: monthIndex, day: 1 }).endOf('month').toDate();
+        // console.log('startOfMonth', startOfMonth)
+        // console.log('endOfMonth', endOfMonth)
 
         const holidays = await db.Holiday.findAll({
             where: {
@@ -613,9 +616,13 @@ exports.upcomingHolidayList = async (req, res) => {
                         ]
                     },
                 ],
-                date: {
-                    [Op.between]: [startOfMonth, endOfMonth]
-                }
+                [db.Sequelize.Op.and]: [
+                    db.sequelize.where(db.sequelize.fn('MONTH', db.sequelize.col('date')), month),
+                    db.sequelize.where(db.sequelize.fn('YEAR', db.sequelize.col('date')), year)
+                ]
+                // date: {
+                //     [Op.between]: [startOfMonth, endOfMonth]
+                // }
             },
             distinct: true,
             order: [['id', 'DESC']],

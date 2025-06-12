@@ -189,13 +189,13 @@ exports.companyBockUnblock = async (req, res) => {
     try {
         const { owner_id } = req.body;
 
-        const company = await db.User.findByPk(owner_id);
+        const company = await db.User.findOne({ where: { id: owner_id, user_role: "company" } });
         if (!company) return res.status(404).json({ status: 0, message: 'Company not found' });
 
         const blobked_unbloced = company.is_company_blocked === "Block" ? "Unblock" : "Block";
 
         await company.update({ is_company_blocked: blobked_unbloced });
-        if (company.is_company_blocked === "block") {
+        if (company.is_company_blocked === "Block") {
             await db.Token.destroy({ where: { user_id: owner_id } });
         }
         return res.status(200).json({
