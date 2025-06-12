@@ -370,6 +370,8 @@ exports.getCompanyAbsencesList = async (req, res) => {
                 offset,
                 order,
             });
+            adminAbsences = adminAbsences.map(absence => absence.toJSON());
+            const isChecked = adminAbsences.some(item => item.is_absences_checked === 1);
             return res.status(200).json({
                 status: 1,
                 message: "Admin Absences List fetched successfully",
@@ -379,6 +381,7 @@ exports.getCompanyAbsencesList = async (req, res) => {
                     currentPage: page,
                     limit: limit,
                 },
+                is_all_checked: isChecked,
                 data: adminAbsences,
             });
         }
