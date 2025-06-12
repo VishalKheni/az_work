@@ -347,7 +347,7 @@ exports.getHistrory = async (req, res) => {
         let { page, limit, start_date, end_date } = req.query;
 
         page = parseInt(page) || 1;
-        limit = parseInt(limit) || 10;
+        limit = parseInt(limit) || 5;
         const offset = (page - 1) * limit;
 
         const where = {
@@ -755,14 +755,18 @@ exports.accountDetail = async (req, res) => {
 exports.homeScreenCount = async (req, res) => {
     try {
         const { month, year } = req.query;
-        const currentDate = moment.utc();
+        // const currentDate = moment.utc();
 
-        const adjustedMonth = month ? parseInt(month) - 1 : currentDate.month(); // 0-based
+        // const adjustedMonth = month ? parseInt(month) - 1 : currentDate.month(); // 0-based
+        // const selectedYear = year ? parseInt(year) : currentDate.year();
+
+        const adjustedMonth = month ? parseInt(month) - 1 : currentDate.month(); // must subtract 1 for 0-based month
         const selectedYear = year ? parseInt(year) : currentDate.year();
 
         const startOfMonth = moment.utc({ year: selectedYear, month: adjustedMonth }).startOf('month').toDate();
         const endOfMonth = moment.utc({ year: selectedYear, month: adjustedMonth }).endOf('month').toDate();
-
+        console.log('startOfMonth', startOfMonth)
+        console.log('endOfMonth', endOfMonth)
         // 1. Get user
         const user = await db.User.findOne({
             where: { id: req.user.id },
@@ -778,14 +782,14 @@ exports.homeScreenCount = async (req, res) => {
             where: {
                 worker_id: req.user.id,
                 status: "approved",
-                date: {
+                clock_in_time: {
                     [Op.between]: [startOfMonth, endOfMonth]
                 },
                 duration: { [Op.ne]: null }
             },
             attributes: ['duration']
         });
-
+        console.log('entries', entries)
         let totalSeconds = 0;
         entries.forEach(entry => {
             const [hh, mm, ss] = entry.duration.split(':').map(Number);

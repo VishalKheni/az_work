@@ -148,6 +148,7 @@ exports.addWorker = async (req, res) => {
             email: worker.email,
             password: password,
             company_name: company.company_name,
+            text: "your account has been successfully created"
         }
         await sendEmailToWorker(emailData);
         return res.status(200).json({
@@ -179,7 +180,7 @@ exports.editWorkerProfile = async (req, res) => {
         }
 
         const worker = await db.User.findByPk(worker_id, {
-            attributes: ['id', 'firstname', 'lastname', 'profile_image', 'phone_number', 'country_code', 'iso_code', 'address', 'job_title_id', 'insurance_number', 'employment_date', 'password'],
+            attributes: ['id', 'firstname', 'lastname', 'profile_image', 'phone_number', 'country_code', 'iso_code', 'address', 'job_title_id', 'insurance_number', 'password', 'employment_date'],
         });
 
         if (!worker) return res.status(404).json({ status: 0, message: "Worker not found" });
@@ -200,11 +201,16 @@ exports.editWorkerProfile = async (req, res) => {
                 });
             }
             var hashedPassword = await bcrypt.hash(password, 10);
-            await worker.update({ password: hashedPassword });
+            await db.User.update(
+                { password: hashedPassword },
+                { where: { id: worker.id } } 
+            );
+            await db.Token.destroy({ where: { user_id: worker.id } })
             const emailData = {
                 email: worker.email,
                 password: password,
                 company_name: company.company_name,
+                text: "your password has been updated"
             }
             await sendEmailToWorker(emailData);
         }
@@ -225,7 +231,7 @@ exports.editWorkerProfile = async (req, res) => {
         await worker.update(updatedData);
         return res.status(200).json({
             status: 1,
-            message: "worker profile update Successfully",
+            message: "Worker profile update successfully",
             data: worker
         });
 

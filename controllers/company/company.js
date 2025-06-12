@@ -4,6 +4,8 @@ const { validateMobile, } = require('../../helpers/twilio');
 const { Op, where, Sequelize, col } = require("sequelize");
 let fs = require('fs');
 const moment = require('moment');
+const bcrypt = require('bcrypt')
+const { sendEmailToWorker } = require("../../helpers/email");
 
 
 exports.branchList = async (req, res) => {
@@ -56,7 +58,7 @@ exports.companyDetail = async (req, res) => {
 
 exports.editCompany = async (req, res) => {
     try {
-        const { company_id, industry_id, company_name, email, country_code, iso_code, phone_number, address, owner_phone_number, owner_country_code, owner_iso_code, owner_firstname, owner_lastname, weekly_hours, monthly_hours, yearly_hours, } = req.body;
+        const { company_id, industry_id, company_name, email, country_code, iso_code, phone_number, address, owner_phone_number, owner_country_code, owner_iso_code, owner_firstname, owner_lastname, weekly_hours, monthly_hours, yearly_hours,password } = req.body;
         const company_logo = req.files?.company_logo;
 
         if (iso_code && phone_number) {
@@ -70,7 +72,7 @@ exports.editCompany = async (req, res) => {
 
         const company = await db.Company.findByPk(company_id);
         if (!company) return res.status(404).json({ status: 0, message: 'Company not found' });
-        const owner = await db.User.findByPk(company.owner_id, { attributes: ['id', 'firstname', 'lastname', 'email', 'country_code', 'iso_code', 'phone_number', 'updatedAt'] });
+        const owner = await db.User.findByPk(company.owner_id, { attributes: ['id', 'firstname', 'lastname', 'email', 'country_code', 'iso_code', 'phone_number', "password", 'updatedAt'] });
         if (!owner) return res.status(400).json({ status: 0, message: 'Owner not found' });
 
         if (req.user?.is_company_active === "Deactive") {
@@ -89,6 +91,20 @@ exports.editCompany = async (req, res) => {
         if (company_logo) {
             fs.unlinkSync(`public/${company.company_logo}`);
             await company.update({ company_logo: `company_logo/${company_logo[0].filename}` });
+        }
+        if (password) {
+            const isSamePassword = await bcrypt.compare(password, owner.password);
+            if (isSamePassword) {
+                return res.status(400).json({
+                    status: 0,
+                    message: "New password cannot be the same as the current password"
+                });
+            }
+            var hashedPassword = await bcrypt.hash(password, 10);
+            await db.User.update(
+                { password: hashedPassword },
+                { where: { id: owner.id } } 
+            );
         }
 
         const companyUpdatedData = {

@@ -123,7 +123,7 @@ const signupEmail = (otp) => `<!DOCTYPE html>
   </body> 
 </html>`
 
-const sendWorkerEmail = ({ email, password, company_name }) => `
+const sendWorkerEmail = ({ email, password, company_name, text }) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -145,7 +145,7 @@ const sendWorkerEmail = ({ email, password, company_name }) => `
                         <img src="https://app.arbeitszeit.swiss:8800/app_logo.png" alt="App Logo" style="width: 100px; height: 90px;">
                       </div><br/>
                       <h2 style="color: #fff; margin-top: 0; margin-bottom: 18px; text-align: center;">Your Account Details</h2>
-                      <p style="color: #fff; line-height: 1; text-align: center;">We are pleased to inform you that your account has been successfully created. Please find your login details below:</p>
+                      <p style="color: #fff; line-height: 1; text-align: center;">We are pleased to inform you that ${text}. Please find your login details below:</p>
                       <p style="color: #fff; line-height: 1;"> Email: <span class="otp-code" style="font-size: 10px; font-weight: bold; color: #fff !important; margin-bottom: 10px;"><a style="color: #fff">${email}</a></span></p>
                       <p style="color: #fff; line-height: 1;"> Password: <span class="otp-code" style="font-size: 10px; font-weight: bold; color: #fff !important; margin-bottom: 10px;">${password}</span></p>
                       <p style="color: #fff; line-height: 1; margin-top: 20px; font-size: 12px; text-align: center;">Please use this email and password to log in to the app</p>

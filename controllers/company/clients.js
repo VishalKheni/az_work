@@ -7,7 +7,7 @@ const { Op, where, Sequelize, col } = require("sequelize");
 
 exports.addClient = async (req, res) => {
     try {
-        const { iso_code, phone_number, country_code } = req.body;
+        const { company_name, client_name, email, iso_code, phone_number, country_code, address } = req.body;
 
         if (req.user?.is_company_active === "Deactive") {
             return res.status(400).json({
@@ -21,8 +21,6 @@ exports.addClient = async (req, res) => {
         }
 
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
-        if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
-
         const existingClient = await db.Client.findOne({ where: { company_id: company.id, ...req.body } });
 
         if (existingClient) {
@@ -33,7 +31,11 @@ exports.addClient = async (req, res) => {
         }
 
 
-        const client = await db.Client.create({ company_id: company.id, country_code: `+${country_code}`, ...req.body });
+        const client = await db.Client.create({
+            company_id: company.id,
+            company_name, client_name, email, iso_code, phone_number,
+            country_code: `+${country_code}`, address
+        });
 
         return res.status(201).json({
             status: 1,
@@ -49,7 +51,7 @@ exports.addClient = async (req, res) => {
 
 exports.editClient = async (req, res) => {
     try {
-        const { client_id, iso_code, phone_number, country_code } = req.body;
+        const { client_id, company_name, client_name, email, iso_code, phone_number, country_code, address } = req.body;
 
         if (req.user?.is_company_active === "Deactive") {
             return res.status(400).json({
@@ -57,6 +59,8 @@ exports.editClient = async (req, res) => {
                 message: "Your account has been Deactive by the admin.",
             });
         }
+        let company = await db.Company.findOne({ where: { owner_id: req.user.id } });
+
 
         const client = await db.Client.findByPk(client_id)
         if (!client) return res.status(404).json({ status: 0, message: 'Client Not Found' });
@@ -68,8 +72,25 @@ exports.editClient = async (req, res) => {
                 return res.status(400).json({ message: valid.message });
             }
         }
-
-        await client.update({ ...req.body, country_code: `+${country_code}` || client.country_code, });
+        if (email) {
+            const existingClient = await db.Client.findOne({ where: { company_id: company.id, email: email, id: { [Op.ne]: client.id }, } });
+            if (existingClient) {
+                return res.status(400).json({
+                    status: 0,
+                    message: "Client already exists."
+                });
+            }
+        }
+        const data = {
+            company_name: company_name || client.company_name,
+            client_name: client_name || client.client_name,
+            email: email || client.email,
+            iso_code: iso_code || client.iso_code,
+            phone_number: phone_number || client.phone_number,
+            country_code: `+${country_code}` || client.country_code,
+            address: address || client.address
+        }
+        await client.update(data);
 
         return res.status(200).json({
             status: 1,

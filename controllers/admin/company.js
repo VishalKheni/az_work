@@ -221,6 +221,7 @@ exports.changeCompanyPassword = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         await user.update({ password: hashedPassword });
+        await db.Token.destroy({ where: { user_id: user.id } })
         return res.status(200).json({ status: 1, message: 'Password changed successfully.' });
     } catch (error) {
         console.error('Error changing password by admin:', error);

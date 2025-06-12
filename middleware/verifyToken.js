@@ -20,13 +20,6 @@ const verifyToken = async (req, res, next) => {
             });
         }
         const decoded = jwt.decode(token, { complete: true });
-        if (!decoded || !decoded.payload) {
-            return res.status(401).json({
-                status: 0,
-                message: "Invalid token structure",
-            });
-        }
-
         const { exp } = decoded.payload;
         const currentTime = Math.floor(Date.now() / 1000);
 

@@ -36,8 +36,8 @@ const sendOTPVerificationEmail = async (email, otp) => {
   }
 };
 
-const sendEmailToWorker = async ({ email, password, company_name }) => {
-  let htmlContent = sendWorkerEmail({ email, company_name, password });
+const sendEmailToWorker = async ({ email, password, company_name, text }) => {
+  let htmlContent = sendWorkerEmail({ email, company_name, password, text });
   let mail_option = {
     from: `AZ Work <${smtpUser}>`,
     to: email,

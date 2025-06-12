@@ -87,7 +87,7 @@ exports.getAbsencesList = async (req, res) => {
 
         let order;
         if (filter === 'id_DESC') {
-            order = [['id', 'DESC']];
+            order = [['id', 'DESC']];   
         } else if (filter === 'absence_type_ASC') {
             order = [['absence_type', 'ASC']];
         } else if (filter === 'paid_ASC') {
