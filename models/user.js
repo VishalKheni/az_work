@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.INTEGER,
             allowNull: true,
             references: { model: 'tbl_job_title', key: 'id' },
-            onDelete: 'CASCADE'
+            onDelete: 'SET NULL'
         },
         firstname: {
             type: DataTypes.STRING,
