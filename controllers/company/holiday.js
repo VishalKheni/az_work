@@ -208,6 +208,8 @@ exports.getCompanyHolidaysList = async (req, res) => {
                 offset,
                 order,
             });
+            adminholidays = adminholidays.map(holiday => holiday.toJSON());
+            const isChecked = adminholidays.every(item => item.is_holiday_checked === true);
             return res.status(200).json({
                 status: 1,
                 message: "Admin Holiday List fetched successfully",
@@ -217,6 +219,7 @@ exports.getCompanyHolidaysList = async (req, res) => {
                     currentPage: page,
                     limit: limit,
                 },
+                is_all_checked: isChecked,
                 data: adminholidays,
             });
         }

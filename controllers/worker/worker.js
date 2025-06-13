@@ -201,7 +201,17 @@ exports.getAllWorkHistory = async (req, res) => {
 
 exports.getProjectList = async (req, res) => {
     try {
-        const projectList = await db.Project.findAll({ where: { company_id: req.user.company_id, status: 'active' } });
+        const today = moment().format('YYYY-MM-DD');
+        // const projectList = await db.Project.findAll({ where: { company_id: req.user.company_id, status: 'active', is_deleted: false } });
+        const projectList = await db.Project.findAll({
+            where: {
+                company_id: req.user.company_id,
+                status: 'active',
+                is_deleted: false,
+                start_date: { [Op.lte]: today },
+                end_date: { [Op.gte]: today },
+            }
+        });
 
         return res.status(200).json({
             status: 1,
@@ -213,132 +223,6 @@ exports.getProjectList = async (req, res) => {
         res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 }
-
-exports.getHistroryv1 = async (req, res) => {
-    try {
-        const { id: worker_id } = req.user;
-        let { page, limit, project_id, date } = req.query;
-        page = parseInt(page) || 1;
-        limit = parseInt(limit) || 10;
-        const offset = (page - 1) * limit;
-
-        const startOfDay = moment(date).startOf('day').toDate();
-        const endOfDay = moment(date).endOf('day').toDate();
-
-        const { count, rows: histrory } = await db.Clock_entry.findAndCountAll({
-            where: {
-                worker_id,
-                date: {
-                    [Op.between]: [startOfDay, endOfDay]
-                },
-                clock_in_time: { [Op.ne]: null },
-                clock_out_time: { [Op.ne]: null }
-            },
-            attributes: { exclude: ['type'] },
-            include: [
-                {
-                    model: db.Document,
-                    as: "clock_images",
-                    where: { type: 'image', },
-                    required: false
-                }
-            ],
-            distinct: true,
-            limit,
-            offset,
-            order: [['createdAt', 'DESC']]
-        })
-        return res.status(200).json({
-            status: 1,
-            message: "Project work history fetched Successfully",
-            pagination: {
-                totalData: count,
-                totalPages: Math.ceil(count / limit),
-                currentPage: page,
-                limit: limit,
-            },
-            data: histrory
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ status: 0, message: 'Internal server error' });
-    }
-}
-
-
-exports.getHistroryv2 = async (req, res) => {
-    try {
-        const { id: worker_id } = req.user;
-        let { page, limit, project_id, date } = req.query;
-
-        page = parseInt(page) || 1;
-        limit = parseInt(limit) || 10;
-        const offset = (page - 1) * limit;
-
-        const wherecondition = {
-            worker_id,
-            clock_in_time: { [Op.ne]: null },
-            clock_out_time: { [Op.ne]: null }
-        };
-
-        if (date) {
-            const startOfDay = moment(date).startOf('day').toDate();
-            const endOfDay = moment(date).endOf('day').toDate();
-            wherecondition.date = {
-                [Op.between]: [startOfDay, endOfDay]
-            };
-        }
-
-        const records = await db.Clock_entry.findAll({
-            where: { ...wherecondition },
-            attributes: { exclude: ['type'] },
-            include: [
-                {
-                    model: db.Document,
-                    as: 'clock_images',
-                    where: { type: 'image' },
-                    required: false
-                }
-            ],
-            order: [['date', 'DESC'], ['createdAt', 'DESC']]
-        });
-
-        // Group by date
-        const grouped = {};
-        for (const record of records) {
-            const day = moment(record.date).format('YYYY-MM-DD');
-            if (!grouped[day]) grouped[day] = [];
-            grouped[day].push(record);
-        }
-
-        // Convert to array format
-        const groupedArray = Object.keys(grouped).map(date => ({
-            date,
-            break_time: grouped[date][0].break_time, // Assuming break_time is the same for all entries of the day
-            clock_entry: grouped[date]
-        }));
-
-        // Pagination on grouped days
-        const totalData = groupedArray.length;
-        const paginatedData = groupedArray.slice(offset, offset + limit);
-
-        return res.status(200).json({
-            status: 1,
-            message: "Work history fetched successfully",
-            pagination: {
-                totalData,
-                totalPages: Math.ceil(totalData / limit),
-                currentPage: page,
-                limit
-            },
-            data: paginatedData
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ status: 0, message: 'Internal server error' });
-    }
-};
 
 
 exports.getHistrory = async (req, res) => {
@@ -521,7 +405,7 @@ exports.addclockImgaes = async (req, res) => {
 
 exports.absencesList = async (req, res) => {
     try {
-        const absencesList = await db.Absences.findAll({ where: { company_id: req.user.company_id } });
+        const absencesList = await db.Absences.findAll({ where: { company_id: req.user.company_id, is_deleted: false } });
         // const absencesList = await db.Absences.findAll({ where: { created_by_admin: true } });
 
         return res.status(200).json({
@@ -535,6 +419,122 @@ exports.absencesList = async (req, res) => {
     }
 }
 
+// exports.sendAbsencesRequest = async (req, res) => {
+//     try {
+//         let { absence_id, type, start_date, end_date, reason } = req.body;
+//         type = parseInt(type);
+
+//         const absence = await db.Absences.findByPk(absence_id);
+//         if (!absence) {
+//             return res.status(404).json({ status: 0, message: "Absence Not found" })
+//         }
+
+
+//         let requestedDays = 0;
+//         const start = moment(start_date).startOf('day');
+//         const end = type === 1 ? moment(end_date).startOf('day') : start.clone();
+
+
+//         if (type === 0) {
+//             // single day absence
+//             if (start.day() === 0 || start.day() === 6) {
+//                 return res.status(400).json({
+//                     status: 0,
+//                     message: "Cannot apply for absence on weekends (Saturday or Sunday)."
+//                 });
+//             }
+//             requestedDays = 1;
+//         } else if (type === 1) {
+//             requestedDays = end.diff(start, 'days') + 1;
+//         }
+
+
+//         const overlappingRequests = await db.absence_request.findAll({
+//             where: {
+//                 worker_id: req.user.id,
+//                 request_status: { [Op.in]: ['pending', 'accepted'] },
+//                 [Op.or]: [
+//                     {
+//                         type: 0,
+//                         start_date: {
+//                             [Op.between]: [start.toDate(), end.toDate()]
+//                         }
+//                     },
+//                     {
+//                         type: 1,
+//                         start_date: { [Op.lte]: end.toDate() },
+//                         end_date: { [Op.gte]: start.toDate() }
+//                     }
+//                 ]
+//             }
+//         });
+
+//         if (overlappingRequests.length > 0) {
+//             return res.status(400).json({
+//                 status: 0,
+//                 message: "You've already applied for leave during these dates. Try selecting a different range."
+//             });
+//         }
+
+
+//         if (absence.absence_type === "Vacation") {
+//             // Fetch previous requests that are vacation type by joining the absence table
+//             const previousRequests = await db.absence_request.findAll({
+//                 where: {
+//                     worker_id: req.user.id,
+//                     absence_id: absence_id,
+//                     request_status: { [Op.in]: ['pending', 'accepted'] },
+//                 },
+//                 include: [{
+//                     model: db.Absences,
+//                     as: 'absence',
+//                     where: { absence_type: 'Vacation' },
+//                     attributes: ['absence_type'] // no need to fetch full absence details
+//                 }]
+//             });
+
+//             let totalUsedVacationDays = 0;
+
+//             previousRequests.forEach(request => {
+//                 if (request.type === 0) {
+//                     totalUsedVacationDays += 1;
+//                 } else if (request.type === 1) {
+//                     const start = moment(request.start_date).startOf('day');
+//                     const end = moment(request.end_date).startOf('day');
+//                     const days = end.diff(start, 'days') + 1;
+//                     totalUsedVacationDays += days;
+//                 }
+//             });
+//             const availableVacationDays = req.user.vacation_days || 0;
+//             if (totalUsedVacationDays + requestedDays > availableVacationDays) {
+//                 return res.status(400).json({
+//                     status: 0,
+//                     message: `Your vacation day limit has been reached.`
+//                 });
+//             }
+//         }
+
+//         const absenceRequest = await db.absence_request.create({
+//             worker_id: req.user.id,
+//             absence_id: absence.id,
+//             start_date: start_date,
+//             end_date: type == 1 ? end_date : null,
+//             reason: reason,
+//             type: type
+//         });
+
+//         return res.status(201).json({
+//             status: 1,
+//             message: "Absence request sent successfully",
+//             data: absenceRequest
+//         });
+//     } catch (error) {
+//         console.log('error', error)
+//         return res.status(500).json({ status: 0, message: 'Internal server error' });
+//     }
+// }
+
+
 exports.sendAbsencesRequest = async (req, res) => {
     try {
         let { absence_id, type, start_date, end_date, reason } = req.body;
@@ -542,63 +542,75 @@ exports.sendAbsencesRequest = async (req, res) => {
 
         const absence = await db.Absences.findByPk(absence_id);
         if (!absence) {
-            return res.status(404).json({ status: 0, message: "Absence Not found" })
+            return res.status(404).json({ status: 0, message: "Absence Not found" });
         }
-
 
         let requestedDays = 0;
         const start = moment(start_date).startOf('day');
         const end = type === 1 ? moment(end_date).startOf('day') : start.clone();
 
-        // if (type === 0) {
-        //     requestedDays = 1;
-        // } else if (type === 1) {
-        //     requestedDays = end.diff(start, 'days') + 1;
-        // }
+        // Fetch holidays in the month of start_date
+        const month = start.month() + 1;
+        const year = start.year();
 
+        const holidays = await db.Holiday.findAll({
+            where: {
+                company_id: req.user.company_id,
+                is_holiday_checked: true,
+                [db.Sequelize.Op.and]: [
+                    db.sequelize.where(db.sequelize.fn('MONTH', db.sequelize.col('date')), month),
+                    db.sequelize.where(db.sequelize.fn('YEAR', db.sequelize.col('date')), year)
+                ]
+            },
+            attributes: ['date'],
+        });
+
+        const holidayDates = holidays.map(h => moment(h.date).format('YYYY-MM-DD'));
+
+        // Type 0 - Single Day Absence
         if (type === 0) {
-            // single day absence
+            const formattedDate = start.format('YYYY-MM-DD');
             if (start.day() === 0 || start.day() === 6) {
                 return res.status(400).json({
                     status: 0,
                     message: "Cannot apply for absence on weekends (Saturday or Sunday)."
                 });
             }
+
+            if (holidayDates.includes(formattedDate)) {
+                return res.status(400).json({
+                    status: 0,
+                    message: "Cannot apply absence on a holiday."
+                });
+            }
+
             requestedDays = 1;
         } else if (type === 1) {
             requestedDays = end.diff(start, 'days') + 1;
         }
 
-        // let requestedDays = 0;
-        // const start = moment(start_date).startOf('day');
-        // const end = type === 1 ? moment(end_date).startOf('day') : start.clone();
+        // Type 1 - Multi Day Absence
+        // else if (type === 1) {
+        //     const dateRange = [];
+        //     let current = start.clone();
+        //     while (current.isSameOrBefore(end)) {
+        //         dateRange.push(current.format('YYYY-MM-DD'));
+        //         current.add(1, 'days');
+        //     }
 
-        // // Check for weekends in the requested days
-        // if (type === 0) {
-        //     // single day absence
-        //     if (start.day() === 0 || start.day() === 6) {
+        //     const conflictHoliday = dateRange.find(date => holidayDates.includes(date));
+        //     console.log('dateRange', dateRange)
+        //     if (conflictHoliday) {
         //         return res.status(400).json({
         //             status: 0,
-        //             message: "Cannot apply for absence on weekends (Saturday or Sunday)."
+        //             message: "You've already applied for leave during these dates. Try selecting a different range."
         //         });
         //     }
-        //     requestedDays = 1;
-        // } else if (type === 1) {
-        //     // multiple days absence
-        //     // Loop through each day in the range to check if any day is weekend
-        //     for (let m = start.clone(); m.isSameOrBefore(end); m.add(1, 'days')) {
-        //         if (m.day() === 0 || m.day() === 6) {
-        //             return res.status(400).json({
-        //                 status: 0,
-        //                 message: "Cannot apply for absence on weekends (Saturday or Sunday)."
-        //             });
-        //         }
-        //     }
-        //     requestedDays = end.diff(start, 'days') + 1;
+
+        //     requestedDays = dateRange.length;
         // }
 
-
-
+        // Overlapping request check
         const overlappingRequests = await db.absence_request.findAll({
             where: {
                 worker_id: req.user.id,
@@ -626,9 +638,8 @@ exports.sendAbsencesRequest = async (req, res) => {
             });
         }
 
-
+        // Vacation day limit check
         if (absence.absence_type === "Vacation") {
-            // Fetch previous requests that are vacation type by joining the absence table
             const previousRequests = await db.absence_request.findAll({
                 where: {
                     worker_id: req.user.id,
@@ -639,7 +650,7 @@ exports.sendAbsencesRequest = async (req, res) => {
                     model: db.Absences,
                     as: 'absence',
                     where: { absence_type: 'Vacation' },
-                    attributes: ['absence_type'] // no need to fetch full absence details
+                    attributes: ['absence_type']
                 }]
             });
 
@@ -649,12 +660,12 @@ exports.sendAbsencesRequest = async (req, res) => {
                 if (request.type === 0) {
                     totalUsedVacationDays += 1;
                 } else if (request.type === 1) {
-                    const start = moment(request.start_date).startOf('day');
-                    const end = moment(request.end_date).startOf('day');
-                    const days = end.diff(start, 'days') + 1;
-                    totalUsedVacationDays += days;
+                    const s = moment(request.start_date).startOf('day');
+                    const e = moment(request.end_date).startOf('day');
+                    totalUsedVacationDays += e.diff(s, 'days') + 1;
                 }
             });
+
             const availableVacationDays = req.user.vacation_days || 0;
             if (totalUsedVacationDays + requestedDays > availableVacationDays) {
                 return res.status(400).json({
@@ -679,7 +690,7 @@ exports.sendAbsencesRequest = async (req, res) => {
             data: absenceRequest
         });
     } catch (error) {
-        console.log('error', error)
+        console.log('error', error);
         return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
 }
@@ -757,16 +768,13 @@ exports.homeScreenCount = async (req, res) => {
         const { month, year } = req.query;
         // const currentDate = moment.utc();
 
-        // const adjustedMonth = month ? parseInt(month) - 1 : currentDate.month(); // 0-based
-        // const selectedYear = year ? parseInt(year) : currentDate.year();
 
         const adjustedMonth = month ? parseInt(month) - 1 : currentDate.month(); // must subtract 1 for 0-based month
         const selectedYear = year ? parseInt(year) : currentDate.year();
 
         const startOfMonth = moment.utc({ year: selectedYear, month: adjustedMonth }).startOf('month').toDate();
         const endOfMonth = moment.utc({ year: selectedYear, month: adjustedMonth }).endOf('month').toDate();
-        // console.log('startOfMonth', startOfMonth)
-        // console.log('endOfMonth', endOfMonth)
+
         // 1. Get user
         const user = await db.User.findOne({
             where: { id: req.user.id },
@@ -1109,8 +1117,6 @@ exports.AbsenceScrenCalendar = async (req, res) => {
                             required: false,
                         },
                     ],
-                    // attributes: ['date', "duration"]
-
                 }
             ]
         });
@@ -1118,9 +1124,7 @@ exports.AbsenceScrenCalendar = async (req, res) => {
         if (!user) {
             return res.status(404).json({ status: 0, message: 'User not found' });
         }
-        // const uniqueClockDates = [
-        //     ...new Set(user.clock_entries.map(entry => entry.date))
-        // ].map(date => ({ date }));
+
         const uniqueClockDates = [
             ...new Set(user.clock_entries.map(entry => entry.date))
         ].sort().map(date => ({ date }));
@@ -1128,6 +1132,26 @@ exports.AbsenceScrenCalendar = async (req, res) => {
         const sortedAbsences = user.absence_requests.sort((a, b) =>
             new Date(a.start_date) - new Date(b.start_date)
         );
+        const holidays = await db.Holiday.findAll({
+            where: {
+                company_id: req.user.company_id,
+                is_holiday_checked: true,
+                [db.Sequelize.Op.and]: [
+                    db.sequelize.where(db.sequelize.fn('MONTH', db.sequelize.col('date')), month),
+                    db.sequelize.where(db.sequelize.fn('YEAR', db.sequelize.col('date')), year)
+                ]
+            },
+            attributes: { exclude: ['user_id', 'admin_holiday_id', 'created_by_admin', 'createdAt', 'updatedAt'] },
+            order: [['date', 'DESC']]
+        });
+
+        var getHolidays = holidays?.map((holiday) => {
+            return {
+                ...holiday.toJSON(),
+                image_url: "absence_logo/calendar.png"
+            };
+        });
+
 
         const entries = await db.Clock_entry.findAll({
             where: {
@@ -1381,7 +1405,8 @@ exports.AbsenceScrenCalendar = async (req, res) => {
                 total_present_days: totalPresentDays,
                 total_absent_days: totalAbsenceDays,
                 clock_entries: uniqueClockDates,
-                absence_requests: sortedAbsences
+                absence_requests: sortedAbsences,
+                holidays: getHolidays
             }
         });
 
@@ -1484,6 +1509,8 @@ exports.companyDetail = async (req, res) => {
     }
 };
 
+
+// extra testing apis
 exports.addclockEntrryV1 = async (req, res) => {
     try {
         const { project_id, type, address, latitude, longitude, worker_id, date, clock_in_time, clock_out_time } = req.body;
@@ -1779,18 +1806,6 @@ exports.absencesScreenCount = async (req, res) => {
             ]
         });
 
-
-        // console.log('usedRequests', usedRequests)
-        // let usedDays = 0;
-        // usedRequests.forEach(request => {
-        //     const startDate = moment(request.start_date);
-        //     const endDate = request.type === 0 || !request.end_date
-        //         ? startDate
-        //         : moment(request.end_date);
-
-        //     const diffDays = endDate.diff(startDate, 'days') + 1;
-        //     usedDays += diffDays;
-        // });
 
         let usedDays = 0;
         usedRequests.forEach(request => {

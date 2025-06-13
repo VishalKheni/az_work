@@ -31,7 +31,7 @@ exports.companyDetail = async (req, res) => {
                 {
                     model: db.User,
                     as: 'owner',
-                    attributes: ['id', 'firstname', 'lastname', 'email', 'country_code', 'iso_code', 'phone_number']
+                    attributes: ['id', 'firstname', 'lastname', 'email', 'country_code', 'iso_code', 'phone_number', 'is_company_active', 'is_company_blocked']
                 },
                 {
                     model: db.Branch,
@@ -587,42 +587,28 @@ exports.dashboardRequestList = async (req, res) => {
 exports.upcomingHolidayList = async (req, res) => {
     try {
         let { month, year } = req.query;
-        const monthIndex = parseInt(month) - 1;
 
-
-        const company = await db.Company.findOne({
-            where: { owner_id: req.user.id },
-        });
-
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
         if (!company) {
             return res.status(404).json({ status: 0, message: "Company not found" });
         }
 
-
-        // const startOfMonth = moment.utc({ year: parseInt(year), month: monthIndex, day: 1 }).startOf('month').toDate();
-        // const endOfMonth = moment.utc({ year: parseInt(year), month: monthIndex, day: 1 }).endOf('month').toDate();
-        // console.log('startOfMonth', startOfMonth)
-        // console.log('endOfMonth', endOfMonth)
-
         const holidays = await db.Holiday.findAll({
             where: {
                 is_holiday_checked: true,
-                [Op.and]: [
-                    {
-                        [Op.or]: [
-                            { company_id: null },
-                            { company_id: company.id },
-                            { user_id: req.user.id }
-                        ]
-                    },
-                ],
+                user_id: req.user.id,
                 [db.Sequelize.Op.and]: [
                     db.sequelize.where(db.sequelize.fn('MONTH', db.sequelize.col('date')), month),
                     db.sequelize.where(db.sequelize.fn('YEAR', db.sequelize.col('date')), year)
                 ]
-                // date: {
-                //     [Op.between]: [startOfMonth, endOfMonth]
-                // }
+                // [Op.and]: [
+                //     {
+                //         [Op.or]: [
+                //             { company_id: company.id },
+                //             { user_id: req.user.id }
+                //         ]
+                //     },
+                // ],
             },
             distinct: true,
             order: [['id', 'DESC']],
@@ -631,7 +617,8 @@ exports.upcomingHolidayList = async (req, res) => {
         const holidaysWithImages = holidays.map((holiday) => {
             return {
                 ...holiday.toJSON(),
-                image_url: "https://app.arbeitszeit.swiss:8800/company_logo/fi_5793801.png"
+                image_url: "https://app.arbeitszeit.swiss:8800/absence_logo/calendar.png"
+                // image_url: "https://app.arbeitszeit.swiss:8800/company_logo/fi_5793801.png"
             };
         });
 

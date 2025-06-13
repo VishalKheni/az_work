@@ -16,7 +16,6 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.INTEGER,
             allowNull: true,
             references: { model: 'tbl_absences', key: 'id' },
-            onDelete: 'CASCADE'
         },
         absence_type: {
             type: DataTypes.STRING,
@@ -30,6 +29,10 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.ENUM('paid', 'unpaid'),
         },
         created_by_admin: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
+        },
+        is_deleted: {
             type: DataTypes.BOOLEAN,
             defaultValue: false
         },

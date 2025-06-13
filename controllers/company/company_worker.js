@@ -913,6 +913,7 @@ exports.getTimeTableList = async (req, res) => {
                 {
                     model: db.absence_request,
                     as: 'absence_requests',
+                    required: false,
                     where: {
                         request_status: "accepted",
                         [Op.or]: [
@@ -935,13 +936,13 @@ exports.getTimeTableList = async (req, res) => {
                                     }
                                 ]
                             }
-                        ]
+                        ],
                     },
                     include: [
                         {
                             model: db.Absences,
                             as: 'absence',
-                            attributes: ["id", "absence_type", "absence_logo", "status"]
+                            attributes: ["id", "absence_type", "absence_logo", "status"],
                         }
                     ]
                 },

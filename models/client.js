@@ -34,6 +34,10 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
+        is_deleted: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
+        },
     }, {
         tableName: "tbl_clients",
         timestamps: true,

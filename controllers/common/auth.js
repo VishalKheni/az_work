@@ -110,6 +110,7 @@ exports.verifyOtpAndRegister = async (req, res) => {
       is_password_add: true,
       is_company_add: true,
       is_company_active: "Active",
+      is_company_blocked: "Unblock"
     });
 
     let company = null;
@@ -131,10 +132,10 @@ exports.verifyOtpAndRegister = async (req, res) => {
       device_token,
       device_type,
       refresh_token: uuidv4(),
-      token_expire_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      token_expire_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     });
 
-    const accessToken = jwt.sign({ user_id: user.id, token_id: tokenRecord.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+    const accessToken = jwt.sign({ user_id: user.id, token_id: tokenRecord.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1d' });
 
     await temp.destroy();
 
@@ -165,7 +166,7 @@ exports.refreshToken = async (req, res) => {
     }
     const user = await db.User.findByPk(storedToken.user_id);
     if (!user) return res.status(400).json({ status: 0, message: "User not found" });
-    const token = jwt.sign({ user_id: user.id, token_id: storedToken.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+    const token = jwt.sign({ user_id: user.id, token_id: storedToken.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1d' });
     return res.status(200).json({
       status: 1,
       message: "Token refreshed successfully",
@@ -205,7 +206,7 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ status: 0, message: "Incorrect password." });
     }
-    
+
     if (user.user_role == "company" && user.is_company_blocked === "Block") {
       return res.status(400).json({ status: 0, message: "Your account is Blocked by admin." });
     }
@@ -214,8 +215,8 @@ exports.login = async (req, res) => {
     }
 
     let tokenRecord = await db.Token.findOne({ where: { device_id, device_type, device_token, user_id: user.id } });
-    if (!tokenRecord) tokenRecord = await db.Token.create({ device_id, device_type, device_token, user_id: user.id, refresh_token: uuidv4(), token_expire_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
-    const token = jwt.sign({ user_id: user.id, token_id: tokenRecord.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+    if (!tokenRecord) tokenRecord = await db.Token.create({ device_id, device_type, device_token, user_id: user.id, refresh_token: uuidv4(), token_expire_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
+    const token = jwt.sign({ user_id: user.id, token_id: tokenRecord.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1d' });
 
     return res.status(200).json({
       status: 1,

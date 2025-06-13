@@ -99,11 +99,11 @@ module.exports = (sequelize, DataTypes, Model) => {
         },
         is_company_active: {
             type: DataTypes.ENUM('Active', 'Deactive'),
-            defaultValue: 'Active',
+            defaultValue: null,
         },
         is_company_blocked: {
             type: DataTypes.ENUM('Block', 'Unblock'),
-            defaultValue: 'Unblock',
+            defaultValue: null,
         },
     }, {
         tableName: "tbl_users",

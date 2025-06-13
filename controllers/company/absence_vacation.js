@@ -332,7 +332,7 @@ exports.getCompanyAbsencesList = async (req, res) => {
 
         if (type === 0) {
             var { count: absencescount, rows: absences } = await db.Absences.findAndCountAll({
-                where: { user_id: req.user.id },
+                where: { user_id: req.user.id, is_deleted: false },
                 limit,
                 offset,
                 order,
@@ -350,7 +350,7 @@ exports.getCompanyAbsencesList = async (req, res) => {
             });
         } else if (type === 1) {
             var { count: admincount, rows: adminAbsences } = await db.Absences.findAndCountAll({
-                where: { created_by_admin: true },
+                where: { created_by_admin: true, is_deleted: false },
                 attributes: {
                     exclude: ['user_id', 'company_id', 'admin_absence_id'],
                     include: [
@@ -371,7 +371,7 @@ exports.getCompanyAbsencesList = async (req, res) => {
                 order,
             });
             adminAbsences = adminAbsences.map(absence => absence.toJSON());
-            const isChecked = adminAbsences.some(item => item.is_absences_checked === 1);
+            const isChecked = adminAbsences.every(item => item.is_absences_checked === 1);
             return res.status(200).json({
                 status: 1,
                 message: "Admin Absences List fetched successfully",
@@ -454,8 +454,7 @@ exports.deleteCompanyAbsences = async (req, res) => {
         }
         const absence = await db.Absences.findOne({ where: { id: absence_id, user_id: req.user.id } });
         if (!absence) return res.status(404).json({ status: 0, message: 'Absence Not Found' });
-        // fs.unlinkSync(`public/${absence.absence_logo}`)
-        await absence.destroy();
+        await absence.update({ is_deleted: true });
         return res.status(201).json({ status: 1, message: 'Absence deleted successfully' });
     } catch (error) {
         console.error('Error while delete absence:', error);

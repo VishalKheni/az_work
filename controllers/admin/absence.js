@@ -70,7 +70,11 @@ exports.deleteAbsences = async (req, res) => {
         if (fs.existsSync(logoPath)) {
             fs.unlinkSync(logoPath);
         }
-        await absence.destroy();
+        await absence.update({ is_deleted: true });
+        await db.Absences.update(
+            { is_deleted: true },
+            { where: { admin_absence_id: absence_id } }
+        );
         return res.status(201).json({ status: 1, message: 'Absence deleted successfully' });
     } catch (error) {
         console.error('Error while delete absence:', error);
@@ -87,7 +91,7 @@ exports.getAbsencesList = async (req, res) => {
 
         let order;
         if (filter === 'id_DESC') {
-            order = [['id', 'DESC']];   
+            order = [['id', 'DESC']];
         } else if (filter === 'absence_type_ASC') {
             order = [['absence_type', 'ASC']];
         } else if (filter === 'paid_ASC') {

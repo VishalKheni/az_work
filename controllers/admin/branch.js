@@ -1,5 +1,6 @@
 require('dotenv').config()
 const db = require("../../config/db");
+const { Op, where, Sequelize, col } = require("sequelize");
 
 
 exports.addBranch = async (req, res) => {
@@ -118,6 +119,30 @@ exports.deleteBranch = async (req, res) => {
         if (!branch) {
             return res.status(400).json({ status: 0, message: 'Branch Not Found' });
         }
+        const usageCount = await db.Company.count({
+            where: { industry_id: branch_id },
+            include: [
+                {
+                    model: db.User,
+                    as: 'owner',
+                    attributes: ['id', 'is_company_blocked', 'is_company_active'],
+                    where: {
+                        is_company_blocked: "Unblock",
+                        is_company_active: {
+                            [Op.or]: ["Active", "Deactive"]
+                        }
+                    }
+                },
+            ]
+        });
+
+        if (usageCount > 0) {
+            return res.status(400).json({
+                status: 0,
+                message: `Cannot delete: Branch is used by ${usageCount} compan${usageCount > 1 ? 'ies' : 'y'}.`
+            });
+        }
+
         await branch.destroy();
         return res.status(200).json({ status: 1, message: 'Branch deleted successfully' });
 

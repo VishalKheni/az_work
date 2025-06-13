@@ -133,7 +133,7 @@ exports.deleteProject = async (req, res) => {
             fs.unlinkSync(`public/${project.document_url}`);
         }
 
-        await project.destroy();
+        await project.update({ is_deleted: true });
 
         return res.status(200).json({
             status: 1,
@@ -155,7 +155,10 @@ exports.getProjectList = async (req, res) => {
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
         if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
 
-        let whereCondition = {};
+        let whereCondition = {
+            company_id: company.id,
+            is_deleted: false
+        };
         if (search) {
             whereCondition[Op.or] = [
                 { project_name: { [Op.like]: `%${search}%` } },
@@ -273,7 +276,7 @@ exports.getProjectDetail = async (req, res) => {
             ? Math.round(totalWorkingHours - branchMonthlyHours)
             : 0;
 
-        const totalHour = parseInt(branchMonthlyHours) 
+        const totalHour = parseInt(branchMonthlyHours)
         const monthlyHour = parseInt(branchMonthlyHours) + overtime
 
         // const formattedDuration = formatSecondsToHHMMSS(totalSeconds);
@@ -281,7 +284,7 @@ exports.getProjectDetail = async (req, res) => {
         return res.status(200).json({
             status: 1,
             message: "Project detail fetched Successfully",
-            data:  projectDetail, totalHour,monthlyHour, overtime ,
+            data: projectDetail, totalHour, monthlyHour, overtime,
 
         });
 
@@ -383,7 +386,7 @@ exports.projectClientList = async (req, res) => {
         if (!company) return res.status(400).json({ status: 0, message: 'Company Not Found' });
 
         const client = await db.Client.findAll({
-            where: { company_id: company.id },
+            where: { company_id: company.id, is_deleted: false },
             attributes: ['id', 'client_name', 'createdAt'],
         });
 
@@ -454,21 +457,3 @@ exports.projectImagesList = async (req, res) => {
 }
 
 
-// exports.ProjectworkingHourCount = async (req, res) => {
-//     try {
-//         let { project_id } = req.query;
-
-//         const projectDetail = await db.Project.findByPk(project_id);
-//         if (!projectDetail) return res.status(400).json({ status: 0, message: 'Project Not Found' });
-
-//         return res.status(200).json({
-//             status: 1,
-//             message: "Project detail fetched Successfully",
-//             data: projectDetail,
-//         });
-
-//     } catch (error) {
-//         console.error('Error while get project detail:', error);
-//         return res.status(500).json({ status: 0, message: 'Internal server error' });
-//     }
-// }

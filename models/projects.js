@@ -40,6 +40,10 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.DECIMAL(11, 8),
             allowNull: true,
         },
+        is_deleted: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
+        },
     }, {
         tableName: "tbl_project",
         timestamps: true,

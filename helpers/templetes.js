@@ -47,7 +47,8 @@ const signupEmail = (otp) => `<!DOCTYPE html>
                       <div
                         style="
                           padding: 20px;
-                          background-color: #05558E;
+                          // background-color: #05558E;
+                          background-color:rgb(109, 183, 236);
                           border-radius: 10px;
                           box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
                           border: 10px;

@@ -21,7 +21,7 @@ exports.addClient = async (req, res) => {
         }
 
         const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
-        const existingClient = await db.Client.findOne({ where: { company_id: company.id, ...req.body } });
+        const existingClient = await db.Client.findOne({ where: { company_id: company.id, email: email } });
 
         if (existingClient) {
             return res.status(400).json({
@@ -107,6 +107,7 @@ exports.editClient = async (req, res) => {
 exports.deleteClient = async (req, res) => {
     try {
         const { client_id } = req.query;
+        const company = await db.Company.findOne({ where: { owner_id: req.user.id } });
 
         if (req.user?.is_company_active === "Deactive") {
             return res.status(400).json({
@@ -117,8 +118,22 @@ exports.deleteClient = async (req, res) => {
 
         const client = await db.Client.findByPk(client_id)
         if (!client) return res.status(404).json({ status: 0, message: 'Client Not Found' });
+        const linkedProjectCount = await db.Project.count({
+            where: {
+                client_id,
+                company_id: company.id,
+                is_deleted: false,
+                status: ['active', 'deactive']
+            }
+        });
 
-        await client.destroy();
+        if (linkedProjectCount > 0) {
+            return res.status(400).json({
+                status: 0,
+                message: `Client is linked to ${linkedProjectCount} active or deactive projects and cannot be deleted.`,
+            });
+        }
+        await client.update({ is_deleted: true });
 
         return res.status(200).json({
             status: 1,
@@ -143,6 +158,7 @@ exports.clientList = async (req, res) => {
 
         let whereCondition = {
             company_id: company.id,
+            is_deleted: false
         };
 
         if (search) {
