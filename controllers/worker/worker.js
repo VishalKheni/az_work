@@ -8,7 +8,8 @@ const user = require('../../models/user');
 
 
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-    const R = 6371; // Radius of the Earth in km
+    // const R = 6371; // Earth's radius in km
+    const R = 6371000; // Earth's radius in meters
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a =
@@ -36,7 +37,7 @@ exports.addclockEntrry = async (req, res) => {
 
         const distance = getDistanceFromLatLonInKm(parseFloat(latitude), parseFloat(longitude), parseFloat(project.latitude), parseFloat(project.longitude));
         const messasgeType = type === 'clock_in' ? 'in' : 'out';
-        if (distance > 0.5) { // 500 meters = 0.5 kilometers
+        if (distance > 500) { // 500 meters     
             return res.status(400).json({
                 status: 0,
                 message: `You are too far from the project location. Must be within 500 meters to clock ${messasgeType}.`,
@@ -69,7 +70,7 @@ exports.addclockEntrry = async (req, res) => {
                 type,
             });
             return res.status(201).json({
-                status: 1, message: 'Clock-in successful',
+                status: 1, message: 'Clock in successful',
                 data: clockin,
                 project: {
                     id: project.id,
@@ -89,7 +90,7 @@ exports.addclockEntrry = async (req, res) => {
             });
 
             if (!lastClockIn) {
-                return res.status(400).json({ status: 0, message: 'No active clock-in found' });
+                return res.status(400).json({ status: 0, message: 'No active clock in found' });
             }
 
             lastClockIn.clock_out_time = now.toDate();
@@ -210,7 +211,8 @@ exports.getProjectList = async (req, res) => {
                 is_deleted: false,
                 start_date: { [Op.lte]: today },
                 end_date: { [Op.gte]: today },
-            }
+            },
+            attributes:{exclude: ['is_deleted']},
         });
 
         return res.status(200).json({
