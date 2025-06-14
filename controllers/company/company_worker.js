@@ -103,7 +103,7 @@ exports.addWorker = async (req, res) => {
                     [Op.or]: ["company", "admin"]
                 }
             }
-        });
+        })
         if (existingWorker || otherWorker) {
             return res.status(400).json({ status: 0, message: 'Email already exists' });
         }

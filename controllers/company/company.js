@@ -92,6 +92,19 @@ exports.editCompany = async (req, res) => {
             fs.unlinkSync(`public/${company.company_logo}`);
             await company.update({ company_logo: `company_logo/${company_logo[0].filename}` });
         }
+        if (email) {
+            const otherWorker = await db.User.findOne({
+                where: {
+                    email: req.body.email,
+                    user_role: {
+                        [Op.or]: ["company", "admin"]
+                    }
+                }
+            })
+            if (existingWorker || otherWorker) {
+                return res.status(400).json({ status: 0, message: 'Email already exists' });
+            }
+        }
         if (password) {
             const isSamePassword = await bcrypt.compare(password, owner.password);
             if (isSamePassword) {
